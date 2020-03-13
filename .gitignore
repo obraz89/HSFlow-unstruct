@@ -1,0 +1,37 @@
+# Visual Studio 2005 - 2008 files
+*.suo
+*.ncb
+*.aps
+
+# Visual Studio 2010+ files
+*.sdf
+*.opensdf
+*.ipch
+*.VC.db
+*.opendb
+.vs/
+ipch/
+
+# Local environment files (Visual Studio, QtCreator)
+*.user
+*.creator.user.*
+
+# Intel analyzer files
+*Amplifier*/
+*Advisor*/
+
+# Compiled files
+bin_*
+bin-*
+x64
+test_case
+*.o
+*.pyc
+lib/
+
+# Symlink for build config
+build/linux/conf.mk
+
+# Testing fields
+*.cgns
+/tests/
