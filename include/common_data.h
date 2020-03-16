@@ -26,9 +26,11 @@ DLLIMPEXP extern TState G_State;
 
 struct t_Zone;
 
-static const int MaxNumOfVertsInFace = 4;
+static const int MaxNumVertsInFace = 4;
 
-static const int MaxNumberOfFacesInCell = 6;
+static const int MaxNumFacesInCell = 6;
+
+static const int MaxNumVertsInCell = 8;
 
 typedef long int lint;
 
@@ -36,7 +38,7 @@ enum struct t_FaceBCKind {
 	FluidFace = 0,
 };
 
-struct t_GrdVert {
+struct t_Vert {
 
 	lint Id;
 
@@ -44,15 +46,23 @@ struct t_GrdVert {
 
 };
 
-struct t_GrdFace {
+struct t_Cell;
+
+struct t_Face {
 
 	lint Id;
 
 	int NumOfVerts;
 
-	t_GrdVert* Verts[MaxNumOfVertsInFace];
+	t_Vert Verts[MaxNumVertsInFace];
 
-	lint IdLeftCell, IdRightCell;
+	t_Cell *pLeftCell, *pRightCell;
+
+	// local indices of the face for left & right cells
+
+	int IndLeft, IndRight;
+
+	int IdBCType;
 
 	double Normal[3];
 
@@ -66,11 +76,20 @@ struct t_GrdFace {
 
 
 
-struct t_GrdCell {
+struct t_Cell {
 
 	lint Id;
 
-	t_GrdFace* Faces[MaxNumberOfFacesInCell];
+	int Nverts;
+
+	int NFaces;
+
+	t_Vert Verts[MaxNumVertsInCell];
+	t_Face Faces[MaxNumFacesInCell];
+
+	double Center[3];
+
+	double Volume;
 
 };
 
