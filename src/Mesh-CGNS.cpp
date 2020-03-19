@@ -108,6 +108,7 @@ int read_cgns_mesh()
 	// Temporary zones data used on CGNS file parsing
 	ctx.cgZones = new t_CGNSZone[G_Domain.nZones];
 
+
 	for (int iZone = 0; iZone < G_Domain.nZones; iZone++) {
 
 		const int& cgZneID = G_Domain.map_iZne2cgID[iZone];
@@ -135,6 +136,47 @@ int read_cgns_mesh()
 
 		ctx.map_ZneName2Idx[Zne.szName] = iZone;
 
+		// bcs
+		int nBCs;
+		cg_nbocos(ctx.iFile, ctx.iBase, cgZneID, &nBCs);
+
+		hsLogMessage("Number of BC sets:%d", nBCs);
+
+		for (int iBC = 1; iBC <= nBCs; ++iBC) {
+
+			char szPatchName[CG_MAX_NAME_LENGTH];
+
+			CG_BCType_t iBCtype;
+
+			CG_PointSetType_t pntSetType;
+			cgsize_t nPnts = 0; // number of points defining the BC region
+
+								// Normals to the BC patch - UNUSED
+			int iNorm[3]; // normal as index vector (computational coords)
+			cgsize_t normListSize = 0;  CG_DataType_t normDataType; // normals in phys coords
+
+			int nDatasets = 0; // number of datasets with additional info for the BC
+
+			cg_boco_info(ctx.iFile, ctx.iBase, cgZneID, iBC,
+				szPatchName, &iBCtype,
+				&pntSetType, &nPnts,
+				iNorm, &normListSize, &normDataType,
+				&nDatasets
+			);
+			if (pntSetType != CG_PointRange && nPnts != 2)
+			{
+				hsLogMessage(
+					"Boundary condition patch '%s'(#%d) of zone '%s'(#%d) isn't defined as point range",
+					szPatchName, iBC, Zne.szName, cgZneID);
+				szPatchName[0] = 0x3;  // 'end of text' code -> error indicator
+			}
+			cgsize_t idxRng[2];
+			cg_boco_read(ctx.iFile, ctx.iBase, cgZneID, iBC, idxRng, nullptr);
+
+			hsLogMessage("BC with name %s has idxrng_start=%d and idxrng_end=%d", szPatchName, idxRng[0], idxRng[1]);
+		}
+
+		// ~bcs
 		
 		// reading sections
 
