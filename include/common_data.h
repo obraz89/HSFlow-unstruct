@@ -34,19 +34,54 @@ static const int MaxNumVertsInCell = 8;
 
 typedef long int lint;
 
-enum struct t_FaceBCKind {
-	FluidFace = 0,
+template<int len>class t_Vec {
+	double cont[len];
+public:
+	double& operator[](int i) {
+#ifdef _DEBUG
+		//if (i<0 || i>len-1) hsLogError("t_Vec:ind out of range");
+#endif // _DEBUG
+		return cont[i]; 
+	}
+	const double& operator[](int i) const { return cont[i]; }
 };
+
+
+
+template<int len> double dot(const t_Vec<len>& v1, const t_Vec<len>& v2) {
+	double ret = 0.0;
+	for (int i=0; i<len; i++) ret+=v1.cont[]
+	return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
+}
+
+using t_Vec3d = t_Vec<3>;
+
+enum struct t_FaceBCKind {
+	Fluid = 0,
+	Inflow,
+	Outflow,
+	Sym,
+	Wall
+};
+
+enum struct t_CellKind {
+	Tetra = 0,
+	Brick
+
+};
+
+struct t_Cell;
 
 struct t_Vert {
 
 	lint Id;
 
-	double xyz[3];
+	// list of cells that has this Vertex
+	t_Cell *pNeibCells;
+
+	t_Vec3d xyz;
 
 };
-
-struct t_Cell;
 
 struct t_Face {
 
@@ -60,13 +95,13 @@ struct t_Face {
 
 	// local indices of the face for left & right cells
 
-	int IndLeft, IndRight;
+	int IndLeftCellFace, IndRightCellFace;
 
-	int IdBCType;
+	t_FaceBCKind BCKind;
 
-	double Normal[3];
+	t_Vec3d Normal;
 
-	double Center[3];
+	t_Vec3d Center;
 
 	void ComputeFaceCenter();
 
@@ -84,16 +119,27 @@ struct t_Cell {
 
 	int NFaces;
 
-	t_Vert Verts[MaxNumVertsInCell];
-	t_Face Faces[MaxNumFacesInCell];
+	t_Vert* Verts[MaxNumVertsInCell];
+	t_Face* Faces[MaxNumFacesInCell];
 
-	double Center[3];
+	// +1 if Face Normal directed outward of the cell, -1 otherwise
+	int FacesNormOutward[MaxNumFacesInCell];
+
+	// List of Neighbor Cells
+	int NumCellsNeig;
+	t_Cell* CellsNeig;
+
+	t_Vec3d Center;
 
 	double Volume;
 
 };
 
-struct t_Zone {};
+struct t_Zone {
+
+
+
+};
 
 struct DLLIMPEXP t_Domain
 {
