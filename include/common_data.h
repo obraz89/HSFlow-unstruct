@@ -137,7 +137,14 @@ struct t_Cell {
 
 struct t_Zone {
 
+	char szName[40];  // name of the zone, initialized by '\0'
 
+	lint nVerts;
+
+	lint nCells;
+
+	t_Vert *Verts;
+	t_Cell *Cells;
 
 };
 

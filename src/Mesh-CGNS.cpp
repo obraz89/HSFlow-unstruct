@@ -23,13 +23,31 @@ library libcgns.a is located)
 
 #include "logging.h"
 #include "common_data.h"
+#include "common_procs.h"
+
+struct t_BufCGSize {
+
+	cgsize_t* buf;
+
+	cgsize_t nRows, nCols;
+	cgsize_t* data() { return buf; }
+	t_BufCGSize(cgsize_t a_NR, cgsize_t a_NC) { nRows = a_NR; nCols = a_NC; buf = new cgsize_t[nRows*nCols]; }
+	cgsize_t get_val(cgsize_t i, cgsize_t j) { return *(buf + i*nCols + j); };
+	t_BufCGSize() { delete[] buf; }
+
+};
+
+//
+// Forward declarations
+//
+static bool parseConnectivity(t_CGNSContext& ctx);  // 1-to-1 connectivity
+static bool parseBCs(t_CGNSContext& ctx);     // boundary conditions
+static bool parseVCs(t_CGNSContext& ctx);     // volume conditions (frozen zones)
+
+static bool loadGridCoords(t_CGNSContext& ctx);
 
 int read_cgns_mesh()
 {
-	double *x, *y, *z;
-	//float x[21 * 17 * 9], y[21 * 17 * 9], z[21 * 17 * 9];
-
-	//cgsize_t isize[3][1], ielem[20 * 16 * 8][8];
 
 	cgsize_t isize[3];
 
@@ -73,164 +91,157 @@ int read_cgns_mesh()
 	//
 	cg_nzones(ctx.iFile, ctx.iBase, &G_Domain.nZones);
 
+	// assignZonesToProcs() will be here when multiblock is up
+	// now we need only G_Domain.map_iZne2cgID
+
+	G_Domain.map_iZne2cgID = new int[G_Domain.nZones];
+
+	//
+	// Default layout: one-to-one mapping of zones indices to CGNS zone IDs
+	//
+	for (int b = 0; b < G_Domain.nZones; ++b)
+		G_Domain.map_iZne2cgID[b] = b + 1;
+
 	// Allocate memory for whole computational domain
 	G_Domain.Zones = new t_Zone[G_Domain.nZones];
 
 	// Temporary zones data used on CGNS file parsing
 	ctx.cgZones = new t_CGNSZone[G_Domain.nZones];
 
+	for (int iZone = 0; iZone < G_Domain.nZones; iZone++) {
 
-	for (int iZone = 1; iZone <= G_Domain.nZones; iZone++) {
+		const int& cgZneID = G_Domain.map_iZne2cgID[iZone];
+		t_Zone& Zne = G_Domain.Zones[iZone];
 
 		hsLogMessage("Reading zone#%d", iZone);
 
-		CG_ZoneType_t type;  cg_zone_type(ctx.iFile, ctx.iBase, iZone, &type);
+		CG_ZoneType_t type;  cg_zone_type(ctx.iFile, ctx.iBase, cgZneID, &type);
 		bool isOk = (type == CG_Unstructured) ? 1 : 0;
 		if (!isOk) hsLogMessage("Only unstructured grids are supported");
 
-		cg_zone_read(ctx.iFile, ctx.iBase, iZone, zonename, isize);
+		cg_zone_read(ctx.iFile, ctx.iBase, cgZneID, zonename, isize);
 
-		const int& nVerts = isize[0];
+		Zne.nVerts = isize[0];
+		Zne.nCells = isize[1];
 
-		const int& nCells = isize[1];
+		const cgsize_t& nVerts = Zne.nVerts;
+		const cgsize_t& nCells = Zne.nCells;
 
-		hsLogMessage("Number of Verts:%d", isize[0]);
+		hsLogMessage("Number of Verts:%d", nVerts);
 
-		hsLogMessage("Number of Cells:%d", isize[1]);
+		hsLogMessage("Number of Cells:%d", nCells);
 
-		hsLogMessage("Number of BC Verts:%d", isize[2]);
+		//hsLogMessage("Number of BC Verts:%d", isize[2]);
 
-		x = new double[nVerts];
-		y = new double[nVerts];
-		z = new double[nVerts];
-		//cgsize_t** ielem;
-		//ielem = new cgsize_t*[nVerts];
-		//for (int i = 0; i < nVerts; i++) ielem[i] = new cgsize_t[MaxNumVertsInCell];
+		ctx.map_ZneName2Idx[Zne.szName] = iZone;
 
-		irmin = 1; irmax = nVerts;
-
-		cg_coord_read(ctx.iFile, ctx.iBase, iZone, "CoordinateX",
-			CG_RealDouble, &irmin, &irmax, x);
-		cg_coord_read(ctx.iFile, ctx.iBase, iZone, "CoordinateY",
-			CG_RealDouble, &irmin, &irmax, y);
-		cg_coord_read(ctx.iFile, ctx.iBase, iZone, "CoordinateZ",
-			CG_RealDouble, &irmin, &irmax, z);
-
+		
 		// reading sections
 
-		// array of tetra cells via vertice ids
-		cgsize_t iVertsTetra[64][4];
-		// array of tetra faces via vertice ids
-		cgsize_t iVertsTri[64][3];
-		// array of brick cells via vertice ids
-		cgsize_t iVertsBrick[64][8];
-		// array of brick faces via vertice ids
-		cgsize_t iVertsQuad[64][4];
 		int nsections, index_sect, nbndry, iparent_flag;
 		cgsize_t iparentdata;
 
-		cg_nsections(ctx.iFile, ctx.iBase, iZone, &nsections);
+		cg_nsections(ctx.iFile, ctx.iBase, cgZneID, &nsections);
 
 		hsLogMessage("Number of sections:%d", nsections);
 
+		cgsize_t n_elems, n_verts_in_elem=0;
+
 		for (index_sect = 1; index_sect <= nsections; index_sect++)
 		{
-			cg_section_read(ctx.iFile, ctx.iBase, iZone, index_sect, sectionname,
+			cg_section_read(ctx.iFile, ctx.iBase, cgZneID, index_sect, sectionname,
 				&itype, &istart, &iend, &nbndry, &iparent_flag);
 			printf("\nReading section data...\n");
 			printf("   section name=%s\n", sectionname);
 			printf("   section type=%s\n", ElementTypeName[itype]);
 			printf("   istart,iend=%i, %i\n", (int)istart, (int)iend);
-			if (itype == CG_HEXA_8)
-			{
-				printf("   reading element data for hexa cell\n");
-				cg_elements_read(ctx.iFile, ctx.iBase, iZone, index_sect, iVertsBrick[0], \
-					&iparentdata);
-				continue;
+
+			n_elems = iend - istart + 1;
+
+			if (itype == CG_HEXA_8) n_verts_in_elem = 8;
+			if (itype == CG_QUAD_4) n_verts_in_elem = 4;
+			if (itype == CG_TETRA_4) n_verts_in_elem = 4;
+			if (itype == CG_TRI_3) n_verts_in_elem = 3;
+
+			t_BufCGSize indices(n_elems, n_verts_in_elem);
+
+			if (n_verts_in_elem == 0) hsLogMessage("   Unknown section type for zone# %d\n", iZone);
+
+			hsLogMessage("   reading element data for %s\n", ElementTypeName[itype]);
+			cg_elements_read(ctx.iFile, ctx.iBase, cgZneID, index_sect, indices.data(), \
+				&iparentdata);
+
+			// debug output of sections
+			for (int i = 0; i < n_elems; i++) {
+				for (int j = 0; j < n_verts_in_elem; j++)
+					std::cout << indices.get_val(i, j) << ";";
+				std::cout << std::endl;
 			}
 
-			if (itype == CG_QUAD_4)
-			{
-				printf("   reading element data for hexa face\n");
-				cg_elements_read(ctx.iFile, ctx.iBase, iZone, index_sect, iVertsQuad[0], \
-					&iparentdata);
-				continue;
-			}
-
-			if (itype == CG_TETRA_4) {
-				printf("   reading element data for tetra cell\n");
-				cg_elements_read(ctx.iFile, ctx.iBase, iZone, index_sect, iVertsTetra[0], \
-					&iparentdata);
-				continue;
-			}
-
-			if (itype == CG_TRI_3) {
-				printf("   reading element data for tetra face (tri)\n");
-				cg_elements_read(ctx.iFile, ctx.iBase, iZone, index_sect, iVertsTri[0], \
-					&iparentdata);
-				continue;
-			}
-
-			hsLogMessage("   Failed to read section from the zone %d\n", iZone);
 
 		}
 
 	}
 
-	
+	// Volume conditions info (frozen zones)
+	parseVCs(ctx);
 
-	/*
-	// get zone size (and name - although not needed here)
-	cg_zone_read(index_file, index_base, index_zone, zonename, isize[0]);
-	// lower range index
-	irmin = 1;
-	// upper range index of vertices
-	irmax = isize[0][0];
-	// read grid coordinates
-	cg_coord_read(index_file, index_base, index_zone, "CoordinateX",
-		CGNS_ENUMV(RealSingle), &irmin, &irmax, x);
-	cg_coord_read(index_file, index_base, index_zone, "CoordinateY",
-		CGNS_ENUMV(RealSingle), &irmin, &irmax, y);
-	cg_coord_read(index_file, index_base, index_zone, "CoordinateZ",
-		CGNS_ENUMV(RealSingle), &irmin, &irmax, z);
-	// find out how many sections
-	cg_nsections(index_file, index_base, index_zone, &nsections);
-	printf("\nnumber of sections=%i\n", nsections);
-	// read element connectivity
-	for (index_sect = 1; index_sect <= nsections; index_sect++)
-	{
-		cg_section_read(index_file, index_base, index_zone, index_sect, sectionname,
-			&itype, &istart, &iend, &nbndry, &iparent_flag);
-		printf("\nReading section data...\n");
-		printf("   section name=%s\n", sectionname);
-		printf("   section type=%s\n", ElementTypeName[itype]);
-		printf("   istart,iend=%i, %i\n", (int)istart, (int)iend);
-		if (itype == CGNS_ENUMV(HEXA_8))
-		{
-			printf("   reading element data for this element\n");
-			cg_elements_read(index_file, index_base, index_zone, index_sect, ielem[0], \
-				&iparentdata);
-		}
+	// Connectivity info
+	// Updates {zne,cgZne}.{is,ie,js,je,ks,ke}, zne.{nx,ny,nz}
+	if (!parseConnectivity(ctx))
+		return false;
 
-		if (itype == CG_TETRA_4) {
-			printf("   reading element data for tetra\n");
-			cg_elements_read(index_file, index_base, index_zone, index_sect, ielem[0], \
-				&iparentdata);
-		}
-		else
-		{
-			printf("   not reading element data for this element\n");
-		}
-	}
-	// close CGNS file
-	cg_close(index_file);
-	printf("\nSuccessfully read unstructured grid from file grid_c.cgns\n");
-	printf("   for example, element 1 is made up of nodes: %i, %i, %i, %i, %i, %i, %i, %i\n",
-		(int)ielem[0][0], (int)ielem[0][1], (int)ielem[0][2], (int)ielem[0][3],
-		(int)ielem[0][4], (int)ielem[0][5], (int)ielem[0][6], (int)ielem[0][7]);
-	printf("   x,y,z of node 357 are: %f, %f, %f\n", x[357], y[357], z[357]);
-	printf("   x,y,z of node 1357 are: %f, %f, %f\n", x[1357], y[1357], z[1357]);
-	return 0;
-	*/
+	// Boundary conditions info
+	if (!parseBCs(ctx))
+		return false;
+
+	// Read grid coordinates
+	if (!loadGridCoords(ctx))
+		return false;
+
 	return 0;
 }
+
+static bool parseConnectivity(t_CGNSContext& ctx) { return true; }
+
+static bool parseBCs(t_CGNSContext& ctx) { return true; }
+
+static bool parseVCs(t_CGNSContext& ctx) { return true; }
+
+static bool loadGridCoords(t_CGNSContext& ctx) {
+
+	for (int iZne = 0; iZne < G_Domain.nZones; ++iZne) {
+
+		double *x, *y, *z;
+
+		t_Zone& Zne = G_Domain.Zones[iZne];
+
+		const cgsize_t& nVerts = Zne.nVerts;
+
+		const int& cgZneID = G_Domain.map_iZne2cgID[iZne];
+		const char* coordNames[] = { "CoordinateX", "CoordinateY", "CoordinateZ" };
+
+		x = new double[nVerts];
+		y = new double[nVerts];
+		z = new double[nVerts];
+
+		cgsize_t irmin = 1; cgsize_t irmax = nVerts;
+
+		cg_coord_read(ctx.iFile, ctx.iBase, cgZneID, "CoordinateX",
+			CG_RealDouble, &irmin, &irmax, x);
+		cg_coord_read(ctx.iFile, ctx.iBase, cgZneID, "CoordinateY",
+			CG_RealDouble, &irmin, &irmax, y);
+		cg_coord_read(ctx.iFile, ctx.iBase, cgZneID, "CoordinateZ",
+			CG_RealDouble, &irmin, &irmax, z);
+	
+
+		delete[] x, y, z;
+
+	}
+
+	return true;
+}
+
+
+
+

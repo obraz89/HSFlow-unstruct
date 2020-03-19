@@ -18,7 +18,6 @@
 #include "logging.h"
 //-----------------------------------------------------------------------------
 
-
 /// Reimplementation std::copy_n() for older compilers not supporting it
 template<typename T>
 inline void copy_n(const T* from, size_t count, T* to)

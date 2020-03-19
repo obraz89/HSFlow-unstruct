@@ -25,7 +25,7 @@ struct t_CGNSZone
 struct t_CGNSContext
 {
 	int iFile, iBase;
-	std::map<std::string, int>  map_zoneName_id;
+	std::map<std::string, int>  map_ZneName2Idx;
 
 	t_CGNSZone* cgZones;
 
