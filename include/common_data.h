@@ -4,6 +4,14 @@
 
 #include "dll_import-export.h"
 
+typedef __int64 lint;
+
+static const int MaxNumVertsInFace = 4;
+
+static const int MaxNumFacesInCell = 6;
+
+static const int MaxNumVertsInCell = 8;
+
 template<typename T>
 class t_BufInds {
 private:
@@ -37,6 +45,8 @@ public:
 	~t_BufIndsStat() { delete[] buf; }
 };
 
+using t_BufFace2Vert = t_BufIndsStat<lint, MaxNumFacesInCell, MaxNumVertsInFace>;
+
 //
 // Problem solving state
 //
@@ -58,14 +68,6 @@ struct TState
 DLLIMPEXP extern TState G_State;
 
 struct t_Zone;
-
-static const int MaxNumVertsInFace = 4;
-
-static const int MaxNumFacesInCell = 6;
-
-static const int MaxNumVertsInCell = 8;
-
-typedef __int64 lint;
 
 template<int len>class t_Vec {
 	double cont[len];
@@ -148,6 +150,8 @@ struct t_Cell {
 
 	lint Id;
 
+	t_CellKind Kind;
+
 	int Nverts;
 
 	int NFaces;
@@ -165,6 +169,27 @@ struct t_Cell {
 	t_Vec3d Center;
 
 	double Volume;
+
+	const t_Vert& getVert(int ind) const{ return *pVerts[ind]; }
+
+};
+
+struct t_CellFaceList {
+
+	const t_Cell& Cell;
+
+	// face 2 vertex decomposition
+	t_BufFace2Vert F2V;
+
+	// array containing number of vertexes for each face 
+	int ArrNumOfVertsInFaces[MaxNumFacesInCell];
+
+	t_CellFaceList() = delete;
+
+	int NFaces() const { return Cell.NFaces; };
+	int NVertInFace(int indFace) const { return ArrNumOfVertsInFaces[indFace]; };
+
+	t_CellFaceList(const t_Cell& cell);
 
 };
 
