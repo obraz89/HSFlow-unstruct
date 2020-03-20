@@ -135,6 +135,21 @@ struct t_Cell {
 
 };
 
+struct t_ZoneFacePatch {
+
+	// Boundary condition on the face
+	char szBC[33] = "";                 // BC-family name, MUST be empty if abutted
+
+	// implement later
+	//hsflow::TPhysBCCaps* BC = nullptr;  // NULL if abutted or not loaded yet
+
+	bool isSkipped = false;     // face's grid layer skipped for processing by abutted zone
+
+	t_Face* Faces;
+
+
+};
+
 struct t_Zone {
 
 	char szName[40];  // name of the zone, initialized by '\0'
