@@ -4,25 +4,10 @@
 
 #include "cgnslib.h"
 
-class t_BufCGSize {
-private:
-	// TODO: for some reason, vs doesnt remove default constructor with
-	// t_BufCGSize() = delete;
-	// making it inaccessible old style
-	t_BufCGSize() {};
+#include "common_data.h"
+#include "common_procs.h"
 
-	cgsize_t* buf;
-public:
-	cgsize_t nRows, nCols;
-	cgsize_t* data() { return buf; }
-	//t_BufCGSize() = delete;
-	t_BufCGSize(t_BufCGSize&) = delete;
-	t_BufCGSize(cgsize_t a_NR, cgsize_t a_NC) { nRows = a_NR; nCols = a_NC; buf = new cgsize_t[nRows*nCols]; }
-	void allocate(cgsize_t a_NR, cgsize_t a_NC) { delete[] buf;  nRows = a_NR; nCols = a_NC; buf = new cgsize_t[nRows*nCols];};
-	cgsize_t get_val(cgsize_t i, cgsize_t j) { return *(buf + i*nCols + j); };
-	~t_BufCGSize() { delete[] buf; }
-
-};
+using t_BufCGSize = t_BufInds<cgsize_t>;
 
 struct t_CGNSZone
 {

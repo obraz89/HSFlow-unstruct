@@ -23,8 +23,6 @@ library libcgns.a is located)
 #include "common_data.h"
 #include "common_procs.h"
 
-
-
 //
 // Forward declarations
 //
@@ -112,8 +110,8 @@ int read_cgns_mesh()
 
 		cg_zone_read(ctx.iFile, ctx.iBase, cgZneID, zonename, isize);
 
-		Zne.nVerts = isize[0];
-		Zne.nCells = isize[1];
+		// isize[0] is nVerts, isize[1] is nCells
+		Zne.initialize(isize[0], isize[1]);
 
 		const cgsize_t& nVerts = Zne.nVerts;
 		const cgsize_t& nCells = Zne.nCells;
@@ -125,8 +123,6 @@ int read_cgns_mesh()
 		//hsLogMessage("Number of BC Verts:%d", isize[2]);
 
 		ctx.map_ZneName2Idx[Zne.szName] = iZone;
-
-		
 		
 		// reading sections
 
@@ -143,7 +139,7 @@ int read_cgns_mesh()
 
 			cg_section_read(ctx.iFile, ctx.iBase, cgZneID, index_sect, sectionname,
 				&itype, &istart, &iend, &nbndry, &iparent_flag);
-			printf("\nReading section data...\n");
+			printf("\nReading section info...\n");
 			printf("   section name=%s\n", sectionname);
 			printf("   section type=%s\n", ElementTypeName[itype]);
 			printf("   istart,iend=%i, %i\n", (int)istart, (int)iend);
@@ -167,6 +163,8 @@ int read_cgns_mesh()
 			cg_elements_read(ctx.iFile, ctx.iBase, cgZneID, index_sect, cgZne.cells.data(), \
 				&iparentdata);
 
+			// pass cell data to internal structures
+
 			// debug output of sections
 			for (int i = 0; i < n_elems; i++) {
 				for (int j = 0; j < n_verts_in_elem; j++)
@@ -177,6 +175,13 @@ int read_cgns_mesh()
 		}
 
 	}
+
+	// Read grid coordinates
+	if (!loadGridCoords(ctx))
+		return false;
+
+	// initialize face lists for all zones
+	G_Domain.makeFaceLists();
 
 	// Volume conditions info (frozen zones)
 	parseVCs(ctx);
@@ -190,12 +195,12 @@ int read_cgns_mesh()
 	if (!parseBCs(ctx))
 		return false;
 
-	// Read grid coordinates
-	if (!loadGridCoords(ctx))
-		return false;
-
 	return 0;
 }
+
+
+
+
 
 static bool parseConnectivity(t_CGNSContext& ctx) { return true; }
 
@@ -310,8 +315,15 @@ static bool loadGridCoords(t_CGNSContext& ctx) {
 			CG_RealDouble, &irmin, &irmax, y);
 		cg_coord_read(ctx.iFile, ctx.iBase, cgZneID, "CoordinateZ",
 			CG_RealDouble, &irmin, &irmax, z);
-	
 
+		for (int i = 0; i < Zne.nVerts; i++) {
+
+			Zne.Verts[i].xyz[0] = x[i];
+			Zne.Verts[i].xyz[1] = y[i];
+			Zne.Verts[i].xyz[2] = z[i];
+
+		}
+	
 		delete[] x, y, z;
 
 	}

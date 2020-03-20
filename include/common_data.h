@@ -4,6 +4,39 @@
 
 #include "dll_import-export.h"
 
+template<typename T>
+class t_BufInds {
+private:
+	// TODO: for some reason, vs doesnt remove default constructor with
+	// t_BufInds() = delete;
+	// making it inaccessible old style
+	t_BufInds() {};
+
+	T* buf;
+public:
+	T nRows, nCols;
+	T* data() { return buf; }
+	//t_BufInds() = delete;
+	t_BufInds(t_BufInds&) = delete;
+	t_BufInds(T a_NR, T a_NC) { nRows = a_NR; nCols = a_NC; buf = new T[nRows*nCols]; }
+	void allocate(T a_NR, T a_NC) { delete[] buf;  nRows = a_NR; nCols = a_NC; buf = new T[nRows*nCols]; };
+	T& get_val(T i, T j) { return *(buf + i*nCols + j); };
+	const T& get_val(T i, T j) const { return *(buf + i*nCols + j); }
+	~t_BufInds() { delete[] buf; }
+
+};
+// container for small packs of index sets
+template<typename T, int nRows, int nCols>
+class t_BufIndsStat {
+private:
+	T buf[nRows][nCols];
+public:
+	T* data() { return buf; }
+	T& get_val(int i, int j) { return buf[i][j]; };
+	const T& get_val(int i, int j) const { return buf[i][j]; }
+	~t_BufIndsStat() { delete[] buf; }
+};
+
 //
 // Problem solving state
 //
@@ -32,7 +65,7 @@ static const int MaxNumFacesInCell = 6;
 
 static const int MaxNumVertsInCell = 8;
 
-typedef long int lint;
+typedef __int64 lint;
 
 template<int len>class t_Vec {
 	double cont[len];
@@ -77,7 +110,7 @@ struct t_Vert {
 	lint Id;
 
 	// list of cells that has this Vertex
-	t_Cell *pNeibCells;
+	t_Cell *pNeigCells;
 
 	t_Vec3d xyz;
 
@@ -119,8 +152,8 @@ struct t_Cell {
 
 	int NFaces;
 
-	t_Vert* Verts[MaxNumVertsInCell];
-	t_Face* Faces[MaxNumFacesInCell];
+	t_Vert* pVerts[MaxNumVertsInCell];
+	t_Face* pFaces[MaxNumFacesInCell];
 
 	// +1 if Face Normal directed outward of the cell, -1 otherwise
 	int FacesNormOutward[MaxNumFacesInCell];
@@ -145,7 +178,7 @@ struct t_ZoneFacePatch {
 
 	bool isSkipped = false;     // face's grid layer skipped for processing by abutted zone
 
-	t_Face* Faces;
+	t_Face* pFaces;
 
 
 };
@@ -160,6 +193,11 @@ struct t_Zone {
 
 	t_Vert *Verts;
 	t_Cell *Cells;
+
+	void initialize(lint nVerts, lint nCells);
+
+	void getNeigCellsOfVertices();
+	void makeFaceList();
 
 };
 
@@ -184,6 +222,8 @@ struct DLLIMPEXP t_Domain
 	double gridCellScaleMin, gridCellScaleMax;
 	bool grid_update_distance_to_walls();
 	bool grid_make_symmetric_boco(const std::string& boco_name);
+
+	void makeFaceLists();
 
 	// Gas parameters
 	double(*pfunViscosity)(const double&) = nullptr;
