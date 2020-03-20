@@ -12,7 +12,11 @@ using t_BufCGSize = t_BufInds<cgsize_t>;
 struct t_CGNSZone
 {
 
+	// TODO: later there will be mixed elements, and sections must be joint together
+	// for now assuming one type of elements read from one section
 	t_BufCGSize cells;
+
+	CGNS_ENUMT(ElementType_t) itype;
 
 
 	// Abutted faces data. The face consists of one or many patches

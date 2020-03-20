@@ -169,7 +169,7 @@ struct t_Cell {
 	t_Vec3d Center;
 
 	double Volume;
-
+	t_Vert& getVert(int ind) { return *pVerts[ind]; }
 	const t_Vert& getVert(int ind) const{ return *pVerts[ind]; }
 
 };
@@ -216,10 +216,16 @@ struct t_Zone {
 
 	lint nCells;
 
-	t_Vert *Verts;
-	t_Cell *Cells;
+	t_Vert *pVerts;
+	t_Cell *pCells;
 
 	void initialize(lint nVerts, lint nCells);
+
+	t_Cell& getCell(lint cell_ID) { return pCells[cell_ID]; }
+	const t_Cell& getCell(lint cell_ID) const{ return pCells[cell_ID]; }
+
+	t_Vert& getVert(lint vert_ID) { return pVerts[vert_ID]; }
+	const t_Vert& getVert(lint vert_ID) const{ return pVerts[vert_ID]; }
 
 	void getNeigCellsOfVertices();
 	void makeFaceList();

@@ -30,6 +30,7 @@ static bool parseConnectivity(t_CGNSContext& ctx);  // 1-to-1 connectivity
 static bool parseBCs(t_CGNSContext& ctx);     // boundary conditions
 static bool parseVCs(t_CGNSContext& ctx);     // volume conditions (frozen zones)
 
+void loadCells(t_CGNSContext& ctx);
 static bool loadGridCoords(t_CGNSContext& ctx);
 
 int read_cgns_mesh()
@@ -163,7 +164,7 @@ int read_cgns_mesh()
 			cg_elements_read(ctx.iFile, ctx.iBase, cgZneID, index_sect, cgZne.cells.data(), \
 				&iparentdata);
 
-			// pass cell data to internal structures
+			cgZne.itype = itype;
 
 			// debug output of sections
 			for (int i = 0; i < n_elems; i++) {
@@ -175,6 +176,8 @@ int read_cgns_mesh()
 		}
 
 	}
+
+	loadCells(ctx);
 
 	// Read grid coordinates
 	if (!loadGridCoords(ctx))
@@ -198,7 +201,58 @@ int read_cgns_mesh()
 	return 0;
 }
 
+void loadCells(t_CGNSContext& ctx) {
 
+	for (int iZne = 0; iZne < G_Domain.nZones; ++iZne)
+	{
+		const int& cgZneID = G_Domain.map_iZne2cgID[iZne];
+		t_Zone& Zne = G_Domain.Zones[iZne];
+		t_CGNSZone& cgZne = ctx.cgZones[iZne];
+
+		if (cgZne.cells.nRows != Zne.nCells) hsLogMessage("loadCells: size mismatch of CGNS and working Zones");
+
+		t_CellKind cell_kind;
+		int NvertsInCell;
+		int NFacesInCell;
+
+		if (cgZne.itype == CG_TETRA_4) { 
+			cell_kind = t_CellKind::Tetra; 
+			NvertsInCell = 4;
+			NFacesInCell = 4;
+		}
+		if (cgZne.itype == CG_HEXA_8) { 
+			cell_kind = t_CellKind::Brick; 
+			NvertsInCell = 8;
+			NFacesInCell = 6;
+		}
+
+		for (int i = 0; i < Zne.nCells; i++) {
+
+			t_Cell& cell = Zne.getCell(i);
+
+			cell.Kind = cell_kind;
+			cell.Nverts = NvertsInCell;
+			cell.NFaces = NFacesInCell;
+
+			// additional check
+			if (NvertsInCell != cgZne.cells.nCols) hsLogMessage("loadCells: wrong number of vertices in cell");
+			// cgns IDs are 1-based, we use zero-based ids
+			for (int j = 0; j < NvertsInCell; j++) {
+				lint Vert_ID = cgZne.cells.get_val(i, j) - 1;
+				cell.pVerts[j] = &(Zne.getVert(Vert_ID));
+			}
+		}
+		std::cout << "______________________\n";
+		// debug output of sections
+		for (int i = 0; i < Zne.nCells; i++) {
+			for (int j = 0; j < NvertsInCell; j++)
+				std::cout << Zne.getCell(i).getVert(j).Id<< ";";
+			std::cout << std::endl;
+		}
+
+	}
+
+};
 
 
 
@@ -317,10 +371,10 @@ static bool loadGridCoords(t_CGNSContext& ctx) {
 			CG_RealDouble, &irmin, &irmax, z);
 
 		for (int i = 0; i < Zne.nVerts; i++) {
-
-			Zne.Verts[i].xyz[0] = x[i];
-			Zne.Verts[i].xyz[1] = y[i];
-			Zne.Verts[i].xyz[2] = z[i];
+			t_Vert& vert = Zne.getVert(i);
+			vert.xyz[0] = x[i];
+			vert.xyz[1] = y[i];
+			vert.xyz[2] = z[i];
 
 		}
 	

@@ -7,11 +7,11 @@ void t_Zone::initialize(lint a_nVerts, lint a_nCells) {
 	nVerts = a_nVerts;
 	nCells = a_nCells;
 
-	Verts = new t_Vert[nVerts]; Cells = new t_Cell[nCells];
+	pVerts = new t_Vert[nVerts]; pCells = new t_Cell[nCells];
 
-	// for now keep ids from cgns, they are 1-based
-	for (lint i = 1; i <= nVerts; i++) Verts[i].Id = i;
-	for (lint i = 1; i <= nCells; i++) Cells[i].Id = i;
+	// zero-based ids
+	for (lint i = 0; i < nVerts; i++) pVerts[i].Id = i;
+	for (lint i = 0; i < nCells; i++) pCells[i].Id = i;
 };
 
 
