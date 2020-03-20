@@ -16,8 +16,6 @@ library libcgns.a is located)
 
 #include <stdio.h>
 #include <iostream>
-/* cgnslib.h file must be located in directory specified by -I during compile: */
-#include "cgnslib.h"
 
 #include "Mesh-CGNS.h"
 
@@ -25,17 +23,7 @@ library libcgns.a is located)
 #include "common_data.h"
 #include "common_procs.h"
 
-struct t_BufCGSize {
 
-	cgsize_t* buf;
-
-	cgsize_t nRows, nCols;
-	cgsize_t* data() { return buf; }
-	t_BufCGSize(cgsize_t a_NR, cgsize_t a_NC) { nRows = a_NR; nCols = a_NC; buf = new cgsize_t[nRows*nCols]; }
-	cgsize_t get_val(cgsize_t i, cgsize_t j) { return *(buf + i*nCols + j); };
-	t_BufCGSize() { delete[] buf; }
-
-};
 
 //
 // Forward declarations
@@ -114,6 +102,7 @@ int read_cgns_mesh()
 
 		const int& cgZneID = G_Domain.map_iZne2cgID[iZone];
 		t_Zone& Zne = G_Domain.Zones[iZone];
+		t_CGNSZone& cgZne = ctx.cgZones[iZone];
 
 		hsLogMessage("Reading zone#%d", iZone);
 
@@ -148,10 +137,10 @@ int read_cgns_mesh()
 
 		hsLogMessage("Number of sections:%d", nsections);
 
-		cgsize_t n_elems, n_verts_in_elem=0;
-
 		for (index_sect = 1; index_sect <= nsections; index_sect++)
 		{
+			cgsize_t n_elems, n_verts_in_elem = 0;
+
 			cg_section_read(ctx.iFile, ctx.iBase, cgZneID, index_sect, sectionname,
 				&itype, &istart, &iend, &nbndry, &iparent_flag);
 			printf("\nReading section data...\n");
@@ -159,28 +148,31 @@ int read_cgns_mesh()
 			printf("   section type=%s\n", ElementTypeName[itype]);
 			printf("   istart,iend=%i, %i\n", (int)istart, (int)iend);
 
-			n_elems = iend - istart + 1;
+			// TODO: universal way to detect sections containing cells
+			// for now detect by type of elements
+			if (itype != CG_HEXA_8 && itype != CG_TETRA_4) continue;
 
 			if (itype == CG_HEXA_8) n_verts_in_elem = 8;
-			if (itype == CG_QUAD_4) n_verts_in_elem = 4;
 			if (itype == CG_TETRA_4) n_verts_in_elem = 4;
-			if (itype == CG_TRI_3) n_verts_in_elem = 3;
 
-			t_BufCGSize indices(n_elems, n_verts_in_elem);
+			n_elems = iend - istart + 1;
 
-			if (n_verts_in_elem == 0) hsLogMessage("   Unknown section type for zone# %d\n", iZone);
+			// bc
+			//if (itype == CG_QUAD_4) n_verts_in_elem = 4;
+			//if (itype == CG_TRI_3) n_verts_in_elem = 3;
+
+			cgZne.cells.allocate(n_elems, n_verts_in_elem);
 
 			hsLogMessage("   reading element data for %s\n", ElementTypeName[itype]);
-			cg_elements_read(ctx.iFile, ctx.iBase, cgZneID, index_sect, indices.data(), \
+			cg_elements_read(ctx.iFile, ctx.iBase, cgZneID, index_sect, cgZne.cells.data(), \
 				&iparentdata);
 
 			// debug output of sections
 			for (int i = 0; i < n_elems; i++) {
 				for (int j = 0; j < n_verts_in_elem; j++)
-					std::cout << indices.get_val(i, j) << ";";
+					std::cout << cgZne.cells.get_val(i, j) << ";";
 				std::cout << std::endl;
 			}
-
 
 		}
 
