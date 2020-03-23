@@ -4,6 +4,9 @@
 
 #include "dll_import-export.h"
 
+#include <array>
+#include <vector>
+
 typedef __int64 lint;
 
 static const int MaxNumVertsInFace = 4;
@@ -35,6 +38,52 @@ public:
 	~t_BufInds() { delete[] buf; }
 
 };
+
+// plain set of indices, usually decomposition of a face
+template<typename T, int Nmax>
+class t_TSet {
+	std::array<T, Nmax> buf;
+	int NElems;
+public:
+	t_TSet() :NElems(0) { for (int i = 0; i < Nmax; i++) buf[i] = 0; }
+	int size() const { return NElems; }
+	void setSize(int a_size) { 
+#ifdef _DEBUG
+		if (a_size > Nmax) hsLogMessage("t_TSet:setSize:Error: size is too big");
+#endif // _DEBUG
+		NElems = a_size;
+	}
+	T& operator[](int i) { 
+#ifdef _DEBUG
+		if ((i > Nmax-1) || (i<0)) hsLogMessage("t_TSet: wrong index");
+#endif // _DEBUG
+		return buf[i]; }
+	const T& operator[](int i) const { 
+#ifdef _DEBUG
+		if ((i > Nmax - 1) || (i<0)) hsLogMessage("t_TSet: wrong index");
+#endif // _DEBUG
+		return buf[i]; }
+
+	// weak comparison, order not important {1,2,3,4}=={1,3,4,2} : true
+	static bool cmp_weak(const t_TSet<T, Nmax>& lv, const t_TSet<T, Nmax>& rv){
+		if (lv.size() != rv.size()) return false;
+		std::array<T, Nmax> l_sorted = lv.buf;
+		std::sort(l_sorted.begin(), l_sorted.end());
+		std::array<T, Nmax> r_sorted = rv.buf;
+		std::sort(r_sorted.begin(), r_sorted.end());
+		bool cmp_ok = true;
+		for (int i = 0; i < Nmax; i++) cmp_ok = cmp_ok && (l_sorted[i] == r_sorted[i]);
+		return cmp_ok;
+	};
+
+	static bool cmp_strict(const t_TSet<T, Nmax>& lv, const t_TSet<T, Nmax>& rv){
+		if (lv.size() != rv.size()) return false;
+		bool cmp_ok = true;
+		for (int i = 0; i < NMax; i++) cmp_ok = cmp_ok && (l_sorted[i] == r_sorted[i]);
+		return cmp_ok;
+	}
+};
+
 // container for small packs of index sets
 template<typename T, int nRows, int nCols>
 class t_BufIndsStat {
@@ -44,12 +93,14 @@ public:
 	T* data() { return buf; }
 	T& get_val(int i, int j) { return buf[i][j]; };
 	const T& get_val(int i, int j) const { return buf[i][j]; }
-	~t_BufIndsStat() { delete[] buf; }
 };
 
 using t_BufFace2Vert = t_BufIndsStat<lint, MaxNumFacesInCell, MaxNumVertsInFace>;
 
 using t_BufEdge2Vert = t_BufIndsStat<lint, MaxNumEdgesInCell, 2>;
+
+// set of indexes, Face 2 Vertex
+using t_SetIndF2V = t_TSet<lint, MaxNumVertsInFace>;
 
 //
 // Problem solving state
@@ -192,7 +243,7 @@ struct t_Cell {
 
 struct t_CellFaceList {
 
-	const t_Cell& Cell;
+	const t_Cell* pCell;
 
 	// array of faces via vertices
 	t_BufFace2Vert F2V;
@@ -200,25 +251,27 @@ struct t_CellFaceList {
 	// array containing number of vertexes for each face 
 	int ArrNumOfVertsInFaces[MaxNumFacesInCell];
 
-	int NFaces() const { return Cell.NFaces; };
+	int NFaces() const { return pCell->NFaces; };
 	int NVertInFace(int indFace) const { return ArrNumOfVertsInFaces[indFace]; };
 
-	t_CellFaceList() = delete;
-	t_CellFaceList(const t_Cell& cell);
+	t_CellFaceList():pCell(nullptr) {};
+	void init(const t_Cell& cell);
+
+	t_SetIndF2V getVertices(int indFace);
 
 };
 
 struct t_CellEdgeList {
 
-	const t_Cell& Cell;
+	const t_Cell* pCell;
 
 	// array of edges via vertices 
 	t_BufEdge2Vert E2V;
 
-	int NEdges() const { return Cell.NEdges; };
+	int NEdges() const { return pCell->NEdges; };
 
-	t_CellEdgeList() = delete;
-	t_CellEdgeList(const t_Cell& cell);
+	t_CellEdgeList() :pCell(nullptr) {};
+	void init(const t_Cell& cell);
 
 
 
@@ -271,9 +324,10 @@ public:
 	t_Vert* getpVert(lint vert_ID) { return &Verts[vert_ID]; }
 	const t_Vert* getpVert(lint vert_ID) const{ return &Verts[vert_ID]; }
 
-	void getNeigCellsOfVertices();
 	void makeVertexConnectivity();
-	void makeFaceList();
+	void makeCellConnectivity();
+
+	std::vector<t_Cell*> getNeigCellsOfCellFace(const t_Cell& cell, int face_ind) const;
 
 	~t_Zone() { delete[] Verts, Cells; }
 
@@ -302,7 +356,7 @@ struct DLLIMPEXP t_Domain
 	bool grid_make_symmetric_boco(const std::string& boco_name);
 
 	void makeVertexConnectivity();
-	void makeFaceLists();
+	void makeCellConnectivity();
 
 	// Gas parameters
 	double(*pfunViscosity)(const double&) = nullptr;

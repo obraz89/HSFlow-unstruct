@@ -5,6 +5,8 @@
 // mainly for debugging
 #include <iostream>
 
+#include <vector>
+
 //************************************* Cell methods
 void t_Cell::setKind(t_CellKind a_Kind) {
 
@@ -36,9 +38,11 @@ void t_Cell::setKind(t_CellKind a_Kind) {
 
 };
 
-t_CellEdgeList::t_CellEdgeList(const t_Cell& a_Cell) :Cell(a_Cell) {
+void t_CellEdgeList::init(const t_Cell& a_Cell){
 
-	if (Cell.Kind == t_CellKind::Brick) {
+	pCell = &a_Cell;
+
+	if (pCell->Kind == t_CellKind::Brick) {
 
 		// list of edges for a hexa cell
 		// decomposition according cgns documentation: sids/conv.html#unst_hexa
@@ -47,14 +51,14 @@ t_CellEdgeList::t_CellEdgeList(const t_Cell& a_Cell) :Cell(a_Cell) {
 		// (1,5), (2,6), (3,7), (4,8),
 		// (5,6), (6,7), (7,8), (8,5)
 
-		const lint& V1 = Cell.getVert(0).Id;
-		const lint& V2 = Cell.getVert(1).Id;
-		const lint& V3 = Cell.getVert(2).Id;
-		const lint& V4 = Cell.getVert(3).Id;
-		const lint& V5 = Cell.getVert(4).Id;
-		const lint& V6 = Cell.getVert(5).Id;
-		const lint& V7 = Cell.getVert(6).Id;
-		const lint& V8 = Cell.getVert(7).Id;
+		const lint& V1 = pCell->getVert(0).Id;
+		const lint& V2 = pCell->getVert(1).Id;
+		const lint& V3 = pCell->getVert(2).Id;
+		const lint& V4 = pCell->getVert(3).Id;
+		const lint& V5 = pCell->getVert(4).Id;
+		const lint& V6 = pCell->getVert(5).Id;
+		const lint& V7 = pCell->getVert(6).Id;
+		const lint& V8 = pCell->getVert(7).Id;
 
 		E2V.get_val(0, 0) = V1;
 		E2V.get_val(0, 1) = V2;
@@ -95,16 +99,16 @@ t_CellEdgeList::t_CellEdgeList(const t_Cell& a_Cell) :Cell(a_Cell) {
 		return;
 	}
 
-	if (Cell.Kind == t_CellKind::Tetra) {
+	if (pCell->Kind == t_CellKind::Tetra) {
 
 		// list of edges for a tetra cell
 		// decomposition according cgns documentation: sids/conv.html#unst_tetra
 		// vertexes (1,2,3,4) => edges (1,2),(2,3),(3,1),(1,4),(2,4),(3,4)
 
-		const lint& V1 = Cell.getVert(0).Id;
-		const lint& V2 = Cell.getVert(1).Id;
-		const lint& V3 = Cell.getVert(2).Id;
-		const lint& V4 = Cell.getVert(3).Id;
+		const lint& V1 = pCell->getVert(0).Id;
+		const lint& V2 = pCell->getVert(1).Id;
+		const lint& V3 = pCell->getVert(2).Id;
+		const lint& V4 = pCell->getVert(3).Id;
 
 		E2V.get_val(0, 0) = V1;
 		E2V.get_val(0, 1) = V2;
@@ -129,25 +133,27 @@ t_CellEdgeList::t_CellEdgeList(const t_Cell& a_Cell) :Cell(a_Cell) {
 	hsLogMessage("t_CellEdgeList: unsupported element type");
 };
 
-t_CellFaceList::t_CellFaceList(const t_Cell& a_Cell) :Cell(a_Cell) {
+void t_CellFaceList::init(const t_Cell& a_Cell){
 
-	if (Cell.Kind == t_CellKind::Brick) {
+	pCell = &a_Cell;
 
-		for (int i = 0; i < Cell.NFaces; i++) ArrNumOfVertsInFaces[i] = 4;
+	if (pCell->Kind == t_CellKind::Brick) {
+
+		for (int i = 0; i < pCell->NFaces; i++) ArrNumOfVertsInFaces[i] = 4;
 
 		// list of faces for a hexa cell
 		// decomposition according cgns documentation: sids/conv.html#unst_hexa
 		// vertexes (1,2,3,4,5,6,7,8) => faces 
 		//(1,4,3,2), (1,2,6,5), (2,3,7,6), (3,4,8,7), (1,5,8,4), (5,6,7,8)
 
-		const lint& V1 = Cell.getVert(0).Id;
-		const lint& V2 = Cell.getVert(1).Id;
-		const lint& V3 = Cell.getVert(2).Id;
-		const lint& V4 = Cell.getVert(3).Id;
-		const lint& V5 = Cell.getVert(4).Id;
-		const lint& V6 = Cell.getVert(5).Id;
-		const lint& V7 = Cell.getVert(6).Id;
-		const lint& V8 = Cell.getVert(7).Id;
+		const lint& V1 = pCell->getVert(0).Id;
+		const lint& V2 = pCell->getVert(1).Id;
+		const lint& V3 = pCell->getVert(2).Id;
+		const lint& V4 = pCell->getVert(3).Id;
+		const lint& V5 = pCell->getVert(4).Id;
+		const lint& V6 = pCell->getVert(5).Id;
+		const lint& V7 = pCell->getVert(6).Id;
+		const lint& V8 = pCell->getVert(7).Id;
 
 		F2V.get_val(0, 0) = V1;
 		F2V.get_val(0, 1) = V4;
@@ -182,17 +188,17 @@ t_CellFaceList::t_CellFaceList(const t_Cell& a_Cell) :Cell(a_Cell) {
 		return;
 	}
 
-	if (Cell.Kind == t_CellKind::Tetra) {
+	if (pCell->Kind == t_CellKind::Tetra) {
 
-		for (int i = 0; i < Cell.NFaces; i++) ArrNumOfVertsInFaces[i] = 3;
+		for (int i = 0; i < pCell->NFaces; i++) ArrNumOfVertsInFaces[i] = 3;
 
 		// list of faces for a tetra cell
 		// decomposition according cgns documentation: sids/conv.html#unst_tetra
 		// vertexes (1,2,3,4) => faces (1,2,3), (1,2,4), (2,3,4), (3,1,4)
-		const lint& V1 = Cell.getVert(0).Id;
-		const lint& V2 = Cell.getVert(1).Id;
-		const lint& V3 = Cell.getVert(2).Id;
-		const lint& V4 = Cell.getVert(0).Id;
+		const lint& V1 = pCell->getVert(0).Id;
+		const lint& V2 = pCell->getVert(1).Id;
+		const lint& V3 = pCell->getVert(2).Id;
+		const lint& V4 = pCell->getVert(0).Id;
 
 		F2V.get_val(0, 0) = V1;
 		F2V.get_val(0, 1) = V2;
@@ -215,6 +221,15 @@ t_CellFaceList::t_CellFaceList(const t_Cell& a_Cell) :Cell(a_Cell) {
 	hsLogMessage("t_CellFaceList: unsupported element type");
 };
 
+t_SetIndF2V t_CellFaceList::getVertices(int indFace) {
+
+	t_SetIndF2V indxs;
+	int n = ArrNumOfVertsInFaces[indFace];
+	indxs.setSize(n);
+	for (int i = 0; i < n; i++) indxs[i] = F2V.get_val(indFace,i);
+	return indxs;
+};
+
 //************************************* Zone methods
 
 void t_Zone::initialize(lint a_nVerts, lint a_nCells) {
@@ -235,10 +250,10 @@ void t_Zone::makeVertexConnectivity() {
 	t_Vert* pVert;
 
 	// reset Neighbor counts
-	for (int i = 0; i < nVerts; i++) getpVert(i)->NNeigCells = 0;
+	for (lint i = 0; i < nVerts; i++) getpVert(i)->NNeigCells = 0;
 
 	// first count Neighbor cells for each vertex
-	for (int i = 0; i < nCells; i++) {
+	for (lint i = 0; i < nCells; i++) {
 
 		pCell = getpCell(i);
 
@@ -250,7 +265,7 @@ void t_Zone::makeVertexConnectivity() {
 	}
 
 	// allocate memory
-	for (int i = 0; i < nVerts; i++) {
+	for (lint i = 0; i < nVerts; i++) {
 		pVert = getpVert(i);
 		pVert->pNeigCells = new t_Cell*[pVert->NNeigCells];
 	}
@@ -258,10 +273,10 @@ void t_Zone::makeVertexConnectivity() {
 	// buffer for current index in neig cell list for each vertex
 	int* IndBuf = new int[nVerts];
 
-	for (int i = 0; i < nVerts; i++) IndBuf[i] = 0;
+	for (lint i = 0; i < nVerts; i++) IndBuf[i] = 0;
 
 	// initialize reference to neighbor cells for each vertex
-	for (int i = 0; i < nCells; i++) {
+	for (lint i = 0; i < nCells; i++) {
 
 		pCell = getpCell(i);
 
@@ -285,28 +300,98 @@ void t_Zone::makeVertexConnectivity() {
 	delete[] IndBuf;
 }
 
-void t_Zone::getNeigCellsOfVertices() {
+// get cells that owns at least one of vertices of the particular cell face
+// TODO: vector push_back performance ?
+std::vector<t_Cell*> t_Zone::getNeigCellsOfCellFace(const t_Cell& cell, int face_ind) const{
 
+	std::vector<t_Cell*> vec_pcells(0);
 
+	t_CellFaceList cfacelst;
+
+	cfacelst.init(cell);
+
+	lint cell_id_this = cell.Id;
+
+	lint iVert;
+
+	for (int i = 0; i < cfacelst.ArrNumOfVertsInFaces[face_ind]; i++) {
+
+		iVert = cfacelst.F2V.get_val(face_ind, i);
+
+		const t_Vert& Vert = getVert(iVert);
+
+		for (int j = 0; j < Vert.NNeigCells; j++) {
+
+			if (Vert.pNeigCells[j]->Id != cell.Id)  vec_pcells.push_back(Vert.pNeigCells[j]);
+
+		}
+
+	}
+
+	return vec_pcells;
 
 };
 
-void t_Zone::makeFaceList() {
+void t_Zone::makeCellConnectivity() {
 
 	// make the list of all faces in each zone
-	// also make lists for bcs
-	// bcs are detected as faces that have only 1 cell attached to it
+	// also detect bc faces : faces that have only 1 cell attached to it
 
-	// the major steps are:
-
-	// 1) construct list of neighbors for each vertex
-
-	getNeigCellsOfVertices();
-
-	// 2) construct pairs of cells that have common face:
-	//		a)  iterate over vertexes that are neighbors of face vertexes => list of "adjacent" cells
+	// 1) construct pairs of cells that have common face:
+	//		a)  iterate over cells that are neighbors of face vertexes => list of "adjacent" cells
 	//		b) for each of "adjacent" cells get all faces
-	//		c) if face vertexes of adjacent cell coincide with vertexes of the cell, they really are adjacent
+	//		c) if face vertexes of adjacent cell coincide with vertexes of the cell, they are really adjacent
+
+	// count number of faces
+	lint nFaces = 0;
+
+	t_CellFaceList cfacelst_base, cfacelst_neig;
+
+	t_Cell *pcell_base, *pcell_neig;
+
+	t_SetIndF2V vrtxset_base, vrtxset_neig;
+
+	for (lint i = 0; i < nCells; i++) {
+
+		pcell_base = getpCell(i);
+
+		cfacelst_base.init(*pcell_base);
+
+		for (int j = 0; j < cfacelst_base.NFaces(); j++) {
+
+			vrtxset_base = cfacelst_base.getVertices(j);
+
+			std::vector<t_Cell*> vec_neig_cells = getNeigCellsOfCellFace(*pcell_base, j);
+
+			int nneig_cells = vec_neig_cells.size();
+
+			for (int k = 0; k < nneig_cells; k++) {
+
+				pcell_neig = vec_neig_cells[k];
+
+				cfacelst_neig.init(*pcell_neig);
+
+				for (int p = 0; p < cfacelst_neig.NFaces(); p++) {
+
+					t_SetIndF2V vrtxset_neig = cfacelst_neig.getVertices(p);
+
+					if (t_SetIndF2V::cmp_weak(vrtxset_base, vrtxset_neig)) {
+						hsLogMessage("Intercell face: LeftCell_id=%d, RightCell_id=%d", pcell_base->Id, pcell_neig->Id);
+					}
+
+				}
+
+				
+
+			}
+
+		}
+
+
+
+	}
+
+
 
 
 }
@@ -318,9 +403,9 @@ void t_Domain::makeVertexConnectivity() {
 }
 
 
-void t_Domain::makeFaceLists() {
+void t_Domain::makeCellConnectivity() {
 
-	for (int i = 0; i < nZones; i++) Zones[i].makeFaceList();
+	for (int i = 0; i < nZones; i++) Zones[i].makeCellConnectivity();
 
 }
 

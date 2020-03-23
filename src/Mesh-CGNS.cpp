@@ -201,7 +201,7 @@ int read_cgns_mesh()
 	G_Domain.makeVertexConnectivity();
 
 	// initialize face lists for all zones
-	G_Domain.makeFaceLists();
+	G_Domain.makeCellConnectivity();
 
 	// Volume conditions info (frozen zones)
 	parseVCs(ctx);
