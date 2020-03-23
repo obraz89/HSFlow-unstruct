@@ -12,6 +12,8 @@ static const int MaxNumFacesInCell = 6;
 
 static const int MaxNumVertsInCell = 8;
 
+static const int MaxNumEdgesInCell = 12;
+
 template<typename T>
 class t_BufInds {
 private:
@@ -46,6 +48,8 @@ public:
 };
 
 using t_BufFace2Vert = t_BufIndsStat<lint, MaxNumFacesInCell, MaxNumVertsInFace>;
+
+using t_BufEdge2Vert = t_BufIndsStat<lint, MaxNumEdgesInCell, 2>;
 
 //
 // Problem solving state
@@ -101,8 +105,8 @@ enum struct t_FaceBCKind {
 
 enum struct t_CellKind {
 	Tetra = 0,
-	Brick
-
+	Brick,
+	Pyra,
 };
 
 struct t_Cell;
@@ -152,7 +156,9 @@ struct t_Cell {
 
 	t_CellKind Kind;
 
-	int Nverts;
+	int NVerts;
+
+	int NEdges;
 
 	int NFaces;
 
@@ -169,8 +175,11 @@ struct t_Cell {
 	t_Vec3d Center;
 
 	double Volume;
+
 	t_Vert& getVert(int ind) { return *pVerts[ind]; }
 	const t_Vert& getVert(int ind) const{ return *pVerts[ind]; }
+
+	void setKind(t_CellKind a_Kind);
 
 };
 
@@ -178,18 +187,33 @@ struct t_CellFaceList {
 
 	const t_Cell& Cell;
 
-	// face 2 vertex decomposition
+	// array of faces via vertices
 	t_BufFace2Vert F2V;
 
 	// array containing number of vertexes for each face 
 	int ArrNumOfVertsInFaces[MaxNumFacesInCell];
 
-	t_CellFaceList() = delete;
-
 	int NFaces() const { return Cell.NFaces; };
 	int NVertInFace(int indFace) const { return ArrNumOfVertsInFaces[indFace]; };
 
+	t_CellFaceList() = delete;
 	t_CellFaceList(const t_Cell& cell);
+
+};
+
+struct t_CellEdgeList {
+
+	const t_Cell& Cell;
+
+	// array of edges via vertices 
+	t_BufEdge2Vert E2V;
+
+	int NEdges() const { return Cell.NEdges; };
+
+	t_CellEdgeList() = delete;
+	t_CellEdgeList(const t_Cell& cell);
+
+
 
 };
 
