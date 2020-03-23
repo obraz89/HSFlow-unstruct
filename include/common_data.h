@@ -115,10 +115,14 @@ struct t_Vert {
 
 	lint Id;
 
+	int NNeigCells;
+
 	// list of cells that has this Vertex
-	t_Cell *pNeigCells;
+	t_Cell **pNeigCells;
 
 	t_Vec3d xyz;
+
+	~t_Vert() { delete[] pNeigCells; }
 
 };
 
@@ -170,7 +174,7 @@ struct t_Cell {
 
 	// List of Neighbor Cells
 	int NumCellsNeig;
-	t_Cell* CellsNeig;
+	t_Cell** pCellsNeig;
 
 	t_Vec3d Center;
 
@@ -178,6 +182,9 @@ struct t_Cell {
 
 	t_Vert& getVert(int ind) { return *pVerts[ind]; }
 	const t_Vert& getVert(int ind) const{ return *pVerts[ind]; }
+
+	t_Vert* getpVert(int ind) { return pVerts[ind]; }
+	const t_Vert* getpVert(int ind) const { return pVerts[ind]; }
 
 	void setKind(t_CellKind a_Kind);
 
@@ -232,7 +239,7 @@ struct t_ZoneFacePatch {
 
 };
 
-struct t_Zone {
+class t_Zone {
 
 	char szName[40];  // name of the zone, initialized by '\0'
 
@@ -240,19 +247,35 @@ struct t_Zone {
 
 	lint nCells;
 
-	t_Vert *pVerts;
-	t_Cell *pCells;
+	t_Vert *Verts;
+	t_Cell *Cells;
+
+public:
 
 	void initialize(lint nVerts, lint nCells);
 
-	t_Cell& getCell(lint cell_ID) { return pCells[cell_ID]; }
-	const t_Cell& getCell(lint cell_ID) const{ return pCells[cell_ID]; }
+	const char* getName() const { return &szName[0]; }
 
-	t_Vert& getVert(lint vert_ID) { return pVerts[vert_ID]; }
-	const t_Vert& getVert(lint vert_ID) const{ return pVerts[vert_ID]; }
+	const lint& getnVerts() const { return nVerts; }
+	const lint& getnCells() const { return nCells; }
+
+	t_Cell& getCell(lint cell_ID) { return Cells[cell_ID]; }
+	const t_Cell& getCell(lint cell_ID) const{ return Cells[cell_ID]; }
+
+	t_Cell* getpCell(lint cell_ID) { return &Cells[cell_ID]; }
+	const t_Cell* getpCell(lint cell_ID) const{ return &Cells[cell_ID]; }
+
+	t_Vert& getVert(lint vert_ID) { return Verts[vert_ID]; }
+	const t_Vert& getVert(lint vert_ID) const{ return Verts[vert_ID]; }
+
+	t_Vert* getpVert(lint vert_ID) { return &Verts[vert_ID]; }
+	const t_Vert* getpVert(lint vert_ID) const{ return &Verts[vert_ID]; }
 
 	void getNeigCellsOfVertices();
+	void makeVertexConnectivity();
 	void makeFaceList();
+
+	~t_Zone() { delete[] Verts, Cells; }
 
 };
 
@@ -278,6 +301,7 @@ struct DLLIMPEXP t_Domain
 	bool grid_update_distance_to_walls();
 	bool grid_make_symmetric_boco(const std::string& boco_name);
 
+	void makeVertexConnectivity();
 	void makeFaceLists();
 
 	// Gas parameters

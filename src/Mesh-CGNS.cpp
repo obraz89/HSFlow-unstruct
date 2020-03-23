@@ -68,8 +68,8 @@ int read_cgns_mesh()
 
 	t_CGNSContext ctx;
 
-	//char gridFN[] = "test_case/box-hexa-simple-2blk.cgns";
-	char gridFN[] = "test_case/box-tetra-simple.cgns";
+	char gridFN[] = "test_case/box-hexa-simple-2blk.cgns";
+	//char gridFN[] = "test_case/box-tetra-simple.cgns";
 	if (cg_open(gridFN, CG_MODE_READ, &ctx.iFile) != CG_OK)
 	{
 		hsLogMessage("Can't open grid file '%s' for reading (%s)",
@@ -128,8 +128,8 @@ int read_cgns_mesh()
 		// isize[0] is nVerts, isize[1] is nCells
 		Zne.initialize(isize[0], isize[1]);
 
-		const cgsize_t& nVerts = Zne.nVerts;
-		const cgsize_t& nCells = Zne.nCells;
+		const cgsize_t& nVerts = Zne.getnVerts();
+		const cgsize_t& nCells = Zne.getnCells();
 
 		hsLogMessage("Number of Verts:%d", nVerts);
 
@@ -137,7 +137,7 @@ int read_cgns_mesh()
 
 		//hsLogMessage("Number of BC Verts:%d", isize[2]);
 
-		ctx.map_ZneName2Idx[Zne.szName] = iZone;
+		ctx.map_ZneName2Idx[Zne.getName()] = iZone;
 		
 		// reading sections
 
@@ -197,6 +197,9 @@ int read_cgns_mesh()
 	if (!loadGridCoords(ctx))
 		return false;
 
+	// initialize vertex connectivity
+	G_Domain.makeVertexConnectivity();
+
 	// initialize face lists for all zones
 	G_Domain.makeFaceLists();
 
@@ -223,9 +226,9 @@ void loadCells(t_CGNSContext& ctx) {
 		t_Zone& Zne = G_Domain.Zones[iZne];
 		t_CGNSZone& cgZne = ctx.cgZones[iZne];
 
-		if (cgZne.cells.nRows != Zne.nCells) hsLogMessage("loadCells: size mismatch of CGNS and working Zones");
+		if (cgZne.cells.nRows != Zne.getnCells()) hsLogMessage("loadCells: size mismatch of CGNS and working Zones");
 
-		for (int i = 0; i < Zne.nCells; i++) {
+		for (int i = 0; i < Zne.getnCells(); i++) {
 
 			t_Cell& cell = Zne.getCell(i);
 
@@ -239,9 +242,9 @@ void loadCells(t_CGNSContext& ctx) {
 				cell.pVerts[j] = &(Zne.getVert(Vert_ID));
 			}
 		}
-		std::cout << "______________________\n";
+		std::cout << "______________________Debug, Zone Verts:\n";
 		// debug output of sections
-		for (int i = 0; i < Zne.nCells; i++) {
+		for (int i = 0; i < Zne.getnCells(); i++) {
 			const t_Cell& cell = Zne.getCell(i);
 			for (int j = 0; j < cell.NVerts; j++)
 				std::cout << Zne.getCell(i).getVert(j).Id<< ";";
@@ -298,7 +301,7 @@ static bool parseBCs(t_CGNSContext& ctx) {
 			{
 				hsLogMessage(
 					"Boundary condition patch '%s'(#%d) of zone '%s'(#%d) isn't defined as point range",
-					szPatchName, iBC, Zne.szName, cgZneID);
+					szPatchName, iBC, Zne.getName(), cgZneID);
 				szPatchName[0] = 0x3;  // 'end of text' code -> error indicator
 			}
 			cgsize_t idxRng[2];
@@ -350,7 +353,7 @@ static bool loadGridCoords(t_CGNSContext& ctx) {
 
 		t_Zone& Zne = G_Domain.Zones[iZne];
 
-		const cgsize_t& nVerts = Zne.nVerts;
+		const cgsize_t& nVerts = Zne.getnVerts();
 
 		const int& cgZneID = G_Domain.map_iZne2cgID[iZne];
 		const char* coordNames[] = { "CoordinateX", "CoordinateY", "CoordinateZ" };
@@ -368,7 +371,7 @@ static bool loadGridCoords(t_CGNSContext& ctx) {
 		cg_coord_read(ctx.iFile, ctx.iBase, cgZneID, "CoordinateZ",
 			CG_RealDouble, &irmin, &irmax, z);
 
-		for (int i = 0; i < Zne.nVerts; i++) {
+		for (int i = 0; i < Zne.getnVerts(); i++) {
 			t_Vert& vert = Zne.getVert(i);
 			vert.xyz[0] = x[i];
 			vert.xyz[1] = y[i];

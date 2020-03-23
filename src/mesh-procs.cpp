@@ -2,6 +2,9 @@
 #include "common_data.h"
 #include "common_procs.h"
 
+// mainly for debugging
+#include <iostream>
+
 //************************************* Cell methods
 void t_Cell::setKind(t_CellKind a_Kind) {
 
@@ -219,14 +222,68 @@ void t_Zone::initialize(lint a_nVerts, lint a_nCells) {
 	nVerts = a_nVerts;
 	nCells = a_nCells;
 
-	pVerts = new t_Vert[nVerts]; pCells = new t_Cell[nCells];
+	Verts = new t_Vert[nVerts]; Cells = new t_Cell[nCells];
 
 	// zero-based ids
-	for (lint i = 0; i < nVerts; i++) pVerts[i].Id = i;
-	for (lint i = 0; i < nCells; i++) pCells[i].Id = i;
+	for (lint i = 0; i < nVerts; i++) Verts[i].Id = i;
+	for (lint i = 0; i < nCells; i++) Cells[i].Id = i;
 };
 
+void t_Zone::makeVertexConnectivity() {
 
+	t_Cell* pCell;
+	t_Vert* pVert;
+
+	// reset Neighbor counts
+	for (int i = 0; i < nVerts; i++) getpVert(i)->NNeigCells = 0;
+
+	// first count Neighbor cells for each vertex
+	for (int i = 0; i < nCells; i++) {
+
+		pCell = getpCell(i);
+
+		for (int j = 0; j < pCell->NVerts; j++) {
+
+			pVert = pCell->getpVert(j);
+			pVert->NNeigCells++;
+		}
+	}
+
+	// allocate memory
+	for (int i = 0; i < nVerts; i++) {
+		pVert = getpVert(i);
+		pVert->pNeigCells = new t_Cell*[pVert->NNeigCells];
+	}
+
+	// buffer for current index in neig cell list for each vertex
+	int* IndBuf = new int[nVerts];
+
+	for (int i = 0; i < nVerts; i++) IndBuf[i] = 0;
+
+	// initialize reference to neighbor cells for each vertex
+	for (int i = 0; i < nCells; i++) {
+
+		pCell = getpCell(i);
+
+		for (int j = 0; j < pCell->NVerts; j++) {
+
+			pVert = pCell->getpVert(j);
+			pVert->pNeigCells[IndBuf[pVert->Id]] = pCell;
+			IndBuf[pVert->Id]++;
+		}
+	}
+
+	// debug
+	//hsLogMessage("Vertex 2 cell connectivity:\n");
+	//for (int i = 0; i < nVerts; i++) {
+	//	for (int j = 0; j < Verts[i].NNeigCells; j++)
+	//		std::cout << Verts[i].pNeigCells[j]->Id << ";";
+	//	std::cout << "\n";
+	//}
+
+
+	delete[] IndBuf;
+}
 
 void t_Zone::getNeigCellsOfVertices() {
 
@@ -253,6 +310,13 @@ void t_Zone::makeFaceList() {
 
 
 }
+
+void t_Domain::makeVertexConnectivity() {
+
+	for (int i = 0; i < nZones; i++) Zones[i].makeVertexConnectivity();
+
+}
+
 
 void t_Domain::makeFaceLists() {
 
