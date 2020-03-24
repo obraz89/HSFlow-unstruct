@@ -183,9 +183,9 @@ struct t_Face {
 
 	int NVerts;
 
-	t_Vert Verts[MaxNumVertsInFace];
+	t_Vert* pVerts[MaxNumVertsInFace];
 
-	t_Cell *pLeftCell, *pRightCell;
+	const t_Cell *pLeftCell, *pRightCell;
 
 	// local indices of the face for left & right cells
 
@@ -227,6 +227,9 @@ struct t_Cell {
 
 	
 	t_Cell* pCellsNeig[MaxNumFacesInCell];
+	// store index of face for neighbor cell that corresponds to the particular face
+	// this is to reduce computations
+	int FaceIndNeig[MaxNumFacesInCell];
 	// Number of Neighbor Fluid Cells
 	int NCellsNeig() { int ret=0; 
 		for (int i = 0; i < MaxNumFacesInCell; i++) 
@@ -266,8 +269,8 @@ struct t_CellFaceList {
 	int NFaces() const { return pCell->NFaces; };
 	int NVertInFace(int indFace) const { return F2V[indFace].size(); };
 
-	t_CellFaceList():pCell(nullptr) {};
-	void init(const t_Cell& cell);
+	t_CellFaceList() = delete;
+	t_CellFaceList(const t_Cell& cell);
 
 	const t_SetIndF2V& getVertices(int indFace) const;
 
@@ -312,6 +315,8 @@ class t_Zone {
 
 	lint nCells;
 
+	lint nFaces;
+
 	t_Vert *Verts;
 	t_Cell *Cells;
 	t_Face *Faces;
@@ -339,10 +344,12 @@ public:
 
 	void makeVertexConnectivity();
 	void makeCellConnectivity();
+	void makeFaces();
 
 	std::vector<t_Cell*> getNeigCellsOfCellFace(const t_Cell& cell, int face_ind) const;
+	void init_face(lint a_id, const t_Cell& cell, int face_ind);
 
-	~t_Zone() { delete[] Verts, Cells; }
+	~t_Zone() { delete[] Verts, Cells, Faces; }
 
 };
 
@@ -370,6 +377,7 @@ struct DLLIMPEXP t_Domain
 
 	void makeVertexConnectivity();
 	void makeCellConnectivity();
+	void makeFaces();
 
 	// Gas parameters
 	double(*pfunViscosity)(const double&) = nullptr;

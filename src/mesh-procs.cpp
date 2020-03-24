@@ -133,7 +133,7 @@ void t_CellEdgeList::init(const t_Cell& a_Cell){
 	hsLogMessage("t_CellEdgeList: unsupported element type");
 };
 
-void t_CellFaceList::init(const t_Cell& a_Cell){
+t_CellFaceList::t_CellFaceList(const t_Cell& a_Cell){
 
 	pCell = &a_Cell;
 
@@ -198,7 +198,7 @@ void t_CellFaceList::init(const t_Cell& a_Cell){
 		const lint& V1 = pCell->getVert(0).Id;
 		const lint& V2 = pCell->getVert(1).Id;
 		const lint& V3 = pCell->getVert(2).Id;
-		const lint& V4 = pCell->getVert(0).Id;
+		const lint& V4 = pCell->getVert(3).Id;
 
 		F2V[0][0] = V1;
 		F2V[0][1] = V2;
@@ -225,6 +225,45 @@ const t_SetIndF2V& t_CellFaceList::getVertices(int indFace) const{
 
 	return F2V[indFace];
 };
+//************************************* Face methods
+
+void t_Zone::init_face(lint a_id, const t_Cell& cell, int face_ind) {
+	
+	t_Face& face = Faces[a_id];
+
+	face.Id = a_id;
+
+	t_CellFaceList flist(cell);
+
+	face.NVerts = flist.NVertInFace(face_ind);
+
+	t_SetIndF2V vertices = flist.getVertices(face_ind);
+
+	for (int i = 0; i < face.NVerts; i++) {
+
+		face.pVerts[i] = getpVert(vertices[i]);
+
+	}
+
+	// TODO: for now i leave left cell as base cell
+	// and right cell as neig cell
+	// so left cell is always defined but right cell
+	// can be missing (BC face)
+	face.pLeftCell = &cell;
+
+	face.IndLeftCellFace = face_ind;
+
+	if (cell.pCellsNeig[face_ind] != nullptr) {
+
+		face.pRightCell = cell.pCellsNeig[face_ind];
+
+		face.IndRightCellFace = cell.FaceIndNeig[face_ind];
+
+		face.BCKind = t_FaceBCKind::Fluid;
+
+	}
+
+}
 
 //************************************* Zone methods
 
@@ -303,9 +342,7 @@ std::vector<t_Cell*> t_Zone::getNeigCellsOfCellFace(const t_Cell& cell, int face
 
 	std::vector<t_Cell*> vec_pcells(0);
 
-	t_CellFaceList cfacelst;
-
-	cfacelst.init(cell);
+	t_CellFaceList cfacelst(cell);
 
 	t_SetIndF2V verts_ids = cfacelst.getVertices(face_ind);
 
@@ -338,8 +375,6 @@ void t_Zone::makeCellConnectivity() {
 	// count number of faces
 	lint nFaces = 0;
 
-	t_CellFaceList cfacelst_base, cfacelst_neig;
-
 	t_Cell *pcell_base, *pcell_neig;
 
 	t_SetIndF2V vrtxset_base, vrtxset_neig;
@@ -348,7 +383,7 @@ void t_Zone::makeCellConnectivity() {
 
 		pcell_base = getpCell(i);
 
-		cfacelst_base.init(*pcell_base);
+		t_CellFaceList cfacelst_base(*pcell_base);
 
 		for (int j = 0; j < cfacelst_base.NFaces(); j++) {
 
@@ -362,7 +397,7 @@ void t_Zone::makeCellConnectivity() {
 
 				pcell_neig = vec_neig_cells[k];
 
-				cfacelst_neig.init(*pcell_neig);
+				t_CellFaceList cfacelst_neig(*pcell_neig);
 
 				for (int p = 0; p < cfacelst_neig.NFaces(); p++) {
 
@@ -374,6 +409,7 @@ void t_Zone::makeCellConnectivity() {
 						if (t_SetIndF2V::cmp_weak(vrtxset_base, vrtxset_neig)) {
 
 							pcell_base->pCellsNeig[j] = pcell_neig;
+							pcell_base->FaceIndNeig[j] = p;
 
 							// debug messages
 							//hsLogMessage("Intercell face: LeftCell_id=%d, RightCell_id=%d", pcell_base->Id, pcell_neig->Id);
@@ -393,10 +429,76 @@ void t_Zone::makeCellConnectivity() {
 	}
 
 }
-
+// make list of faces
+// store only one face per intercell
+// 1) count number of faces
+// 2) allocate & initialize
 void t_Zone::makeFaces() {
 
+	lint nFaceMax = nCells*MaxNumFacesInCell;
 
+	bool* faces_skipped = new bool[nCells*MaxNumFacesInCell];
+
+	t_Face* faces_long = new t_Face[nCells*MaxNumFacesInCell];
+
+	for (int i = 0; i < nFaceMax; i++) faces_skipped[i] = false;
+
+	nFaces = 0;
+
+	// counting faces & making skip list
+	for (lint i = 0; i < nCells; i++) {
+
+		const t_Cell& cell_base = getCell(i);
+
+		t_CellFaceList cfacelst(cell_base);
+
+		for (int j = 0; j < cell_base.NFaces; j++) {
+
+			t_SetIndF2V verts_base = cfacelst.getVertices(j);
+
+			if (faces_skipped[i*MaxNumFacesInCell + j] == false) {
+
+				nFaces++;
+				// find adjacent face if this is an intercell face
+				if (cell_base.pCellsNeig[j] != nullptr) {
+
+					const t_Cell& cell_neig = *cell_base.pCellsNeig[j];
+					int neig_face_ind = cell_base.FaceIndNeig[j];
+					faces_skipped[cell_neig.Id*MaxNumFacesInCell + neig_face_ind] = true;
+
+				}
+
+			}
+
+		}
+
+	}
+
+	// debug messages
+	//hsLogMessage("Zone has %d faces", nFaces);
+
+	Faces = new t_Face[nFaces];
+
+	// initializing faces
+	int iFace = 0;
+	for (lint i = 0; i < nCells; i++) {
+
+		const t_Cell& cell_base = getCell(i);
+
+		for (int j = 0; j < cell_base.NFaces; j++) {
+
+			if (faces_skipped[i*MaxNumFacesInCell + j] == false) {
+
+				t_Face& face = Faces[iFace];
+
+				init_face(iFace, cell_base, j);
+				iFace++;
+
+			}
+		}
+	}
+
+	delete[] faces_skipped;
 
 }
 

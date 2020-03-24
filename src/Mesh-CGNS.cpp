@@ -68,8 +68,8 @@ int read_cgns_mesh()
 
 	t_CGNSContext ctx;
 
-	//char gridFN[] = "test_case/box-hexa-simple-2blk.cgns";
-	char gridFN[] = "test_case/box-tetra-simple.cgns";
+	char gridFN[] = "test_case/box-hexa-simple-2blk.cgns";
+	//char gridFN[] = "test_case/box-tetra-simple.cgns";
 	if (cg_open(gridFN, CG_MODE_READ, &ctx.iFile) != CG_OK)
 	{
 		hsLogMessage("Can't open grid file '%s' for reading (%s)",
@@ -197,11 +197,11 @@ int read_cgns_mesh()
 	if (!loadGridCoords(ctx))
 		return false;
 
-	// initialize vertex connectivity
 	G_Domain.makeVertexConnectivity();
 
-	// initialize face lists for all zones
 	G_Domain.makeCellConnectivity();
+
+	G_Domain.makeFaces();
 
 	// Volume conditions info (frozen zones)
 	parseVCs(ctx);
