@@ -139,7 +139,7 @@ void t_CellFaceList::init(const t_Cell& a_Cell){
 
 	if (pCell->Kind == t_CellKind::Brick) {
 
-		for (int i = 0; i < pCell->NFaces; i++) ArrNumOfVertsInFaces[i] = 4;
+		for (int i = 0; i < pCell->NFaces; i++) F2V[i].setSize(4);
 
 		// list of faces for a hexa cell
 		// decomposition according cgns documentation: sids/conv.html#unst_hexa
@@ -155,42 +155,42 @@ void t_CellFaceList::init(const t_Cell& a_Cell){
 		const lint& V7 = pCell->getVert(6).Id;
 		const lint& V8 = pCell->getVert(7).Id;
 
-		F2V.get_val(0, 0) = V1;
-		F2V.get_val(0, 1) = V4;
-		F2V.get_val(0, 2) = V3;
-		F2V.get_val(0, 3) = V2;
+		F2V[0][0] = V1;
+		F2V[0][1] = V4;
+		F2V[0][2] = V3;
+		F2V[0][3] = V2;
 
-		F2V.get_val(1, 0) = V1;
-		F2V.get_val(1, 1) = V2;
-		F2V.get_val(1, 2) = V6;
-		F2V.get_val(1, 3) = V5;
+		F2V[1][0] = V1;
+		F2V[1][1] = V2;
+		F2V[1][2] = V6;
+		F2V[1][3] = V5;
 
-		F2V.get_val(2, 0) = V2;
-		F2V.get_val(2, 1) = V3;
-		F2V.get_val(2, 2) = V7;
-		F2V.get_val(2, 3) = V6;
+		F2V[2][0] = V2;
+		F2V[2][1] = V3;
+		F2V[2][2] = V7;
+		F2V[2][3] = V6;
 
-		F2V.get_val(3, 0) = V3;
-		F2V.get_val(3, 1) = V4;
-		F2V.get_val(3, 2) = V8;
-		F2V.get_val(3, 3) = V7;
+		F2V[3][0] = V3;
+		F2V[3][1] = V4;
+		F2V[3][2] = V8;
+		F2V[3][3] = V7;
 
-		F2V.get_val(4, 0) = V1;
-		F2V.get_val(4, 1) = V5;
-		F2V.get_val(4, 2) = V8;
-		F2V.get_val(4, 3) = V4;
+		F2V[4][0] = V1;
+		F2V[4][1] = V5;
+		F2V[4][2] = V8;
+		F2V[4][3] = V4;
 
-		F2V.get_val(5, 0) = V5;
-		F2V.get_val(5, 1) = V6;
-		F2V.get_val(5, 2) = V7;
-		F2V.get_val(5, 3) = V8;
+		F2V[5][0] = V5;
+		F2V[5][1] = V6;
+		F2V[5][2] = V7;
+		F2V[5][3] = V8;
 
 		return;
 	}
 
 	if (pCell->Kind == t_CellKind::Tetra) {
 
-		for (int i = 0; i < pCell->NFaces; i++) ArrNumOfVertsInFaces[i] = 3;
+		for (int i = 0; i < pCell->NFaces; i++) F2V[i].setSize(3);
 
 		// list of faces for a tetra cell
 		// decomposition according cgns documentation: sids/conv.html#unst_tetra
@@ -200,34 +200,30 @@ void t_CellFaceList::init(const t_Cell& a_Cell){
 		const lint& V3 = pCell->getVert(2).Id;
 		const lint& V4 = pCell->getVert(0).Id;
 
-		F2V.get_val(0, 0) = V1;
-		F2V.get_val(0, 1) = V2;
-		F2V.get_val(0, 2) = V3;
+		F2V[0][0] = V1;
+		F2V[0][1] = V2;
+		F2V[0][2] = V3;
 
-		F2V.get_val(1, 0) = V1;
-		F2V.get_val(1, 1) = V2;
-		F2V.get_val(1, 2) = V4;
+		F2V[1][0] = V1;
+		F2V[1][1] = V2;
+		F2V[1][2] = V4;
 
-		F2V.get_val(2, 0) = V2;
-		F2V.get_val(2, 1) = V3;
-		F2V.get_val(2, 2) = V4;
+		F2V[2][0] = V2;
+		F2V[2][1] = V3;
+		F2V[2][2] = V4;
 
-		F2V.get_val(3, 0) = V3;
-		F2V.get_val(3, 1) = V1;
-		F2V.get_val(3, 2) = V4;
+		F2V[3][0] = V3;
+		F2V[3][1] = V1;
+		F2V[3][2] = V4;
 
 		return;
 	}
 	hsLogMessage("t_CellFaceList: unsupported element type");
 };
 
-t_SetIndF2V t_CellFaceList::getVertices(int indFace) {
+const t_SetIndF2V& t_CellFaceList::getVertices(int indFace) const{
 
-	t_SetIndF2V indxs;
-	int n = ArrNumOfVertsInFaces[indFace];
-	indxs.setSize(n);
-	for (int i = 0; i < n; i++) indxs[i] = F2V.get_val(indFace,i);
-	return indxs;
+	return F2V[indFace];
 };
 
 //************************************* Zone methods
@@ -310,15 +306,11 @@ std::vector<t_Cell*> t_Zone::getNeigCellsOfCellFace(const t_Cell& cell, int face
 
 	cfacelst.init(cell);
 
-	lint cell_id_this = cell.Id;
+	t_SetIndF2V verts_ids = cfacelst.getVertices(face_ind);
 
-	lint iVert;
+	for (int i = 0; i < cfacelst.NVertInFace(face_ind); i++) {
 
-	for (int i = 0; i < cfacelst.ArrNumOfVertsInFaces[face_ind]; i++) {
-
-		iVert = cfacelst.F2V.get_val(face_ind, i);
-
-		const t_Vert& Vert = getVert(iVert);
+		const t_Vert& Vert = getVert(verts_ids[i]);
 
 		for (int j = 0; j < Vert.NNeigCells; j++) {
 
@@ -375,7 +367,11 @@ void t_Zone::makeCellConnectivity() {
 
 					t_SetIndF2V vrtxset_neig = cfacelst_neig.getVertices(p);
 
+					// check if both faces consist of the same vertices, order not important
 					if (t_SetIndF2V::cmp_weak(vrtxset_base, vrtxset_neig)) {
+
+
+
 						hsLogMessage("Intercell face: LeftCell_id=%d, RightCell_id=%d", pcell_base->Id, pcell_neig->Id);
 					}
 

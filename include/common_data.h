@@ -255,19 +255,16 @@ struct t_CellFaceList {
 
 	const t_Cell* pCell;
 
+	t_SetIndF2V F2V[MaxNumFacesInCell];
 	// array of faces via vertices
-	t_BufFace2Vert F2V;
-
-	// array containing number of vertexes for each face 
-	int ArrNumOfVertsInFaces[MaxNumFacesInCell];
-
+	
 	int NFaces() const { return pCell->NFaces; };
-	int NVertInFace(int indFace) const { return ArrNumOfVertsInFaces[indFace]; };
+	int NVertInFace(int indFace) const { return F2V[indFace].size(); };
 
 	t_CellFaceList():pCell(nullptr) {};
 	void init(const t_Cell& cell);
 
-	t_SetIndF2V getVertices(int indFace);
+	const t_SetIndF2V& getVertices(int indFace) const;
 
 };
 
