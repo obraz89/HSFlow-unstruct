@@ -185,7 +185,7 @@ struct t_Face {
 
 	t_Vert* pVerts[MaxNumVertsInFace];
 
-	const t_Cell *pLeftCell, *pRightCell;
+	t_Cell *pLeftCell, *pRightCell;
 
 	// local indices of the face for left & right cells
 
@@ -347,7 +347,7 @@ public:
 	void makeFaces();
 
 	std::vector<t_Cell*> getNeigCellsOfCellFace(const t_Cell& cell, int face_ind) const;
-	void init_face(lint a_id, const t_Cell& cell, int face_ind);
+	void init_face2cell_conn(lint a_id, t_Cell& cell, int face_ind);
 
 	~t_Zone() { delete[] Verts, Cells, Faces; }
 

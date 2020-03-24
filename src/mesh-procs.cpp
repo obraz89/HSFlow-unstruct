@@ -227,7 +227,7 @@ const t_SetIndF2V& t_CellFaceList::getVertices(int indFace) const{
 };
 //************************************* Face methods
 
-void t_Zone::init_face(lint a_id, const t_Cell& cell, int face_ind) {
+void t_Zone::init_face2cell_conn(lint a_id, t_Cell& cell, int face_ind) {
 	
 	t_Face& face = Faces[a_id];
 
@@ -253,9 +253,17 @@ void t_Zone::init_face(lint a_id, const t_Cell& cell, int face_ind) {
 
 	face.IndLeftCellFace = face_ind;
 
+	cell.pFaces[face_ind] = &face;
+
 	if (cell.pCellsNeig[face_ind] != nullptr) {
 
-		face.pRightCell = cell.pCellsNeig[face_ind];
+		t_Cell& cell_neig = *cell.pCellsNeig[face_ind];
+
+		face.pRightCell = &cell_neig;
+
+		int neig_face_ind = cell.FaceIndNeig[face_ind];
+
+		cell_neig.pFaces[neig_face_ind] = &face;
 
 		face.IndRightCellFace = cell.FaceIndNeig[face_ind];
 
@@ -483,7 +491,7 @@ void t_Zone::makeFaces() {
 	int iFace = 0;
 	for (lint i = 0; i < nCells; i++) {
 
-		const t_Cell& cell_base = getCell(i);
+		t_Cell& cell_base = getCell(i);
 
 		for (int j = 0; j < cell_base.NFaces; j++) {
 
@@ -491,7 +499,7 @@ void t_Zone::makeFaces() {
 
 				t_Face& face = Faces[iFace];
 
-				init_face(iFace, cell_base, j);
+				init_face2cell_conn(iFace, cell_base, j);
 				iFace++;
 
 			}
