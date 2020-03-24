@@ -373,9 +373,9 @@ static bool loadGridCoords(t_CGNSContext& ctx) {
 
 		for (int i = 0; i < Zne.getnVerts(); i++) {
 			t_Vert& vert = Zne.getVert(i);
-			vert.xyz[0] = x[i];
-			vert.xyz[1] = y[i];
-			vert.xyz[2] = z[i];
+			vert.xyz.x = x[i];
+			vert.xyz.y = y[i];
+			vert.xyz.z = z[i];
 
 		}
 	

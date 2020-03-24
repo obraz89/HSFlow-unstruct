@@ -124,27 +124,50 @@ DLLIMPEXP extern TState G_State;
 
 struct t_Zone;
 
-template<int len>class t_Vec {
-	double cont[len];
-public:
-	double& operator[](int i) {
-#ifdef _DEBUG
-		//if (i<0 || i>len-1) hsLogError("t_Vec:ind out of range");
-#endif // _DEBUG
-		return cont[i]; 
+/**
+* Euclidean 3D vector
+*/
+struct t_Vec3
+{
+	double x, y, z;
+
+	t_Vec3() = default; // zero initialization
+	t_Vec3(double a1, double a2, double a3) : x(a1), y(a2), z(a3) { ; }
+
+	void set(double a1, double a2, double a3) { x = a1;  y = a2;  z = a3; }
+
+	void operator+=(const t_Vec3& v) { x += v.x;  y += v.y;  z += v.z; }
+	t_Vec3 operator+(const t_Vec3& v) const { return t_Vec3{ x + v.x, y + v.y, z + v.z }; }
+	t_Vec3 operator-(const t_Vec3& v) const { return t_Vec3{ x - v.x, y - v.y, z - v.z }; }
+	void operator*=(double k) { x *= k;  y *= k;  z *= k; }
+	t_Vec3 operator*(double k) const { return t_Vec3{ x * k, y * k, z * k }; }
+
+	double sq() const { return x*x + y*y + z*z; }
+	double length() const { return sqrt(sq()); }
+
+	/**
+	*  Make vector to be of unit length
+	*  @return previous vector length
+	*/
+	double normalize() {
+		const double d = length();
+		x /= d; y /= d; z /= d;
+		return d;
 	}
-	const double& operator[](int i) const { return cont[i]; }
+	void flip() { x = -x;  y = -y;  z = -z; }
+
+	/// Vector product
+	t_Vec3 cross(const t_Vec3& v) const
+	{
+		return t_Vec3(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
+	}
+
+	/// Scalar product
+	double dot(const t_Vec3& v) const
+	{
+		return x*v.x + y*v.y + z*v.z;
+	}
 };
-
-
-
-template<int len> double dot(const t_Vec<len>& v1, const t_Vec<len>& v2) {
-	double ret = 0.0;
-	for (int i=0; i<len; i++) ret+=v1.cont[]
-	return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
-}
-
-using t_Vec3d = t_Vec<3>;
 
 enum struct t_FaceBCKind {
 	Fluid = 0,
@@ -171,7 +194,7 @@ struct t_Vert {
 	// list of cells that has this Vertex
 	t_Cell **pNeigCells;
 
-	t_Vec3d xyz;
+	t_Vec3 xyz;
 
 	~t_Vert() { delete[] pNeigCells; }
 
@@ -193,9 +216,9 @@ struct t_Face {
 
 	t_FaceBCKind BCKind;
 
-	t_Vec3d Normal;
+	t_Vec3 Normal;
 
-	t_Vec3d Center;
+	t_Vec3 Center;
 
 	t_Face() { pLeftCell = nullptr; pRightCell = nullptr; }
 
@@ -237,7 +260,7 @@ struct t_Cell {
 		return ret; 
 	};
 
-	t_Vec3d Center;
+	t_Vec3 Center;
 
 	double Volume;
 
