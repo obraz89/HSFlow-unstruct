@@ -197,6 +197,8 @@ struct t_Face {
 
 	t_Vec3d Center;
 
+	t_Face() { pLeftCell = nullptr; pRightCell = nullptr; }
+
 	void ComputeFaceCenter();
 
 	void ComputeFaceNormal();
@@ -223,13 +225,21 @@ struct t_Cell {
 	// +1 if Face Normal directed outward of the cell, -1 otherwise
 	int FacesNormOutward[MaxNumFacesInCell];
 
-	// List of Neighbor Cells
+	// Number of Neighbor Fluid Cells
 	int NumCellsNeig;
-	t_Cell** pCellsNeig;
+	t_Cell* pCellsNeig[MaxNumFacesInCell];
 
 	t_Vec3d Center;
 
 	double Volume;
+
+	t_Cell() {
+		for (int i = 0; i < MaxNumVertsInCell;i++) pVerts[i] = nullptr;
+		for (int i = 0; i < MaxNumFacesInCell; i++) {
+			pFaces[i] = nullptr;
+			pCellsNeig[i] = nullptr;
+		}
+	}
 
 	t_Vert& getVert(int ind) { return *pVerts[ind]; }
 	const t_Vert& getVert(int ind) const{ return *pVerts[ind]; }
