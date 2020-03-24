@@ -297,6 +297,7 @@ void t_Zone::makeVertexConnectivity() {
 }
 
 // get cells that owns at least one of vertices of the particular cell face
+// (excluding cell itself)
 // TODO: vector push_back performance ?
 std::vector<t_Cell*> t_Zone::getNeigCellsOfCellFace(const t_Cell& cell, int face_ind) const{
 
@@ -367,12 +368,18 @@ void t_Zone::makeCellConnectivity() {
 
 					t_SetIndF2V vrtxset_neig = cfacelst_neig.getVertices(p);
 
-					// check if both faces consist of the same vertices, order not important
-					if (t_SetIndF2V::cmp_weak(vrtxset_base, vrtxset_neig)) {
+					if (pcell_base->pCellsNeig[j] == nullptr) {
 
+						// check if both faces consist of the same vertices, order not important
+						if (t_SetIndF2V::cmp_weak(vrtxset_base, vrtxset_neig)) {
 
+							pcell_base->pCellsNeig[j] = pcell_neig;
 
-						hsLogMessage("Intercell face: LeftCell_id=%d, RightCell_id=%d", pcell_base->Id, pcell_neig->Id);
+							// debug messages
+							//hsLogMessage("Intercell face: LeftCell_id=%d, RightCell_id=%d", pcell_base->Id, pcell_neig->Id);
+							//hsLogMessage("Face Vertices: %d,%d,%d,%d", vrtxset_neig[0], vrtxset_neig[1], vrtxset_neig[2], vrtxset_neig[3]);
+						}
+
 					}
 
 				}
@@ -383,10 +390,11 @@ void t_Zone::makeCellConnectivity() {
 
 		}
 
-
-
 	}
 
+}
+
+void t_Zone::makeFaces() {
 
 
 
@@ -402,6 +410,12 @@ void t_Domain::makeVertexConnectivity() {
 void t_Domain::makeCellConnectivity() {
 
 	for (int i = 0; i < nZones; i++) Zones[i].makeCellConnectivity();
+
+}
+
+void t_Domain::makeFaces() {
+
+	for (int i = 0; i < nZones; i++) Zones[i].makeFaces();
 
 }
 

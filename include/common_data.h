@@ -181,7 +181,7 @@ struct t_Face {
 
 	lint Id;
 
-	int NumOfVerts;
+	int NVerts;
 
 	t_Vert Verts[MaxNumVertsInFace];
 
@@ -225,9 +225,14 @@ struct t_Cell {
 	// +1 if Face Normal directed outward of the cell, -1 otherwise
 	int FacesNormOutward[MaxNumFacesInCell];
 
-	// Number of Neighbor Fluid Cells
-	int NumCellsNeig;
+	
 	t_Cell* pCellsNeig[MaxNumFacesInCell];
+	// Number of Neighbor Fluid Cells
+	int NCellsNeig() { int ret=0; 
+		for (int i = 0; i < MaxNumFacesInCell; i++) 
+			if (pCellsNeig[i] != nullptr) ret++; 
+		return ret; 
+	};
 
 	t_Vec3d Center;
 
@@ -309,6 +314,7 @@ class t_Zone {
 
 	t_Vert *Verts;
 	t_Cell *Cells;
+	t_Face *Faces;
 
 public:
 
