@@ -143,14 +143,14 @@ struct t_Vec3
 	t_Vec3 operator*(double k) const { return t_Vec3{ x * k, y * k, z * k }; }
 
 	double sq() const { return x*x + y*y + z*z; }
-	double length() const { return sqrt(sq()); }
+	double norm() const { return sqrt(sq()); }
 
 	/**
 	*  Make vector to be of unit length
 	*  @return previous vector length
 	*/
 	double normalize() {
-		const double d = length();
+		const double d = norm();
 		x /= d; y /= d; z /= d;
 		return d;
 	}
@@ -168,6 +168,8 @@ struct t_Vec3
 		return x*v.x + y*v.y + z*v.z;
 	}
 };
+
+t_Vec3 operator*(double val, const t_Vec3& vec);
 
 enum struct t_FaceBCKind {
 	Fluid = 0,
@@ -219,6 +221,8 @@ struct t_Face {
 	t_Vec3 Normal;
 
 	t_Vec3 Center;
+
+	double Area;
 
 	t_Face() { pLeftCell = nullptr; pRightCell = nullptr; }
 

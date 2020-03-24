@@ -506,6 +506,25 @@ void t_Zone::makeFaces() {
 		}
 	}
 
+	// compute face normals and areas
+	for (lint i = 0; i < nFaces; i++) {
+		t_Face& face = Faces[i];
+		if (face.NVerts == 3) {
+			const t_Vec3& v1 = face.pVerts[0]->xyz;
+			const t_Vec3& v2 = face.pVerts[1]->xyz;
+			const t_Vec3& v3 = face.pVerts[2]->xyz;
+			ComputeTriangleAreaNormal({v1,v2,v3}, face.Normal, face.Area);
+		}
+		if (face.NVerts == 4) {
+			const t_Vec3& v1 = face.pVerts[0]->xyz;
+			const t_Vec3& v2 = face.pVerts[1]->xyz;
+			const t_Vec3& v3 = face.pVerts[2]->xyz;
+			const t_Vec3& v4 = face.pVerts[3]->xyz;
+			ComputeQuadAreaNormal({ v1,v2,v3,v4 }, face.Normal, face.Area);
+
+		}
+	}
+
 	delete[] faces_skipped;
 
 }

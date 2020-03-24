@@ -35,4 +35,9 @@ inline T sq(T x)
 {
 	return x*x;
 }
+
+// geometry routines
+void ComputeTriangleAreaNormal(const t_Vec3 (&pnts)[3], t_Vec3& norm, double& area);
+
+void ComputeQuadAreaNormal(const t_Vec3(&pnts)[4], t_Vec3& norm, double& area);
 //-----------------------------------------------------------------------------
