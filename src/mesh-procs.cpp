@@ -38,28 +38,43 @@ void t_Cell::setKind(t_CellKind a_Kind) {
 
 };
 
-t_Vec3 t_Cell::getFaceNormalOutward(int iface) const{
+// If cell vertices are read according to cgns vertex numbering,
+// the computed normal is directed outward of the cell
+// TODO: if grids with non-standard vertex numbering are read
+// additional work should be done to ensure the normal is directed outward of the cell
+void t_Cell::calcFaceNormalAreaOutward(int iface, t_Vec3& norm, double& area) const{
 
 	t_CellFaceList flist(*this);
 	
 	// compute directly cell face normal
 	t_SetOfpVerts verts = flist.getVertices(iface);
-	t_Vec3 norm_cell_face;
-	double area_cell_face;
+
 	if (verts.size() == 3) {
 		t_Vec3 pnts[3];
 		for (int k = 0; k < 3; k++) pnts[k] = verts[k]->xyz;
-		ComputeTriangleAreaNormal(pnts, norm_cell_face, area_cell_face);
+		ComputeTriangleAreaNormal(pnts, norm, area);
 	}
 	if (verts.size() == 4) {
 		t_Vec3 pnts[4];
 		for (int k = 0; k < 4; k++) pnts[k] = verts[k]->xyz;
-		ComputeQuadAreaNormal(pnts, norm_cell_face, area_cell_face);
+		ComputeQuadAreaNormal(pnts, norm, area);
 
 	}
 
-	return norm_cell_face;
+	return;
 
+}
+
+t_Vec3 t_Cell::getFaceNormalOutward(int iface) const{
+
+	t_Vec3 norm;
+
+	const t_Face* pface = pFaces[iface];
+
+	if (this == pface->pMyCell) norm = pface->Normal;
+	else norm = -1.0*pface->Normal;
+
+	return norm;
 }
 
 void t_CellEdgeList::init(const t_Cell& a_Cell){
@@ -521,28 +536,10 @@ void t_Zone::makeFaces() {
 				t_Face& face = Faces[iFace];
 
 				init_face2cell_conn(iFace, cell_base, j);
+				cell_base.calcFaceNormalAreaOutward(j, face.Normal, face.Area);
 				iFace++;
 
 			}
-		}
-	}
-
-	// compute face normals and areas
-	for (lint i = 0; i < nFaces; i++) {
-		t_Face& face = Faces[i];
-		if (face.NVerts == 3) {
-			const t_Vec3& v1 = face.pVerts[0]->xyz;
-			const t_Vec3& v2 = face.pVerts[1]->xyz;
-			const t_Vec3& v3 = face.pVerts[2]->xyz;
-			ComputeTriangleAreaNormal({v1,v2,v3}, face.Normal, face.Area);
-		}
-		if (face.NVerts == 4) {
-			const t_Vec3& v1 = face.pVerts[0]->xyz;
-			const t_Vec3& v2 = face.pVerts[1]->xyz;
-			const t_Vec3& v3 = face.pVerts[2]->xyz;
-			const t_Vec3& v4 = face.pVerts[3]->xyz;
-			ComputeQuadAreaNormal({ v1,v2,v3,v4 }, face.Normal, face.Area);
-
 		}
 	}
 
@@ -584,22 +581,10 @@ bool t_Domain::checkNormalOrientations() {
 			t_CellFaceList flist(cell);
 
 			for (int iFace = 0; iFace < cell.NFaces; iFace++) {
-
-				// compute directly cell face normal
-				t_SetOfpVerts verts = flist.getVertices(iFace);
-				t_Vec3 norm_cell_face;
-				double area_cell_face;
-				if (verts.size() == 3) {
-					t_Vec3 pnts[3];
-					for (int k = 0; k < 3; k++) pnts[k] = verts[k]->xyz;
-					ComputeTriangleAreaNormal(pnts, norm_cell_face, area_cell_face);
-				}
-				if (verts.size() == 4) {
-					t_Vec3 pnts[4];
-					for (int k = 0; k < 4; k++) pnts[k] = verts[k]->xyz;
-					ComputeQuadAreaNormal(pnts, norm_cell_face, area_cell_face);
-
-				}
+				
+				t_Vec3 norm_cell_face; 
+				double area;
+				cell.calcFaceNormalAreaOutward(iFace, norm_cell_face, area);
 
 				// compare computed normal & area to face normal & area
 				const t_Face& face = *cell.pFaces[iFace];
@@ -620,5 +605,38 @@ bool t_Domain::checkNormalOrientations() {
 
 	return ok;
 
+}
+// calculate residual for a Ostrogradsky theorem
+// for all cells
+double t_Domain::calcUnitOstrogradResid() {
+
+	double max_resid = 0.0;
+	double resid;
+	double area;
+	t_Vec3 norm, sum;
+	for (int iZone = 0; iZone < G_Domain.nZones; iZone++) {
+
+		const t_Zone& zne = G_Domain.Zones[iZone];
+
+		for (int iCell = 0; iCell < zne.getnCells(); iCell++) {
+
+			const t_Cell& cell = zne.getCell(iCell);
+
+			sum.set(0, 0, 0);
+
+			for (int k = 0; k < cell.NFaces; k++) {
+
+				norm = cell.getFaceNormalOutward(k);
+				area = cell.getFace(k).Area;
+				sum+= norm*area;
+			}
+
+			resid = sum.norm();
+			if (resid > max_resid) max_resid = resid;
+		}
+
+	}
+	hsLogMessage("Check volumes (Ostrogradsky): Max resid = %lf", max_resid);
+	return max_resid;
 }
 

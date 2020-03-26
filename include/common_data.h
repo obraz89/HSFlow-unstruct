@@ -218,8 +218,6 @@ struct t_Face {
 	// MyCell is always defined but OppCell can be missing (BC face)
 	t_Cell *pMyCell, *pOppCell;
 
-	// local indices of the face for left & right cells
-
 	int IndLeftCellFace, IndRightCellFace;
 
 	t_FaceBCKind BCKind;
@@ -284,7 +282,15 @@ struct t_Cell {
 	t_Vert* getpVert(int ind) { return pVerts[ind]; }
 	const t_Vert* getpVert(int ind) const { return pVerts[ind]; }
 
+	t_Face& getFace(int ind) { return *pFaces[ind]; }
+	const t_Face& getFace(int ind) const{ return *pFaces[ind]; }
+
+	t_Face* getpFace(int ind) { return pFaces[ind]; }
+	const t_Face* getpFace(int ind) const{ return pFaces[ind]; }
+
 	void setKind(t_CellKind a_Kind);
+	void calcFaceNormalAreaOutward(int iface, t_Vec3& norm, double& area) const;
+	
 	t_Vec3 getFaceNormalOutward(int iface) const;
 
 };
@@ -414,6 +420,7 @@ struct DLLIMPEXP t_Domain
 	void makeFaces();
 
 	bool checkNormalOrientations();
+	double calcUnitOstrogradResid();
 
 	// Gas parameters
 	double(*pfunViscosity)(const double&) = nullptr;

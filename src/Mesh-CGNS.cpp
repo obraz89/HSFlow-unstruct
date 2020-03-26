@@ -210,6 +210,8 @@ int read_cgns_mesh()
 	else
 		hsLogMessage("Error:checkNormalOrientations failed!");
 
+	G_Domain.calcUnitOstrogradResid();
+
 	// Volume conditions info (frozen zones)
 	parseVCs(ctx);
 
