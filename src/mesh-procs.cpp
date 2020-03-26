@@ -38,6 +38,30 @@ void t_Cell::setKind(t_CellKind a_Kind) {
 
 };
 
+t_Vec3 t_Cell::getFaceNormalOutward(int iface) const{
+
+	t_CellFaceList flist(*this);
+	
+	// compute directly cell face normal
+	t_SetOfpVerts verts = flist.getVertices(iface);
+	t_Vec3 norm_cell_face;
+	double area_cell_face;
+	if (verts.size() == 3) {
+		t_Vec3 pnts[3];
+		for (int k = 0; k < 3; k++) pnts[k] = verts[k]->xyz;
+		ComputeTriangleAreaNormal(pnts, norm_cell_face, area_cell_face);
+	}
+	if (verts.size() == 4) {
+		t_Vec3 pnts[4];
+		for (int k = 0; k < 4; k++) pnts[k] = verts[k]->xyz;
+		ComputeQuadAreaNormal(pnts, norm_cell_face, area_cell_face);
+
+	}
+
+	return norm_cell_face;
+
+}
+
 void t_CellEdgeList::init(const t_Cell& a_Cell){
 
 	pCell = &a_Cell;
@@ -146,14 +170,14 @@ t_CellFaceList::t_CellFaceList(const t_Cell& a_Cell){
 		// vertexes (1,2,3,4,5,6,7,8) => faces 
 		//(1,4,3,2), (1,2,6,5), (2,3,7,6), (3,4,8,7), (1,5,8,4), (5,6,7,8)
 
-		const lint& V1 = pCell->getVert(0).Id;
-		const lint& V2 = pCell->getVert(1).Id;
-		const lint& V3 = pCell->getVert(2).Id;
-		const lint& V4 = pCell->getVert(3).Id;
-		const lint& V5 = pCell->getVert(4).Id;
-		const lint& V6 = pCell->getVert(5).Id;
-		const lint& V7 = pCell->getVert(6).Id;
-		const lint& V8 = pCell->getVert(7).Id;
+		const t_Vert* V1 = pCell->getpVert(0);
+		const t_Vert* V2 = pCell->getpVert(1);
+		const t_Vert* V3 = pCell->getpVert(2);
+		const t_Vert* V4 = pCell->getpVert(3);
+		const t_Vert* V5 = pCell->getpVert(4);
+		const t_Vert* V6 = pCell->getpVert(5);
+		const t_Vert* V7 = pCell->getpVert(6);
+		const t_Vert* V8 = pCell->getpVert(7);
 
 		F2V[0][0] = V1;
 		F2V[0][1] = V4;
@@ -195,10 +219,10 @@ t_CellFaceList::t_CellFaceList(const t_Cell& a_Cell){
 		// list of faces for a tetra cell
 		// decomposition according cgns documentation: sids/conv.html#unst_tetra
 		// vertexes (1,2,3,4) => faces (1,2,3), (1,2,4), (2,3,4), (3,1,4)
-		const lint& V1 = pCell->getVert(0).Id;
-		const lint& V2 = pCell->getVert(1).Id;
-		const lint& V3 = pCell->getVert(2).Id;
-		const lint& V4 = pCell->getVert(3).Id;
+		const t_Vert* V1 = pCell->getpVert(0);
+		const t_Vert* V2 = pCell->getpVert(1);
+		const t_Vert* V3 = pCell->getpVert(2);
+		const t_Vert* V4 = pCell->getpVert(3);
 
 		F2V[0][0] = V1;
 		F2V[0][1] = V2;
@@ -221,7 +245,7 @@ t_CellFaceList::t_CellFaceList(const t_Cell& a_Cell){
 	hsLogMessage("t_CellFaceList: unsupported element type");
 };
 
-const t_SetIndF2V& t_CellFaceList::getVertices(int indFace) const{
+const t_SetOfpVerts& t_CellFaceList::getVertices(int indFace) const{
 
 	return F2V[indFace];
 };
@@ -237,19 +261,16 @@ void t_Zone::init_face2cell_conn(lint a_id, t_Cell& cell, int face_ind) {
 
 	face.NVerts = flist.NVertInFace(face_ind);
 
-	t_SetIndF2V vertices = flist.getVertices(face_ind);
+	t_SetOfpVerts vertices = flist.getVertices(face_ind);
 
 	for (int i = 0; i < face.NVerts; i++) {
 
-		face.pVerts[i] = getpVert(vertices[i]);
+		face.pVerts[i] = vertices[i];
 
 	}
 
-	// TODO: for now i leave left cell as base cell
-	// and right cell as neig cell
-	// so left cell is always defined but right cell
-	// can be missing (BC face)
-	face.pLeftCell = &cell;
+
+	face.pMyCell = &cell;
 
 	face.IndLeftCellFace = face_ind;
 
@@ -259,7 +280,7 @@ void t_Zone::init_face2cell_conn(lint a_id, t_Cell& cell, int face_ind) {
 
 		t_Cell& cell_neig = *cell.pCellsNeig[face_ind];
 
-		face.pRightCell = &cell_neig;
+		face.pOppCell = &cell_neig;
 
 		int neig_face_ind = cell.FaceIndNeig[face_ind];
 
@@ -352,15 +373,15 @@ std::vector<t_Cell*> t_Zone::getNeigCellsOfCellFace(const t_Cell& cell, int face
 
 	t_CellFaceList cfacelst(cell);
 
-	t_SetIndF2V verts_ids = cfacelst.getVertices(face_ind);
+	t_SetOfpVerts verts = cfacelst.getVertices(face_ind);
 
 	for (int i = 0; i < cfacelst.NVertInFace(face_ind); i++) {
 
-		const t_Vert& Vert = getVert(verts_ids[i]);
+		const t_Vert* Vert = verts[i];
 
-		for (int j = 0; j < Vert.NNeigCells; j++) {
+		for (int j = 0; j < Vert->NNeigCells; j++) {
 
-			if (Vert.pNeigCells[j]->Id != cell.Id)  vec_pcells.push_back(Vert.pNeigCells[j]);
+			if (Vert->pNeigCells[j]->Id != cell.Id)  vec_pcells.push_back(Vert->pNeigCells[j]);
 
 		}
 
@@ -385,7 +406,7 @@ void t_Zone::makeCellConnectivity() {
 
 	t_Cell *pcell_base, *pcell_neig;
 
-	t_SetIndF2V vrtxset_base, vrtxset_neig;
+	t_SetOfpVerts vrtxset_base, vrtxset_neig;
 
 	for (lint i = 0; i < nCells; i++) {
 
@@ -409,12 +430,12 @@ void t_Zone::makeCellConnectivity() {
 
 				for (int p = 0; p < cfacelst_neig.NFaces(); p++) {
 
-					t_SetIndF2V vrtxset_neig = cfacelst_neig.getVertices(p);
+					t_SetOfpVerts vrtxset_neig = cfacelst_neig.getVertices(p);
 
 					if (pcell_base->pCellsNeig[j] == nullptr) {
 
 						// check if both faces consist of the same vertices, order not important
-						if (t_SetIndF2V::cmp_weak(vrtxset_base, vrtxset_neig)) {
+						if (t_SetOfpVerts::cmp_weak(vrtxset_base, vrtxset_neig)) {
 
 							pcell_base->pCellsNeig[j] = pcell_neig;
 							pcell_base->FaceIndNeig[j] = p;
@@ -462,7 +483,7 @@ void t_Zone::makeFaces() {
 
 		for (int j = 0; j < cell_base.NFaces; j++) {
 
-			t_SetIndF2V verts_base = cfacelst.getVertices(j);
+			t_SetOfpVerts verts_base = cfacelst.getVertices(j);
 
 			if (faces_skipped[i*MaxNumFacesInCell + j] == false) {
 
@@ -545,6 +566,63 @@ void t_Domain::makeCellConnectivity() {
 void t_Domain::makeFaces() {
 
 	for (int i = 0; i < nZones; i++) Zones[i].makeFaces();
+
+}
+
+bool t_Domain::checkNormalOrientations() {
+
+	bool ok = true;
+
+	for (int iZone = 0; iZone < G_Domain.nZones; iZone++) {
+
+		const t_Zone& zne = G_Domain.Zones[iZone];
+
+		for (int iCell = 0; iCell < zne.getnCells(); iCell++) {
+
+			const t_Cell& cell = zne.getCell(iCell);
+
+			t_CellFaceList flist(cell);
+
+			for (int iFace = 0; iFace < cell.NFaces; iFace++) {
+
+				// compute directly cell face normal
+				t_SetOfpVerts verts = flist.getVertices(iFace);
+				t_Vec3 norm_cell_face;
+				double area_cell_face;
+				if (verts.size() == 3) {
+					t_Vec3 pnts[3];
+					for (int k = 0; k < 3; k++) pnts[k] = verts[k]->xyz;
+					ComputeTriangleAreaNormal(pnts, norm_cell_face, area_cell_face);
+				}
+				if (verts.size() == 4) {
+					t_Vec3 pnts[4];
+					for (int k = 0; k < 4; k++) pnts[k] = verts[k]->xyz;
+					ComputeQuadAreaNormal(pnts, norm_cell_face, area_cell_face);
+
+				}
+
+				// compare computed normal & area to face normal & area
+				const t_Face& face = *cell.pFaces[iFace];
+				double scal_prod = norm_cell_face.dot(face.Normal);
+				if (&cell == face.pMyCell) {
+					bool cnd = (scal_prod > 0.999) && (scal_prod < 1.001);
+					ok = ok && cnd;
+					if (!cnd) hsLogMessage("Fail");
+					hsLogMessage("Face norm & cell face norm must be the same (scal prod=+1), computed:%lf", scal_prod);
+				}
+				else if (&cell == face.pOppCell) {
+					bool cnd = (scal_prod > -1.001) && (scal_prod<-0.999);
+					ok = ok && cnd;
+					if (!cnd) hsLogMessage("Fail");
+					hsLogMessage("Face norm & cell face norm must be opposite (scal prod=-1), computed:%lf", scal_prod);
+				}
+				else { hsLogMessage("Error:checkNormalOrientations():Broken Face2Cell connectivity"); }
+			}
+		}
+
+	}
+
+	return ok;
 
 }
 

@@ -203,6 +203,9 @@ int read_cgns_mesh()
 
 	G_Domain.makeFaces();
 
+	if (!G_Domain.checkNormalOrientations()) 
+		hsLogMessage("Error:checkNormalOrientations failed!");
+
 	// Volume conditions info (frozen zones)
 	parseVCs(ctx);
 

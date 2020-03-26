@@ -155,7 +155,7 @@
     <ClInclude Include="include\Mesh-CGNS.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\common_data.cpp" />
+    <ClCompile Include="src\common_procs.cpp" />
     <ClCompile Include="src\HSFlow-shared.cpp" />
     <ClCompile Include="src\logging.cpp" />
     <ClCompile Include="src\main.cpp" />

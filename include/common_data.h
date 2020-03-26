@@ -7,6 +7,8 @@
 #include <array>
 #include <vector>
 
+#include "logging.h"
+
 typedef __int64 lint;
 
 static const int MaxNumVertsInFace = 4;
@@ -100,7 +102,8 @@ using t_BufFace2Vert = t_BufIndsStat<lint, MaxNumFacesInCell, MaxNumVertsInFace>
 using t_BufEdge2Vert = t_BufIndsStat<lint, MaxNumEdgesInCell, 2>;
 
 // set of indexes, Face 2 Vertex
-using t_SetIndF2V = t_TSet<lint, MaxNumVertsInFace>;
+struct t_Vert;
+using t_SetOfpVerts = t_TSet<const t_Vert*, MaxNumVertsInFace>;
 
 //
 // Problem solving state
@@ -208,9 +211,12 @@ struct t_Face {
 
 	int NVerts;
 
-	t_Vert* pVerts[MaxNumVertsInFace];
+	const t_Vert* pVerts[MaxNumVertsInFace];
 
-	t_Cell *pLeftCell, *pRightCell;
+	// MyCell: Face coincide with cell face, scalar product of normals +1
+	// OppCell: opposing cell, scalar product of their normals -1 
+	// MyCell is always defined but OppCell can be missing (BC face)
+	t_Cell *pMyCell, *pOppCell;
 
 	// local indices of the face for left & right cells
 
@@ -224,7 +230,7 @@ struct t_Face {
 
 	double Area;
 
-	t_Face() { pLeftCell = nullptr; pRightCell = nullptr; }
+	t_Face() { pMyCell = nullptr; pOppCell = nullptr; }
 
 	void ComputeFaceCenter();
 
@@ -249,10 +255,6 @@ struct t_Cell {
 	t_Vert* pVerts[MaxNumVertsInCell];
 	t_Face* pFaces[MaxNumFacesInCell];
 
-	// +1 if Face Normal directed outward of the cell, -1 otherwise
-	int FacesNormOutward[MaxNumFacesInCell];
-
-	
 	t_Cell* pCellsNeig[MaxNumFacesInCell];
 	// store index of face for neighbor cell that corresponds to the particular face
 	// this is to reduce computations
@@ -283,6 +285,7 @@ struct t_Cell {
 	const t_Vert* getpVert(int ind) const { return pVerts[ind]; }
 
 	void setKind(t_CellKind a_Kind);
+	t_Vec3 getFaceNormalOutward(int iface) const;
 
 };
 
@@ -290,7 +293,7 @@ struct t_CellFaceList {
 
 	const t_Cell* pCell;
 
-	t_SetIndF2V F2V[MaxNumFacesInCell];
+	t_SetOfpVerts F2V[MaxNumFacesInCell];
 	// array of faces via vertices
 	
 	int NFaces() const { return pCell->NFaces; };
@@ -299,7 +302,7 @@ struct t_CellFaceList {
 	t_CellFaceList() = delete;
 	t_CellFaceList(const t_Cell& cell);
 
-	const t_SetIndF2V& getVertices(int indFace) const;
+	const t_SetOfpVerts& getVertices(int indFace) const;
 
 };
 
@@ -405,6 +408,8 @@ struct DLLIMPEXP t_Domain
 	void makeVertexConnectivity();
 	void makeCellConnectivity();
 	void makeFaces();
+
+	bool checkNormalOrientations();
 
 	// Gas parameters
 	double(*pfunViscosity)(const double&) = nullptr;
