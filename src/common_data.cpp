@@ -14,7 +14,7 @@ void ComputeTriangleAreaNormal(const t_Vec3(&pnts)[3], t_Vec3& norm, double& are
 	norm.normalize();
 
 	//debug
-	hsLogMessage("Normal:(%lf, %lf, %lf), Area:%lf", norm.x, norm.y, norm.z, area);
+	//hsLogMessage("Tria:Normal:(%lf, %lf, %lf), Area:%lf", norm.x, norm.y, norm.z, area);
 
 };
 
@@ -35,7 +35,7 @@ void ComputeQuadAreaNormal_v1(const t_Vec3(&pnts)[4], t_Vec3& norm, double& area
 	ComputeTriangleAreaNormal({pnts[0], pnts[1], c}, n_v[0], s_v[0]);
 	ComputeTriangleAreaNormal({pnts[1], pnts[2], c}, n_v[1], s_v[1]);
 	ComputeTriangleAreaNormal({pnts[2], pnts[3], c}, n_v[2], s_v[2]);
-	ComputeTriangleAreaNormal({pnts[3], pnts[1], c}, n_v[3], s_v[3]);
+	ComputeTriangleAreaNormal({pnts[3], pnts[0], c}, n_v[3], s_v[3]);
 
 	area = 0; for (int i = 0; i < 4; i++) area += s_v[i];
 	norm.set(0, 0, 0);
@@ -44,6 +44,9 @@ void ComputeQuadAreaNormal_v1(const t_Vec3(&pnts)[4], t_Vec3& norm, double& area
 		double coef = s_v[i] * inv_area;
 		norm += coef*n_v[i];
 	} ;
+
+	//debug
+	//hsLogMessage("Quad[v1]:Normal:(%lf, %lf, %lf), Area:%lf", norm.x, norm.y, norm.z, area);
 
 }
 // here use simple quad approach
@@ -59,7 +62,7 @@ void ComputeQuadAreaNormal_v2(const t_Vec3(&pnts)[4], t_Vec3& norm, double& area
 	norm = p; norm.normalize();
 
 	//debug
-	hsLogMessage("Normal:(%lf, %lf, %lf), Area:%lf", norm.x, norm.y, norm.z, area);
+	//hsLogMessage("Quad[v2]:Normal:(%lf, %lf, %lf), Area:%lf", norm.x, norm.y, norm.z, area);
 
 }
 

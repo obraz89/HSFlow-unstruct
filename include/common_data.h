@@ -131,7 +131,7 @@ struct t_Vec3
 {
 	double x, y, z;
 
-	t_Vec3() = default; // zero initialization
+	t_Vec3() :x(0.0), y(0.0), z(0.0) {}; // zero initialization
 	t_Vec3(double a1, double a2, double a3) : x(a1), y(a2), z(a3) { ; }
 
 	void set(double a1, double a2, double a3) { x = a1;  y = a2;  z = a3; }
