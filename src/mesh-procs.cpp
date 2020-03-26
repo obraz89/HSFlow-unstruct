@@ -218,15 +218,15 @@ t_CellFaceList::t_CellFaceList(const t_Cell& a_Cell){
 
 		// list of faces for a tetra cell
 		// decomposition according cgns documentation: sids/conv.html#unst_tetra
-		// vertexes (1,2,3,4) => faces (1,2,3), (1,2,4), (2,3,4), (3,1,4)
+		// vertexes (1,2,3,4) => faces (1,3,2), (1,2,4), (2,3,4), (3,1,4)
 		const t_Vert* V1 = pCell->getpVert(0);
 		const t_Vert* V2 = pCell->getpVert(1);
 		const t_Vert* V3 = pCell->getpVert(2);
 		const t_Vert* V4 = pCell->getpVert(3);
 
 		F2V[0][0] = V1;
-		F2V[0][1] = V2;
-		F2V[0][2] = V3;
+		F2V[0][1] = V3;
+		F2V[0][2] = V2;
 
 		F2V[1][0] = V1;
 		F2V[1][1] = V2;
