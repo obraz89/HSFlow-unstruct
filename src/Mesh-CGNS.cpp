@@ -107,6 +107,8 @@ int read_cgns_mesh()
 	// Allocate memory for whole computational domain
 	G_Domain.Zones = new t_Zone[G_Domain.nZones];
 
+	for (int i = 0; i < G_Domain.nZones; i++) G_Domain.Zones[i].setId(i);
+
 	// Temporary zones data used on CGNS file parsing
 	ctx.cgZones = new t_CGNSZone[G_Domain.nZones];
 
@@ -203,7 +205,9 @@ int read_cgns_mesh()
 
 	G_Domain.makeFaces();
 
-	if (!G_Domain.checkNormalOrientations()) 
+	if (G_Domain.checkNormalOrientations()) 
+		hsLogMessage("check Face Normal Orientations : Ok");
+	else
 		hsLogMessage("Error:checkNormalOrientations failed!");
 
 	// Volume conditions info (frozen zones)
@@ -245,14 +249,14 @@ void loadCells(t_CGNSContext& ctx) {
 				cell.pVerts[j] = &(Zne.getVert(Vert_ID));
 			}
 		}
-		std::cout << "______________________Debug, Zone Verts:\n";
+		//std::cout << "______________________Debug, Zone Verts:\n";
 		// debug output of sections
-		for (int i = 0; i < Zne.getnCells(); i++) {
-			const t_Cell& cell = Zne.getCell(i);
-			for (int j = 0; j < cell.NVerts; j++)
-				std::cout << Zne.getCell(i).getVert(j).Id<< ";";
-			std::cout << std::endl;
-		}
+		//for (int i = 0; i < Zne.getnCells(); i++) {
+		//	const t_Cell& cell = Zne.getCell(i);
+		//	for (int j = 0; j < cell.NVerts; j++)
+		//		std::cout << Zne.getCell(i).getVert(j).Id<< ";";
+		//	std::cout << std::endl;
+		//}
 
 	}
 

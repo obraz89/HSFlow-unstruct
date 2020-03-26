@@ -504,7 +504,7 @@ void t_Zone::makeFaces() {
 	}
 
 	// debug messages
-	//hsLogMessage("Zone has %d faces", nFaces);
+	hsLogMessage("Zone #%d has %d faces, initializing Face list", id, nFaces);
 
 	Faces = new t_Face[nFaces];
 
@@ -605,16 +605,12 @@ bool t_Domain::checkNormalOrientations() {
 				const t_Face& face = *cell.pFaces[iFace];
 				double scal_prod = norm_cell_face.dot(face.Normal);
 				if (&cell == face.pMyCell) {
-					bool cnd = (scal_prod > 0.999) && (scal_prod < 1.001);
-					ok = ok && cnd;
-					if (!cnd) hsLogMessage("Fail");
-					hsLogMessage("Face norm & cell face norm must be the same (scal prod=+1), computed:%lf", scal_prod);
+					ok = ok && (scal_prod > 0.999) && (scal_prod < 1.001);
+					//hsLogMessage("Face norm & cell face norm must be the same (scal prod=+1), computed:%lf", scal_prod);
 				}
 				else if (&cell == face.pOppCell) {
-					bool cnd = (scal_prod > -1.001) && (scal_prod<-0.999);
-					ok = ok && cnd;
-					if (!cnd) hsLogMessage("Fail");
-					hsLogMessage("Face norm & cell face norm must be opposite (scal prod=-1), computed:%lf", scal_prod);
+					ok = ok && (scal_prod > -1.001) && (scal_prod<-0.999);
+					//hsLogMessage("Face norm & cell face norm must be opposite (scal prod=-1), computed:%lf", scal_prod);
 				}
 				else { hsLogMessage("Error:checkNormalOrientations():Broken Face2Cell connectivity"); }
 			}

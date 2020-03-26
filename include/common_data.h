@@ -341,6 +341,8 @@ class t_Zone {
 
 	char szName[40];  // name of the zone, initialized by '\0'
 
+	int id;
+
 	lint nVerts;
 
 	lint nCells;
@@ -354,6 +356,8 @@ class t_Zone {
 public:
 
 	void initialize(lint nVerts, lint nCells);
+
+	void setId(int a_id) { id = a_id; }
 
 	const char* getName() const { return &szName[0]; }
 
