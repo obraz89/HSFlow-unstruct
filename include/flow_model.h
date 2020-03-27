@@ -1,11 +1,13 @@
 #pragma once
 
-//#include "common_data.h"
+#include "matrix_small.h"
 
 // TODO: for perfect gas imply that NPrimVars = NConsVars
 //static const int NPrimVars = 5;
 
 static const int NConsVars = 5;
+
+using t_VecConsVars = t_Vec<NConsVars>;
 
 struct t_FlowModelParams {
 
@@ -18,16 +20,6 @@ struct t_FlowModelParams {
 extern t_FlowModelParams G_FlowModelParams;
 
 void initialize_flow_model();
-
-// vector of size NConsVars
-class t_VecConsVars {
-protected:
-	double data[NConsVars];
-public:
-	double& operator[](int ind) { return data[ind]; }
-	const double& operator[](int ind) const { return data[ind]; }
-
-};
 
 class t_ConsVars;
 

@@ -55,3 +55,9 @@ void t_Zone::calcFaceFlux(lint iFace) {
 
 
 }
+
+double t_Zone::calcDt() {
+
+	return 0.0;
+
+}

@@ -2,8 +2,6 @@
 
 #include "common_procs.h"
 
- t_Vec3 operator*(double val, const t_Vec3& vec) { return vec*val; }
-
 void ComputeTriangleAreaNormal(const t_Vec3(&pnts)[3], t_Vec3& norm, double& area) {
 
 	t_Vec3 v1 = pnts[1] - pnts[0];

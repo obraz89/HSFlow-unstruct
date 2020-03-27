@@ -9,6 +9,8 @@
 
 #include "logging.h"
 
+#include "matrix_small.h"
+
 #include "flow_model.h"
 
 typedef __int64 lint;
@@ -129,52 +131,7 @@ DLLIMPEXP extern TState G_State;
 
 struct t_Zone;
 
-/**
-* Euclidean 3D vector
-*/
-struct t_Vec3
-{
-	double x, y, z;
 
-	t_Vec3() :x(0.0), y(0.0), z(0.0) {}; // zero initialization
-	t_Vec3(double a1, double a2, double a3) : x(a1), y(a2), z(a3) { ; }
-
-	void set(double a1, double a2, double a3) { x = a1;  y = a2;  z = a3; }
-
-	void operator+=(const t_Vec3& v) { x += v.x;  y += v.y;  z += v.z; }
-	t_Vec3 operator+(const t_Vec3& v) const { return t_Vec3{ x + v.x, y + v.y, z + v.z }; }
-	t_Vec3 operator-(const t_Vec3& v) const { return t_Vec3{ x - v.x, y - v.y, z - v.z }; }
-	void operator*=(double k) { x *= k;  y *= k;  z *= k; }
-	t_Vec3 operator*(double k) const { return t_Vec3{ x * k, y * k, z * k }; }
-
-	double sq() const { return x*x + y*y + z*z; }
-	double norm() const { return sqrt(sq()); }
-
-	/**
-	*  Make vector to be of unit length
-	*  @return previous vector length
-	*/
-	double normalize() {
-		const double d = norm();
-		x /= d; y /= d; z /= d;
-		return d;
-	}
-	void flip() { x = -x;  y = -y;  z = -z; }
-
-	/// Vector product
-	t_Vec3 cross(const t_Vec3& v) const
-	{
-		return t_Vec3(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
-	}
-
-	/// Scalar product
-	double dot(const t_Vec3& v) const
-	{
-		return x*v.x + y*v.y + z*v.z;
-	}
-};
-
-t_Vec3 operator*(double val, const t_Vec3& vec);
 
 enum struct t_FaceBCKind {
 	Fluid = 0,
