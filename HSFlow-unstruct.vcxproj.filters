@@ -33,6 +33,9 @@
     <ClInclude Include="include\common_procs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\flow_model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Mesh-CGNS.cpp">
@@ -51,6 +54,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\common_procs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\scheme1_explicit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\flow_model.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

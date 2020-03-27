@@ -9,6 +9,8 @@
 
 #include "logging.h"
 
+#include "flow_model.h"
+
 typedef __int64 lint;
 
 static const int MaxNumVertsInFace = 4;
@@ -226,6 +228,8 @@ struct t_Face {
 
 	t_Vec3 Center;
 
+	t_VecConsVars Flux;
+
 	double Area;
 
 	t_Face() { pMyCell = nullptr; pOppCell = nullptr; }
@@ -290,6 +294,8 @@ struct t_Cell {
 
 	void setKind(t_CellKind a_Kind);
 	void calcFaceNormalAreaOutward(int iface, t_Vec3& norm, double& area) const;
+
+	bool isMyFace(int face_ind) const{ return (this == pFaces[face_ind]->pMyCell); }
 	
 	t_Vec3 getFaceNormalOutward(int iface) const;
 
@@ -389,6 +395,12 @@ public:
 	std::vector<t_Cell*> getNeigCellsOfCellFace(const t_Cell& cell, int face_ind) const;
 	void init_face2cell_conn(lint a_id, t_Cell& cell, int face_ind);
 
+	// flow solver
+
+	double calcDt();
+	void makeTimeStep(double dt);
+	void calcFaceFlux(lint iFace);
+
 	~t_Zone() { delete[] Verts, Cells, Faces; }
 
 };
@@ -421,6 +433,8 @@ struct DLLIMPEXP t_Domain
 
 	bool checkNormalOrientations();
 	double calcUnitOstrogradResid();
+
+	void makeTimeStep();
 
 	// Gas parameters
 	double(*pfunViscosity)(const double&) = nullptr;

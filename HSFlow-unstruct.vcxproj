@@ -151,16 +151,19 @@
     <ClInclude Include="include\common_data.h" />
     <ClInclude Include="include\common_procs.h" />
     <ClInclude Include="include\dll_import-export.h" />
+    <ClInclude Include="include\flow_model.h" />
     <ClInclude Include="include\logging.h" />
     <ClInclude Include="include\Mesh-CGNS.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\common_procs.cpp" />
+    <ClCompile Include="src\flow_model.cpp" />
     <ClCompile Include="src\HSFlow-shared.cpp" />
     <ClCompile Include="src\logging.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Mesh-CGNS.cpp" />
     <ClCompile Include="src\mesh-procs.cpp" />
+    <ClCompile Include="src\scheme1_explicit.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
