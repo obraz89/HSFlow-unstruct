@@ -5,6 +5,8 @@
 
 #include "flow_model.h"
 
+#include "flow_params.h"
+
 void load_settings() {
 
 	G_Domain.nDim = 3;
@@ -17,6 +19,8 @@ int main()
 	read_cgns_mesh();
 
 	initialize_flow_model();
+
+	initialize_flow_params();
 
 	G_Domain.makeTimeStep();
 
