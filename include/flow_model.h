@@ -27,7 +27,8 @@ class t_ConsVars;
 // (rho, u, v, w, p)
 class t_PrimVars : public t_VecConsVars {
 public:
-	t_ConsVars toConsVars();
+	t_ConsVars calcConsVars() const;
+	//double calcRhoE() const;
 
 };
 
@@ -35,5 +36,12 @@ public:
 // (rho, rho*u, rho*v, rho*w, rho*E)
 class t_ConsVars : public t_VecConsVars {
 public:
-	t_PrimVars toPrimVars();
+	t_PrimVars calcPrimVars() const;
+};
+
+class t_Flux : public t_VecConsVars {
+
+	void computeFlux(const t_ConsVars& csv);
+	void computeFlux(const t_PrimVars& pvs);
+
 };

@@ -10,15 +10,17 @@ void initialize_flow_model() {
 
 }
 
-t_ConsVars t_PrimVars::toConsVars() {
+//******************************************PrimVars
+
+t_ConsVars t_PrimVars::calcConsVars() const{
 
 	t_ConsVars csv;
 
-	double r = data[0];
-	double u = data[1];
-	double v = data[2];
-	double w = data[3];
-	double p = data[4];
+	const double& r = data[0];
+	const double& u = data[1];
+	const double& v = data[2];
+	const double& w = data[3];
+	const double& p = data[4];
 
 	csv[0] = r;
 	
@@ -32,8 +34,9 @@ t_ConsVars t_PrimVars::toConsVars() {
 
 	return csv;
 }
+//******************************************ConsVars
 
-t_PrimVars t_ConsVars::toPrimVars() {
+t_PrimVars t_ConsVars::calcPrimVars() const{
 
 	t_PrimVars pvs;
 
@@ -50,4 +53,26 @@ t_PrimVars t_ConsVars::toPrimVars() {
 	pvs[4] = p;
 
 	return pvs;
+}
+
+//******************************************Flux
+// we are in some reference frame (x,y,z) which is rotation from global (X,Y,Z)
+// compute inviscid face flux through area with normal (1;0;0) 
+// velocities must be in reference frame (x,y,z)!
+void t_Flux::computeFlux(const t_PrimVars& pvs) {
+
+	const double& r = data[0];
+	const double& u = data[1];
+	const double& v = data[2];
+	const double& w = data[3];
+	const double& p = data[4];
+
+	double rhoE = 0.5 * r * (u * u + v * v + w * w) + p / (G_FlowModelParams.Gamma - 1);
+
+	data[0] = r * u;
+	data[1] = r * u * u + p;
+	data[2] = r * u * v;
+	data[3] = r * u * w;
+	data[4] = u * (rhoE + p);
+
 }
