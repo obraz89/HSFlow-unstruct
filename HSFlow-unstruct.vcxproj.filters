@@ -39,6 +39,12 @@
     <ClInclude Include="include\matrix_small.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\rs_procs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\flow_params.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Mesh-CGNS.cpp">
@@ -66,6 +72,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\matrix_small.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rs_procs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\flow_params.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
