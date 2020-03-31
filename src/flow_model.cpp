@@ -10,6 +10,27 @@ void initialize_flow_model() {
 
 }
 
+//******************************************t_VecConsVars
+
+t_VecConsVars& t_VecConsVars::rotate(const t_SqMat3& R) {
+
+	// first component is scalar - not changed
+
+	// components 2-4 rotated as 3d vector
+	t_Vec3 res, v;
+
+	for (int i = 0; i < 3; i++) v[i] = data[i+1];
+
+	res = R * v;
+
+	for (int i = 0; i < 3; i++) data[i+1] = res[i];
+
+	// fifth component is scalar - not changed
+
+	return *this;
+
+}
+
 //******************************************PrimVars
 
 t_PrimVars& t_PrimVars::setByCV(const t_ConsVars& cv) {

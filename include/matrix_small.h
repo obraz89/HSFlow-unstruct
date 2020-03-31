@@ -2,6 +2,10 @@
 
 #include <array>
 
+#include <string>
+
+#include <sstream>
+
 // classes for small matrix computations
 // small means that size is known at compile time and is ... small
 
@@ -45,6 +49,10 @@ template<int N> t_Vec<N> operator*(double val, const t_Vec<N>& vec) {
 	return vec*val;
 };
 
+template <typename T> int sign(T val) {
+	return (T(0) < val) - (val < T(0));
+}
+
 class t_Vec3 :public t_Vec<3> {
 public:
 	t_Vec3() :t_Vec<3>() {}
@@ -63,3 +71,77 @@ public:
 };
 
 t_Vec3 operator*(double val, const t_Vec3& vec);
+
+// rotation matrix in 3D space (can be used to rotate fluxes too)
+// produced by a normal vector N
+// the storage is minimized,
+// trigonometrical calculations also minimize
+// Convention:
+// local Reference frame ked (ksi, eta, dzeta), global - XYZ
+// coordinates of N in global RF: (Nx, Ny, Nz)
+// in local RF: (Nk, Ne, Nd)
+// unity vectors of axis of ked in global RF: (ek, ee, ed)
+// The vector N generates x-axis of local RF : ek = N
+// ee and ed is an arbitrary pair of vectors normal to ek.
+// We choose them with Psi and Theta angles (Yaw and Pitch)
+// We define direct rotation matrix R as follows (_T is transposition)
+// (k,e,d)_T = R*(X,Y,Z)_T
+struct t_MatRotN {
+
+	double sin_psi, cos_psi;
+	double sin_tet, cos_tet;
+
+	void calc_rot_angles_by_N(const t_Vec3& N);
+
+};
+
+// Square matrix
+// packaged by rows, A[1][2] - second row, third column
+template<int N> class t_SqMat {
+protected:
+	std::array<std::array<double,N>, N> data;
+
+	void _mul_by_vec(const t_Vec<N>& vec, t_Vec<N>& dest) const{
+		for (int i = 0; i < N; i++) {
+			dest[i] = 0.0;
+			for (int j = 0; j < N; j++) dest[i] += data[i][j] * vec[j];
+		}
+	};
+public:
+	t_SqMat(){ for (int i = 0; i < N; i++) for (int j = 0; j < N; j++) data[i][j] = 0.0; };
+	std::array<double, N>& operator[](int row) { return data[row]; }
+	const std::array<double, N>& operator[](int row) const{ return data[row]; }
+
+
+	t_Vec<N>  operator*(const t_Vec<N>& vec) const{
+		t_Vec<N> ret;
+		_mul_by_vec(vec, ret);
+		return ret;
+	}
+
+	// debugging
+	std::string to_str() {
+		std::ostringstream ostr;
+		ostr << "R:";
+		for (int i = 0; i < N; i++) {
+			ostr << "[";
+			for (int j = 0; j < N; j++)
+				ostr << data[i][j] << ";";
+			ostr << "]\n";
+		}
+		return ostr.str();
+	}
+
+};
+
+class t_SqMat3 :public t_SqMat<3> {
+public:
+	t_SqMat3() :t_SqMat<3>() {}
+	void set(const t_MatRotN& rot_mat);
+	void set_inv(const t_MatRotN& rot_mat);
+	t_Vec3 operator*(const t_Vec3& v) const{
+		t_Vec3 ret;
+		_mul_by_vec(v, ret);
+		return ret;
+	}
+};

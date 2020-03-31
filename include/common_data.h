@@ -185,7 +185,7 @@ struct t_Face {
 
 	t_Vec3 Center;
 
-	t_VecConsVars Flux;
+	t_Flux Flux;
 
 	double Area;
 
@@ -219,15 +219,20 @@ struct t_Cell {
 	// this is to reduce computations
 	int FaceIndNeig[MaxNumFacesInCell];
 	// Number of Neighbor Fluid Cells
+
+	t_Vec3 Center;
+
+	double Volume;
+
+	// Flow Data
+
+	t_PrimVars PrimVars;
+
 	int NCellsNeig() { int ret=0; 
 		for (int i = 0; i < MaxNumFacesInCell; i++) 
 			if (pCellsNeig[i] != nullptr) ret++; 
 		return ret; 
 	};
-
-	t_Vec3 Center;
-
-	double Volume;
 
 	t_Cell() {
 		for (int i = 0; i < MaxNumVertsInCell;i++) pVerts[i] = nullptr;
