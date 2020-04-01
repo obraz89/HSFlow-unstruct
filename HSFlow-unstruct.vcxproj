@@ -99,7 +99,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level1</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>SHARED_EXPORT;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SHARED_EXPORT;_DEBUG;_CONSOLE;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(MPI_DIR)\include;$(CGNS_DIR)\include;$(SolutionDir)\include</AdditionalIncludeDirectories>
     </ClCompile>
@@ -153,10 +153,12 @@
     <ClInclude Include="include\dll_import-export.h" />
     <ClInclude Include="include\flow_model.h" />
     <ClInclude Include="include\flow_params.h" />
+    <ClInclude Include="include\IniFile.hpp" />
     <ClInclude Include="include\logging.h" />
     <ClInclude Include="include\matrix_small.h" />
     <ClInclude Include="include\Mesh-CGNS.h" />
     <ClInclude Include="include\rs_procs.h" />
+    <ClInclude Include="include\settings.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\common_procs.cpp" />
@@ -170,6 +172,7 @@
     <ClCompile Include="src\mesh-procs.cpp" />
     <ClCompile Include="src\rs_procs.cpp" />
     <ClCompile Include="src\scheme1_explicit.cpp" />
+    <ClCompile Include="src\settings.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

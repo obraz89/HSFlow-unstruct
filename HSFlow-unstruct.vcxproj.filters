@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\ext">
+      <UniqueIdentifier>{2adec86e-87b8-4304-9349-528e78065e6c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -44,6 +47,12 @@
     </ClInclude>
     <ClInclude Include="include\flow_params.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\settings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IniFile.hpp">
+      <Filter>Header Files\ext</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -78,6 +87,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\flow_params.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\settings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

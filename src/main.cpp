@@ -7,14 +7,11 @@
 
 #include "flow_params.h"
 
-void load_settings() {
-
-	G_Domain.nDim = 3;
-};
+#include "settings.h"
 
 int main()
 {
-	load_settings();
+	load_settings("test_case/main.ini");
 
 	read_cgns_mesh();
 
