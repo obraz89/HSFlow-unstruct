@@ -54,6 +54,12 @@
     <ClInclude Include="include\IniFile.hpp">
       <Filter>Header Files\ext</Filter>
     </ClInclude>
+    <ClInclude Include="include\bc_data.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\PluginBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Mesh-CGNS.cpp">
@@ -90,6 +96,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\settings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\bc_data.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PluginBase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

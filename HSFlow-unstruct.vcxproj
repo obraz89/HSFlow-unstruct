@@ -148,6 +148,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\bc_data.h" />
     <ClInclude Include="include\common_data.h" />
     <ClInclude Include="include\common_procs.h" />
     <ClInclude Include="include\dll_import-export.h" />
@@ -157,10 +158,12 @@
     <ClInclude Include="include\logging.h" />
     <ClInclude Include="include\matrix_small.h" />
     <ClInclude Include="include\Mesh-CGNS.h" />
+    <ClInclude Include="include\PluginBase.h" />
     <ClInclude Include="include\rs_procs.h" />
     <ClInclude Include="include\settings.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\bc_data.cpp" />
     <ClCompile Include="src\common_procs.cpp" />
     <ClCompile Include="src\flow_model.cpp" />
     <ClCompile Include="src\flow_params.cpp" />
@@ -170,6 +173,7 @@
     <ClCompile Include="src\matrix_small.cpp" />
     <ClCompile Include="src\Mesh-CGNS.cpp" />
     <ClCompile Include="src\mesh-procs.cpp" />
+    <ClCompile Include="src\PluginBase.cpp" />
     <ClCompile Include="src\rs_procs.cpp" />
     <ClCompile Include="src\scheme1_explicit.cpp" />
     <ClCompile Include="src\settings.cpp" />
