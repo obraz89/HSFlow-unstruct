@@ -155,6 +155,8 @@
 		bool has(const K& k) const;
 
 		void clear();
+
+		std::vector<K> get_list_of_keys() const;
 	};
 	//----------------------------------------------------------------------------
 
@@ -212,6 +214,8 @@
 		double get_real_param(const char* pszName) const;
 		int get_int_param(const char* pszName) const;
 		const std::string& get_string_param(const char* pszName) const;
+
+		std::vector<std::string> get_list_of_names() const;
 	};
 	//-----------------------------------------------------------------------------
 
@@ -249,6 +253,7 @@
 
 	};
 	//-----------------------------------------------------------------------------
+
 
 #pragma warning(pop)
 

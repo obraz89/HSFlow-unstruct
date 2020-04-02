@@ -285,6 +285,15 @@ bool OrderedMap<K, T>::emplace(const K & key, const T & val)
 	(*lookup_)[key] = data_.size() - 1;
 	return true;
 }
+
+template<typename K, typename T>
+std::vector<K> OrderedMap<K, T>::get_list_of_keys() const{
+	std::vector<K> keys;
+	std::vector<Value>::const_iterator it;
+	for (it = data_.begin(); it < data_.end(); it++) 
+		keys.push_back(it->first);
+	return keys;
+}
 //-----------------------------------------------------------------------------
 
 template<typename K, typename T>
@@ -392,6 +401,12 @@ const std::string& TPluginParamsGroup::get_string_param(const char* szName) cons
 
 	return *val;
 }
+
+std::vector<std::string> TPluginParamsGroup::get_list_of_names() const {
+
+	return mapParams.get_list_of_keys();
+
+};
 //-----------------------------------------------------------------------------
 
 

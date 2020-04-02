@@ -1,10 +1,10 @@
 #pragma once
 
-#include <map>
-
 #include "PluginBase.h"
 
 #include "common_data.h"
+
+#include <vector>
 
 #define BC_INFLOW_STR "bc_inflow"
 #define BC_OUTFLOW_STR "bc_outflow"
@@ -14,10 +14,10 @@
 // base class for information of face-type boundary conditions
 class t_BCDataFace : public TPlugin{
 protected:
-	std::string name;
+	std::string nameOfFldSection;
 public:
-	t_BCDataFace(const std::string& n) :name(n) {}
-	std::string get_name() const { return name; };
+	void setFldSectionName(const std::string& section_name) { nameOfFldSection = section_name; };
+	std::string getFldSectionName() { return nameOfFldSection; }
 	virtual void yield(const t_PrimVars& my_pvs, t_PrimVars& opp_pvs) = 0;
 
 };
@@ -26,8 +26,9 @@ public:
 class t_BCDataInflow :public t_BCDataFace {
 
 public:
-	t_BCDataInflow() :t_BCDataFace(BC_INFLOW_STR) { default_settings(); }
+	t_BCDataInflow(){ default_settings(); }
 	// implement TPugin
+	std::string get_name() const { return BC_INFLOW_STR; };
 	std::string get_description() const { return std::string("bc inflow"); };
 	void default_settings() {};
 	void init(std::string& ini_data, const std::string& spec) { TPlugin::init(ini_data, spec); };
@@ -39,8 +40,9 @@ public:
 class t_BCDataOutFlow :public t_BCDataFace {
 
 public:
-	t_BCDataOutFlow() :t_BCDataFace(BC_OUTFLOW_STR) { default_settings(); }
+	t_BCDataOutFlow(){ default_settings(); }
 	// implement TPugin
+	std::string get_name() const { return BC_OUTFLOW_STR; };
 	std::string get_description() const { return std::string("bc outflow"); };
 	void default_settings() {};
 	void init(std::string& ini_data, const std::string& spec) { TPlugin::init(ini_data, spec); };
@@ -54,8 +56,8 @@ class t_BCDataEulerWall :public t_BCDataFace {
 	double TWallDim;
 
 public:
-	t_BCDataEulerWall() :t_BCDataFace(BC_EULER_WALL_STR) { default_settings(); }
 	// implement TPugin
+	std::string get_name() const { return BC_EULER_WALL_STR; };
 	std::string get_description() const { return std::string("bc euler wall"); };
 	void default_settings() {
 		TPluginParamsGroup g("", "gas-dynamic functions values on the wall");
@@ -78,8 +80,9 @@ public:
 // Symmetry bc
 class t_BCDataSym :public t_BCDataFace {
 public:
-	t_BCDataSym() :t_BCDataFace(BC_SYM_STR) { default_settings(); }
+	t_BCDataSym(){ default_settings(); }
 	// implement TPugin
+	std::string get_name() const { return BC_SYM_STR; };
 	std::string get_description() const { return std::string("bc sym"); };
 	void default_settings() {};
 	void init(std::string& ini_data, const std::string& spec) { TPlugin::init(ini_data, spec); };
@@ -87,48 +90,58 @@ public:
 	void yield(const t_PrimVars& my_pvs, t_PrimVars& opp_pvs);
 };
 
-// This is identical to set of BC plugins in HSFlow
-// TODO: if necessary, can be a dynamic list
-struct t_BCList {
-	t_BCDataInflow bc_inflow;
-	t_BCDataOutFlow bc_outflow;
-	t_BCDataEulerWall bc_euler_wall;
-	t_BCDataSym bc_sym;
-	// to iterate
-	std::vector<t_BCDataFace*> pBCs;
-	t_BCList() :bc_inflow(), bc_outflow(), bc_euler_wall(), bc_sym(), pBCs() {
-		pBCs.push_back(&bc_inflow);
-		pBCs.push_back(&bc_outflow);
-		pBCs.push_back(&bc_euler_wall);
-		pBCs.push_back(&bc_sym);
-	}
-	const t_BCDataFace* getBCByKind(t_FaceBCKind kind) {
+std::vector<std::string> tokenize_str(std::string str);
 
-		switch (kind) {
-		case t_FaceBCKind::Inflow:
-			return &bc_inflow;
-			break;
-		case t_FaceBCKind::Outflow:
-			return &bc_outflow;
-			break;
-		case t_FaceBCKind::Wall:
-			return &bc_euler_wall;
-			break;
-		case t_FaceBCKind::Sym:
-			return &bc_sym;
-			break;
-		default:
-			hsLogMessage("Error:t_BCList: bc handler was not loaded for this bc");
-			break;
+/**
+ * Boundary condition sub-plugins manager,
+ * handles plugins references to each-other
+ */
+class t_BCList : public TPlugin{
+
+	std::map<std::string, t_BCDataFace*>  _pBCs;
+
+public:
+	// implement TPugin
+	t_BCList() { default_settings(); }
+	std::string get_name() const { return "bc_list"; };
+	std::string get_description() const { return std::string("bc list"); };
+	void default_settings() {
+
+		TPluginParamsGroup g("", "list of bcs");
+
+		g.add("Supported_bc_names", getSupportedBCsStr(), "supported kinds of bcs");
+		g.add("bc_list", "inflow, outflow, wall, sym", "list of bcs");
+
+		std::vector<std::string> bc_sets = tokenize_str(g.get_string_param("bc_list"));
+
+		for (int i = 0; i < bc_sets.size(); i++) {
+			g.add(&(bc_sets[i][0]), BC_INFLOW_STR, "bc set");
 		}
 
-	}
-	void init(std::string& ini_data, const std::string& spec) {
+		_mapParamsGrps.emplace(g.get_name(), g);
 
-		for (int i = 0; i < pBCs.size(); i++)
-			pBCs[i]->init(ini_data, spec);
 
-	}
+	};
+	void init(std::string& ini_data, const std::string& spec) { 
+
+		TPlugin::init(ini_data, spec); 
+
+		const TPluginParamsGroup& g = get_settings_grp("");
+
+		std::vector<std::string> bc_sets = tokenize_str(g.get_string_param("bc_list"));
+
+			for (int i = 0; i < bc_sets.size(); i++) {
+				std::string bc_set_name = bc_sets[i];
+				std::string bc_kind_name = g.get_string_param(&(bc_sets[i][0]));
+				hsLogMessage("Addind BC with sec_name %s : type is %s", 
+					&bc_set_name[0], &bc_kind_name[0]);
+			}
+
+	};
+
+	std::string getSupportedBCsStr();
+
+	//void init_boco(const std::string& patchFamily);
 };
 
 extern t_BCList G_BCList;

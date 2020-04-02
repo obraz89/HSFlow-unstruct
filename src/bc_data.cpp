@@ -4,6 +4,12 @@
 
 #include "IniFile.hpp"
 
+#include <sstream>
+
+#pragma warning(push)
+// Disable Visual Studio warnings
+#pragma warning(disable:4996)  // strtok may be unsafe ... ignoring) 
+
 t_BCList G_BCList;
 
 // my_pvs - variables on the face of a real cell
@@ -51,3 +57,35 @@ void t_BCDataSym::yield(const t_PrimVars& my_pvs, t_PrimVars& opp_pvs) {
 	opp_pvs[1] *= -1.0;
 
 }
+
+// BC List
+
+std::string t_BCList::getSupportedBCsStr() {
+
+	std::ostringstream ostr;
+
+	ostr << BC_INFLOW_STR <<", ";
+	ostr << BC_OUTFLOW_STR <<", ";
+	ostr << BC_EULER_WALL_STR<<", ";
+	ostr << BC_SYM_STR;
+
+	return ostr.str();
+
+}
+
+std::vector<std::string> tokenize_str(std::string str) {
+
+	std::vector<std::string> v;
+
+	char* pch;
+	pch = strtok(&str[0], " ,");
+	while (pch != NULL)
+	{
+		v.push_back(pch);
+		pch = strtok(NULL, " ,.-");
+	}
+
+	return v;
+}
+
+#pragma warning(pop)
