@@ -2,6 +2,10 @@
 
 #include "PluginBase.h"
 
+#include "matrix_small.h"
+
+#include <cmath>
+
 #define STR_FLOW_PARAMS "flow_params"
 
 class t_FlowParamsFreeStream : public TPlugin {
@@ -17,6 +21,9 @@ protected:
 
 	// aos in radians
 	double AoSRad;
+
+	// non-dimensional velocity vector at infinity
+	t_Vec3 UInf;
 public:
 	t_FlowParamsFreeStream() :name(STR_FLOW_PARAMS) { default_settings(); }
 	// implement TPugin
@@ -52,7 +59,17 @@ public:
 
 		AoSRad = PI * aos_deg / 180.0;
 
+		double Ux = cos(AoARad) * cos(AoSRad);
+
+		double Uy = sin(AoARad);
+
+		double Uz = cos(AoARad) * sin(AoSRad);
+
+		UInf.set(Ux, Uy, Uz);
 	};
+
+	const t_Vec3& getUInf() const { return UInf; }
+	double getMach() const { return Mach; }
 
 };
 

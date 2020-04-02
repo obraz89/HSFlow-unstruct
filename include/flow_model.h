@@ -44,6 +44,10 @@ public:
 	double getP() const { return data[4]; }
 	//double calcRhoE() const;
 
+	void setUVW(const t_Vec3& v) {
+		for (int i = 0; i < 3; i++) data[i + 1] = v[i];
+	}
+
 };
 
 // vector of conservative flow variables
