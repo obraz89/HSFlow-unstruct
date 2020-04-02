@@ -9,6 +9,24 @@
 
 using t_BufCGSize = t_BufInds<cgsize_t>;
 
+// patch of fixed element type, mixed elements not supported
+struct t_CGFacePatch
+{
+
+	std::string nameOfSect;
+
+	CG_ElementType_t itype;
+
+	t_BufCGSize _data;
+
+	cgsize_t* data() { return _data.data(); }
+
+	t_CGFacePatch(const std::string& name):nameOfSect(name), _data(0,0) { ; }
+	// TODO: compiler wants it, don't know why
+	t_CGFacePatch() :_data(0, 0), nameOfSect("") { }
+	t_CGFacePatch(t_CGFacePatch& p):_data(0,0){ nameOfSect = p.nameOfSect; }
+};
+
 struct t_CGNSZone
 {
 
@@ -18,22 +36,11 @@ struct t_CGNSZone
 
 	CGNS_ENUMT(ElementType_t) itype;
 
-
-	// Abutted faces data. The face consists of one or many patches
-	struct t_FacePatch
-	{
-		//
-
-		// Ctor
-		t_FacePatch() { ; }
-	};
-
 	// Zone connectivity info
-	int nPatches;
-	t_FacePatch* Patches;
+	std::vector<t_CGFacePatch*> pFacePatches;
 
-	t_CGNSZone() : nPatches(0), Patches(NULL), cells(0,0) { ; }
-	~t_CGNSZone() { delete[] Patches; }
+	t_CGNSZone() : pFacePatches(), cells(0,0) { ; }
+	~t_CGNSZone() { for (int i = 0; i < pFacePatches.size(); i++) delete pFacePatches[i]; }
 };
 
 struct t_CGNSContext

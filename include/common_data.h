@@ -25,17 +25,11 @@ static const int MaxNumEdgesInCell = 12;
 
 template<typename T>
 class t_BufInds {
-private:
-	// TODO: for some reason, vs doesnt remove default constructor with
-	// t_BufInds() = delete;
-	// making it inaccessible old style
-	t_BufInds() {};
-
 	T* buf;
 public:
 	T nRows, nCols;
 	T* data() { return buf; }
-	//t_BufInds() = delete;
+	t_BufInds() = delete;
 	t_BufInds(t_BufInds&) = delete;
 	t_BufInds(T a_NR, T a_NC) { nRows = a_NR; nCols = a_NC; buf = new T[nRows*nCols]; }
 	void allocate(T a_NR, T a_NC) { delete[] buf;  nRows = a_NR; nCols = a_NC; buf = new T[nRows*nCols]; };
@@ -195,6 +189,8 @@ struct t_Face {
 
 	void ComputeFaceNormal();
 
+	t_SetOfpVerts getVerts() const;
+
 };
 
 
@@ -353,6 +349,7 @@ public:
 	void makeVertexConnectivity();
 	void makeCellConnectivity();
 	void makeFaces();
+	void updateFacesWithBCPatch(const t_Face* face_patch, const int NFacesInPatch);
 
 	std::vector<t_Cell*> getNeigCellsOfCellFace(const t_Cell& cell, int face_ind) const;
 	void init_face2cell_conn(lint a_id, t_Cell& cell, int face_ind);

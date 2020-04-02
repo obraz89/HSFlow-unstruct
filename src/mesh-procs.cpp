@@ -266,6 +266,13 @@ const t_SetOfpVerts& t_CellFaceList::getVertices(int indFace) const{
 };
 //************************************* Face methods
 
+t_SetOfpVerts t_Face::getVerts() const {
+	t_SetOfpVerts verts;
+	verts.setSize(this->NVerts);
+	for (int i = 0; i < verts.size(); i++) verts[i] = pVerts[i];
+	return verts;
+};
+
 void t_Zone::init_face2cell_conn(lint a_id, t_Cell& cell, int face_ind) {
 	
 	t_Face& face = Faces[a_id];
@@ -546,6 +553,50 @@ void t_Zone::makeFaces() {
 	delete[] faces_skipped;
 
 }
+
+// cgns ctx prepared face_patch data
+// compare all faces to faces from face patch and update their BCKind
+void t_Zone::updateFacesWithBCPatch(const t_Face* face_patch, const int NFacesInPatch) {
+
+	for (int i = 0; i < NFacesInPatch; i++) {
+
+		const t_Face& face_in_patch = face_patch[i];
+
+		t_SetOfpVerts vrtxset_base = face_in_patch.getVerts();
+
+		bool face_found = false;
+
+		//1) make list of cells that are neighbors for vertices of a current face
+		for (int j = 0; j < face_in_patch.NVerts; j++) {
+
+			const t_Vert* pVert = face_in_patch.pVerts[j];
+
+			for (int k = 0; k < pVert->NNeigCells; k++) {
+				const t_Cell* pCellNeig = pVert->pNeigCells[k];
+
+				t_CellFaceList flist(*pCellNeig);
+
+				for (int p = 0; p < pCellNeig->NFaces; p++) {
+
+					t_SetOfpVerts vrtxset_neig = flist.getVertices(p);
+
+					if (t_SetOfpVerts::cmp_weak(vrtxset_base, vrtxset_neig)) {
+						// we found corresponding face
+						// updating info
+						pCellNeig->pFaces[p]->BCKind = face_in_patch.BCKind;
+						face_found = true;
+					}
+				}
+			}
+
+		}
+		// debug
+		if (!face_found) 
+			hsLogMessage("Error:t_Zone::updateFacesWithBCPatch:can't find corresponding face");
+
+	}
+
+};
 
 void t_Domain::makeVertexConnectivity() {
 

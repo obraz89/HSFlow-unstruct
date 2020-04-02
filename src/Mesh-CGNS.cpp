@@ -23,10 +23,14 @@ library libcgns.a is located)
 #include "common_data.h"
 #include "common_procs.h"
 
+#include "bc_data.h"
+
 //
 // Forward declarations
 //
 static bool parseConnectivity(t_CGNSContext& ctx);  // 1-to-1 connectivity
+
+static bool check_BCs(t_CGNSContext& ctx);
 static bool parseBCs(t_CGNSContext& ctx);     // boundary conditions
 static bool parseVCs(t_CGNSContext& ctx);     // volume conditions (frozen zones)
 
@@ -68,8 +72,8 @@ int read_cgns_mesh()
 
 	t_CGNSContext ctx;
 
-	//char gridFN[] = "test_case/box-hexa-simple-2blk.cgns";
-	char gridFN[] = "test_case/box-tetra-simple.cgns";
+	char gridFN[] = "test_case/box-hexa-simple-2blk.cgns";
+	//char gridFN[] = "test_case/box-tetra-simple.cgns";
 	if (cg_open(gridFN, CG_MODE_READ, &ctx.iFile) != CG_OK)
 	{
 		hsLogMessage("Can't open grid file '%s' for reading (%s)",
@@ -163,7 +167,7 @@ int read_cgns_mesh()
 
 			// TODO: universal way to detect sections containing cells
 			// for now detect by type of elements
-			if (itype != CG_HEXA_8 && itype != CG_TETRA_4) continue;
+			//if (itype != CG_HEXA_8 && itype != CG_TETRA_4) continue;
 
 			if (itype == CG_HEXA_8) n_verts_in_elem = 8;
 			if (itype == CG_TETRA_4) n_verts_in_elem = 4;
@@ -171,23 +175,56 @@ int read_cgns_mesh()
 			n_elems = iend - istart + 1;
 
 			// bc
-			//if (itype == CG_QUAD_4) n_verts_in_elem = 4;
-			//if (itype == CG_TRI_3) n_verts_in_elem = 3;
+			if (itype == CG_QUAD_4) n_verts_in_elem = 4;
+			if (itype == CG_TRI_3) n_verts_in_elem = 3;
 
-			cgZne.cells.allocate(n_elems, n_verts_in_elem);
+			// reading face patches
+			if (itype == CG_QUAD_4 || itype == CG_TRI_3) {
+				t_CGFacePatch* pPatch = new t_CGFacePatch(sectionname);
+				cgZne.pFacePatches.push_back(pPatch);
+				pPatch->_data.allocate(n_elems, n_verts_in_elem);
 
-			hsLogMessage("   reading element data for %s\n", ElementTypeName[itype]);
-			cg_elements_read(ctx.iFile, ctx.iBase, cgZneID, index_sect, cgZne.cells.data(), \
-				&iparentdata);
+				hsLogMessage("   reading face patch : section %d, Type: %s\n",
+					index_sect, ElementTypeName[itype]);
 
-			cgZne.itype = itype;
+				cg_elements_read(ctx.iFile, ctx.iBase, cgZneID, index_sect, pPatch->data(), \
+					& iparentdata);
 
-			// debug output of sections
-			for (int i = 0; i < n_elems; i++) {
-				for (int j = 0; j < n_verts_in_elem; j++)
-					std::cout << cgZne.cells.get_val(i, j) << ";";
-				std::cout << std::endl;
+				pPatch->itype = itype;
+
+				// debug output of section
+				for (int i = 0; i < n_elems; i++) {
+					for (int j = 0; j < n_verts_in_elem; j++)
+						std::cout << pPatch->_data.get_val(i, j) << ";";
+					std::cout << std::endl;
+				}
+
+
+				continue;
 			}
+			// reading elements
+			if (itype == CG_HEXA_8 || itype == CG_TETRA_4) {
+
+				cgZne.cells.allocate(n_elems, n_verts_in_elem);
+
+				hsLogMessage("   reading elements : section %d, Type: %s\n",
+					index_sect, ElementTypeName[itype]);
+
+				cg_elements_read(ctx.iFile, ctx.iBase, cgZneID, index_sect, cgZne.cells.data(), \
+					& iparentdata);
+
+				cgZne.itype = itype;
+
+				// debug output of section
+				for (int i = 0; i < n_elems; i++) {
+					for (int j = 0; j < n_verts_in_elem; j++)
+						std::cout << cgZne.cells.get_val(i, j) << ";";
+					std::cout << std::endl;
+				}
+				continue;
+			}
+
+			hsLogMessage("Error: read_cgns_mesh(): unsupported section type");
 
 		}
 
@@ -216,11 +253,13 @@ int read_cgns_mesh()
 	parseVCs(ctx);
 
 	// Connectivity info
-	// Updates {zne,cgZne}.{is,ie,js,je,ks,ke}, zne.{nx,ny,nz}
 	if (!parseConnectivity(ctx))
 		return false;
 
-	// Boundary conditions info
+	// checks with some cgns bc-specific funcs
+	if (!check_BCs(ctx))
+		return false;
+	// update mesh with bc sets
 	if (!parseBCs(ctx))
 		return false;
 
@@ -268,7 +307,7 @@ void loadCells(t_CGNSContext& ctx) {
 
 static bool parseConnectivity(t_CGNSContext& ctx) { return true; }
 
-static bool parseBCs(t_CGNSContext& ctx) { 
+static bool check_BCs(t_CGNSContext& ctx) { 
 
 	// bcs
 	int nBCs;
@@ -283,7 +322,7 @@ static bool parseBCs(t_CGNSContext& ctx) {
 
 		cg_nbocos(ctx.iFile, ctx.iBase, cgZneID, &nBCs);
 
-		hsLogMessage("Number of BC sets:%d", nBCs);
+		hsLogMessage("BC check .................Number of BC sets:%d", nBCs);
 
 		for (int iBC = 1; iBC <= nBCs; ++iBC) {
 
@@ -312,6 +351,7 @@ static bool parseBCs(t_CGNSContext& ctx) {
 					"Boundary condition patch '%s'(#%d) of zone '%s'(#%d) isn't defined as point range",
 					szPatchName, iBC, Zne.getName(), cgZneID);
 				szPatchName[0] = 0x3;  // 'end of text' code -> error indicator
+				return false;
 			}
 			cgsize_t idxRng[2];
 			cg_boco_read(ctx.iFile, ctx.iBase, cgZneID, iBC, idxRng, nullptr);
@@ -343,7 +383,7 @@ static bool parseBCs(t_CGNSContext& ctx) {
 				strcpy_s(szBC, szPatchName);
 			}
 		}
-
+		hsLogMessage("BC check .................Ok");
 		// ~bcs
 
 	}
@@ -351,6 +391,54 @@ static bool parseBCs(t_CGNSContext& ctx) {
 	
 	
 	return true; }
+// parse BCs after they have already been read into ctx
+// face lists in zones must be initialized too
+static bool parseBCs(t_CGNSContext& ctx) {
+
+	for (int iZne = 0; iZne < G_Domain.nZones; ++iZne)
+	{
+		const int& cgZneID = G_Domain.map_iZne2cgID[iZne];
+		t_Zone& Zne = G_Domain.Zones[iZne];
+		t_CGNSZone& cgZne = ctx.cgZones[iZne];
+
+		for (int ipatch = 0; ipatch < cgZne.pFacePatches.size(); ipatch++) {
+
+			const t_CGFacePatch& fpatch_cg = *cgZne.pFacePatches[ipatch];
+
+			t_FaceBCKind bc_kind;
+			bool ok = G_BCList.getBCKindBySectName(fpatch_cg.nameOfSect, bc_kind);
+			//ok if the patch is a bc patch (not a zone-2-zone patch)
+			if (ok) {
+				int nF = fpatch_cg._data.nRows;
+				int NVertsInFace = fpatch_cg._data.nCols;
+				t_Face* flist = new t_Face[nF];
+
+				for (int iF = 0; iF < nF; iF++) {
+
+					t_Face& face = flist[iF];
+
+					face.BCKind = bc_kind;
+
+					face.NVerts = NVertsInFace;
+
+					for (int j = 0; j < NVertsInFace; j++) {
+
+						cgsize_t iVert = fpatch_cg._data.get_val(iF, j);
+						// cg Id is 1-based, we make our 0-based
+						face.pVerts[j] = Zne.getpVert(iVert - 1);
+					}
+
+				}
+
+				Zne.updateFacesWithBCPatch(flist, nF);
+
+				delete[] flist;
+			}
+		}
+	}
+
+	return true;
+};     // boundary conditions
 
 static bool parseVCs(t_CGNSContext& ctx) { return true; }
 

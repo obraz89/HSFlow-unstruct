@@ -6,6 +6,8 @@
 
 #include <vector>
 
+#include "IniFile.hpp"
+
 // base class for information of face-type boundary conditions
 class t_BCDataFace : public TPlugin{
 protected:
@@ -13,6 +15,8 @@ protected:
 public:
 	t_BCDataFace() = delete;
 	t_BCDataFace(const std::string& sect):nameOfFldSection(sect) {}
+	const std::string& getSectName() const { return nameOfFldSection; }
+	virtual const std::string& getBCKindName() const = 0;
 	virtual void yield(const t_PrimVars& my_pvs, t_PrimVars& opp_pvs) = 0;
 	virtual ~t_BCDataFace() {}
 
@@ -26,7 +30,7 @@ public:
 
 	t_BCDataInflow() = delete;
 	t_BCDataInflow(const std::string& sect):t_BCDataFace(sect){ default_settings(); }
-
+	const std::string& getBCKindName() const { return bc_kind; }
 	// implement TPugin
 	std::string get_name() const { return bc_kind + "/" + nameOfFldSection; }
 	std::string get_description() const { return std::string("bc inflow"); };
@@ -45,7 +49,7 @@ public:
 
 	t_BCDataOutFlow() = delete;
 	t_BCDataOutFlow(const std::string& sect):t_BCDataFace(sect){ default_settings(); }
-
+	const std::string& getBCKindName() const { return bc_kind; }
 	// implement TPugin
 	std::string get_name() const { return bc_kind + "/" + nameOfFldSection; }
 	std::string get_description() const { return std::string("bc outflow"); };
@@ -66,6 +70,7 @@ public:
 
 	t_BCDataEulerWall() = delete;
 	t_BCDataEulerWall(const std::string& sect) :t_BCDataFace(sect) { default_settings(); }
+	const std::string& getBCKindName() const { return bc_kind; }
 	// implement TPugin
 	std::string get_name() const { return bc_kind + "/" + nameOfFldSection; }
 	std::string get_description() const { return std::string("bc euler wall"); };
@@ -95,6 +100,7 @@ public:
 
 	t_BCDataSym() = delete;
 	t_BCDataSym(const std::string& sect):t_BCDataFace(sect){ default_settings(); }
+	const std::string& getBCKindName() const { return bc_kind; }
 	// implement TPugin
 	std::string get_name() const { return bc_kind + "/" + nameOfFldSection; }
 	std::string get_description() const { return std::string("bc sym"); };
@@ -121,18 +127,18 @@ public:
 	std::string get_description() const { return std::string("bc list"); };
 	void default_settings() {
 
-		TPluginParamsGroup g("", "list of bcs");
+		//TPluginParamsGroup g("", "list of bcs");
 
-		g.add("Supported_bc_names", getSupportedBCsStr(), "supported kinds of bcs");
-		g.add("bc_list", "inflow, outflow, wall, sym", "list of bcs");
+		//g.add("Supported_bc_names", getSupportedBCsStr(), "supported kinds of bcs");
+		//g.add("bc_list", "inflow, outflow, wall, sym", "list of bcs");
 
-		std::vector<std::string> bc_sets = tokenize_str(g.get_string_param("bc_list"));
+		//std::vector<std::string> bc_sets = tokenize_str(g.get_string_param("bc_list"));
 
-		for (int i = 0; i < bc_sets.size(); i++) {
-			g.add(&(bc_sets[i][0]), t_BCDataInflow::bc_kind, "bc set");
-		}
+		//for (int i = 0; i < bc_sets.size(); i++) {
+		//	g.add(&(bc_sets[i][0]), t_BCDataInflow::bc_kind, "bc set");
+		//}
 
-		_mapParamsGrps.emplace(g.get_name(), g);
+		//_mapParamsGrps.emplace(g.get_name(), g);
 
 
 	};
@@ -140,14 +146,31 @@ public:
 
 		TPlugin::init(ini_data, spec); 
 
-		const TPluginParamsGroup& g = get_settings_grp("");
+		ini::IniFile ini;   ini.decode(ini_data);
+		std::string bc_list_sname = get_name();
+		if (!ini.has(bc_list_sname)) {
+			ini::IniSection sect;
+			// add some defaults
+			sect["Supported_bc_names"] = getSupportedBCsStr();
+			sect["inflow"] = t_BCDataInflow::bc_kind;
+			sect["out"] = t_BCDataOutFlow::bc_kind;
 
-		std::vector<std::string> bc_sets = tokenize_str(g.get_string_param("bc_list"));
+			ini[bc_list_sname] = sect;
+		}
 
-			for (int i = 0; i < bc_sets.size(); i++) {
+		ini_data = ini.encode();
 
-				std::string bc_set_name = bc_sets[i];
-				std::string bc_kind_name = g.get_string_param(&(bc_sets[i][0]));
+		//const TPluginParamsGroup& g = get_settings_grp("");
+
+			for (const auto& field_pair: ini[bc_list_sname]) {
+
+				if (field_pair.first.compare("Supported_bc_names") == 0) {
+					// skip this helper option
+					continue;
+				}
+
+				std::string bc_set_name = field_pair.first;
+				std::string bc_kind_name = field_pair.second.asString();
 
 				t_BCDataFace* pBC = nullptr;
 
@@ -176,6 +199,8 @@ public:
 
 	}
 	std::string getSupportedBCsStr();
+
+	bool getBCKindBySectName(const std::string& name, t_FaceBCKind& kind);
 
 	~t_BCList() {
 		std::map<std::string, t_BCDataFace*>::iterator it;

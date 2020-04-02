@@ -78,6 +78,42 @@ std::string t_BCList::getSupportedBCsStr() {
 
 }
 
+bool t_BCList::getBCKindBySectName(const std::string& sect_name, t_FaceBCKind& bc_kind) {
+
+	std::string bc_kind_str="";
+	bool ok = false;
+
+	for (auto elem : _pBCs) {
+		if (sect_name.compare(elem.second->getSectName())==0) {
+			bc_kind_str = elem.second->getBCKindName();
+		}
+	};
+
+	if (bc_kind_str.compare("") == 0){
+		// debug
+		//hsLogMessage(
+		//	"Warning:t_BCList::getBCKindBySectName: can't find bc for the section %s", &sect_name[0]);
+	}
+	else {
+		ok = true;
+		if (bc_kind_str.compare(t_BCDataInflow::bc_kind) == 0) {
+			bc_kind = t_FaceBCKind::Inflow;
+		}
+		if (bc_kind_str.compare(t_BCDataOutFlow::bc_kind) == 0) {
+			bc_kind = t_FaceBCKind::Outflow;
+		}
+		if (bc_kind_str.compare(t_BCDataEulerWall::bc_kind) == 0) {
+			bc_kind = t_FaceBCKind::Wall;
+		}
+		if (bc_kind_str.compare(t_BCDataSym::bc_kind) == 0) {
+			bc_kind = t_FaceBCKind::Sym;
+		}
+
+	}
+	return ok;
+
+};
+
 std::vector<std::string> tokenize_str(std::string str) {
 
 	std::vector<std::string> v;
