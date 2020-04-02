@@ -22,11 +22,8 @@ public:
 
 };
 
-// Inflow, VelInf should be non-dim unit vector
-// zero angle of attack case: (1,0,0)
+// Supersonic Inflow
 class t_BCDataInflow :public t_BCDataFace {
-
-	t_Vec3 VelInf;
 
 public:
 	t_BCDataInflow() :t_BCDataFace(BC_INFLOW_STR) { default_settings(); }
@@ -90,7 +87,7 @@ public:
 	void yield(const t_PrimVars& my_pvs, t_PrimVars& opp_pvs);
 };
 
-// This is identical to BC set in  HSFlow
+// This is identical to set of BC plugins in HSFlow
 // TODO: if necessary, can be a dynamic list
 struct t_BCList {
 	t_BCDataInflow bc_inflow;

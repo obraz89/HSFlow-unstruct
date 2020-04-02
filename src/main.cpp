@@ -17,8 +17,6 @@ int main()
 
 	initialize_flow_model();
 
-	initialize_flow_params();
-
 	G_Domain.makeTimeStep();
 
 	return 0;

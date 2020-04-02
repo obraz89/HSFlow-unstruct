@@ -2,6 +2,8 @@
 
 #include "common_data.h"
 
+#include "flow_params.h"
+
 #include "bc_data.h"
 
 
@@ -28,10 +30,15 @@ void load_settings(const std::string& fn) {
 
 	ini_data = ini.encode();
 
+	G_FreeStreamParams.init(ini_data, "");
+
 	G_BCList.init(ini_data, "");
 
-	//TPlugin::save_settings(fn, ini_data);
+	// for now rewriting ini every time (to get defaults for the first time) 
+	// TODO: replace by TPlugin::save_settings(fn, ini_data); 
+	// when MPI is ok
+	ini.decode(ini_data);
 
-	//for (auto& sect : ini) hsLogMessage("Parsing ini: has section %s", &sect.first[0]);
+	ini.save(fn);
 
 };
