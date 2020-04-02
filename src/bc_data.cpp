@@ -8,7 +8,12 @@
 
 #pragma warning(push)
 // Disable Visual Studio warnings
-#pragma warning(disable:4996)  // strtok may be unsafe ... ignoring) 
+#pragma warning(disable:4996)  // strtok may be unsafe ... ignoring)
+
+const std::string t_BCDataInflow::bc_kind = "bc_inflow";
+const std::string t_BCDataOutFlow::bc_kind = "bc_outflow";
+const std::string t_BCDataEulerWall::bc_kind = "bc_euler_wall";
+const std::string t_BCDataSym::bc_kind = "bc_sym";
 
 t_BCList G_BCList;
 
@@ -64,10 +69,10 @@ std::string t_BCList::getSupportedBCsStr() {
 
 	std::ostringstream ostr;
 
-	ostr << BC_INFLOW_STR <<", ";
-	ostr << BC_OUTFLOW_STR <<", ";
-	ostr << BC_EULER_WALL_STR<<", ";
-	ostr << BC_SYM_STR;
+	ostr << t_BCDataInflow::bc_kind <<", ";
+	ostr << t_BCDataOutFlow::bc_kind <<", ";
+	ostr << t_BCDataEulerWall::bc_kind<<", ";
+	ostr << t_BCDataSym::bc_kind;
 
 	return ostr.str();
 

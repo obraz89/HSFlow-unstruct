@@ -6,29 +6,29 @@
 
 #include <vector>
 
-#define BC_INFLOW_STR "bc_inflow"
-#define BC_OUTFLOW_STR "bc_outflow"
-#define BC_EULER_WALL_STR "bc_euler_wall"
-#define BC_SYM_STR "bc_sym"
-
 // base class for information of face-type boundary conditions
 class t_BCDataFace : public TPlugin{
 protected:
 	std::string nameOfFldSection;
 public:
-	void setFldSectionName(const std::string& section_name) { nameOfFldSection = section_name; };
-	std::string getFldSectionName() { return nameOfFldSection; }
+	t_BCDataFace() = delete;
+	t_BCDataFace(const std::string& sect):nameOfFldSection(sect) {}
 	virtual void yield(const t_PrimVars& my_pvs, t_PrimVars& opp_pvs) = 0;
+	virtual ~t_BCDataFace() {}
 
 };
 
 // Supersonic Inflow
 class t_BCDataInflow :public t_BCDataFace {
-
 public:
-	t_BCDataInflow(){ default_settings(); }
+
+	static const std::string bc_kind;
+
+	t_BCDataInflow() = delete;
+	t_BCDataInflow(const std::string& sect):t_BCDataFace(sect){ default_settings(); }
+
 	// implement TPugin
-	std::string get_name() const { return BC_INFLOW_STR; };
+	std::string get_name() const { return bc_kind + "/" + nameOfFldSection; }
 	std::string get_description() const { return std::string("bc inflow"); };
 	void default_settings() {};
 	void init(std::string& ini_data, const std::string& spec) { TPlugin::init(ini_data, spec); };
@@ -40,9 +40,14 @@ public:
 class t_BCDataOutFlow :public t_BCDataFace {
 
 public:
-	t_BCDataOutFlow(){ default_settings(); }
+
+	static const std::string bc_kind;
+
+	t_BCDataOutFlow() = delete;
+	t_BCDataOutFlow(const std::string& sect):t_BCDataFace(sect){ default_settings(); }
+
 	// implement TPugin
-	std::string get_name() const { return BC_OUTFLOW_STR; };
+	std::string get_name() const { return bc_kind + "/" + nameOfFldSection; }
 	std::string get_description() const { return std::string("bc outflow"); };
 	void default_settings() {};
 	void init(std::string& ini_data, const std::string& spec) { TPlugin::init(ini_data, spec); };
@@ -56,15 +61,20 @@ class t_BCDataEulerWall :public t_BCDataFace {
 	double TWallDim;
 
 public:
+
+	static const std::string bc_kind;
+
+	t_BCDataEulerWall() = delete;
+	t_BCDataEulerWall(const std::string& sect) :t_BCDataFace(sect) { default_settings(); }
 	// implement TPugin
-	std::string get_name() const { return BC_EULER_WALL_STR; };
+	std::string get_name() const { return bc_kind + "/" + nameOfFldSection; }
 	std::string get_description() const { return std::string("bc euler wall"); };
 	void default_settings() {
 		TPluginParamsGroup g("", "gas-dynamic functions values on the wall");
 		g.add("Tw_K", 300.0, "temperature, dimensional in K");
 		_mapParamsGrps.emplace(g.get_name(), g);
 	};
-	virtual void init(std::string& ini_data, const std::string& spec) {
+	void init(std::string& ini_data, const std::string& spec) {
 
 		TPlugin::init(ini_data, spec);
 
@@ -80,9 +90,13 @@ public:
 // Symmetry bc
 class t_BCDataSym :public t_BCDataFace {
 public:
-	t_BCDataSym(){ default_settings(); }
+
+	static const std::string bc_kind;
+
+	t_BCDataSym() = delete;
+	t_BCDataSym(const std::string& sect):t_BCDataFace(sect){ default_settings(); }
 	// implement TPugin
-	std::string get_name() const { return BC_SYM_STR; };
+	std::string get_name() const { return bc_kind + "/" + nameOfFldSection; }
 	std::string get_description() const { return std::string("bc sym"); };
 	void default_settings() {};
 	void init(std::string& ini_data, const std::string& spec) { TPlugin::init(ini_data, spec); };
@@ -115,7 +129,7 @@ public:
 		std::vector<std::string> bc_sets = tokenize_str(g.get_string_param("bc_list"));
 
 		for (int i = 0; i < bc_sets.size(); i++) {
-			g.add(&(bc_sets[i][0]), BC_INFLOW_STR, "bc set");
+			g.add(&(bc_sets[i][0]), t_BCDataInflow::bc_kind, "bc set");
 		}
 
 		_mapParamsGrps.emplace(g.get_name(), g);
@@ -131,17 +145,49 @@ public:
 		std::vector<std::string> bc_sets = tokenize_str(g.get_string_param("bc_list"));
 
 			for (int i = 0; i < bc_sets.size(); i++) {
+
 				std::string bc_set_name = bc_sets[i];
 				std::string bc_kind_name = g.get_string_param(&(bc_sets[i][0]));
-				hsLogMessage("Addind BC with sec_name %s : type is %s", 
-					&bc_set_name[0], &bc_kind_name[0]);
+
+				t_BCDataFace* pBC = nullptr;
+
+				if (bc_kind_name.compare(t_BCDataInflow::bc_kind) == 0)
+					pBC = new t_BCDataInflow(bc_set_name);
+
+				if (bc_kind_name.compare(t_BCDataOutFlow::bc_kind) == 0)
+					pBC = new t_BCDataOutFlow(bc_set_name);
+
+				if (bc_kind_name.compare(t_BCDataEulerWall::bc_kind) == 0)
+					pBC = new t_BCDataEulerWall(bc_set_name);
+
+				if (bc_kind_name.compare(t_BCDataSym::bc_kind) == 0)
+					pBC = new t_BCDataSym(bc_set_name);
+
+				if (pBC==nullptr)
+					hsLogMessage("Error:t_BCList:Unknown bc type!");
+				else {
+					hsLogMessage("Initializing bc set: %s", &(pBC->get_name()[0]));
+					pBC->init(ini_data, "");
+					_pBCs.emplace(std::make_pair(bc_set_name, pBC));
+				}
+
+
 			}
 
-	};
-
+	}
 	std::string getSupportedBCsStr();
 
-	//void init_boco(const std::string& patchFamily);
+	~t_BCList() {
+		std::map<std::string, t_BCDataFace*>::iterator it;
+
+		for (auto elem : _pBCs) delete elem.second;
+
+	}
+
 };
+
+
+
+	//void init_boco(const std::string& patchFamily);
 
 extern t_BCList G_BCList;
