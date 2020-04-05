@@ -29,6 +29,7 @@ class t_BufInds {
 public:
 	T nRows, nCols;
 	T* data() { return buf; }
+	const T* data() const { return buf; }
 	t_BufInds() = delete;
 	t_BufInds(t_BufInds&) = delete;
 	t_BufInds(T a_NR, T a_NC) { nRows = a_NR; nCols = a_NC; buf = new T[nRows*nCols]; }

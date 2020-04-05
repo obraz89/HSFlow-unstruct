@@ -113,7 +113,8 @@ int read_cgns_mesh()
 
 		cg_zone_read(ctx.iFile, ctx.iBase, cgZneID, zonename, isize);
 
-		// isize[0] is nVerts, isize[1] is nCells
+		// CGNS documentation: midlevel/structural.html#zone
+		// isize = {NVertex, NCell3D, NBoundVertex}
 		Zne.initialize(isize[0], isize[1]);
 
 		const cgsize_t& nVerts = Zne.getnVerts();
@@ -163,13 +164,19 @@ int read_cgns_mesh()
 			// reading face patches
 			if (itype == CG_QUAD_4 || itype == CG_TRI_3) {
 				t_CGFacePatch* pPatch = new t_CGFacePatch(sectionname);
-				cgZne.pFacePatches.push_back(pPatch);
-				pPatch->_data.allocate(n_elems, n_verts_in_elem);
+
+				t_FaceBCKind kind;
+				if (G_BCList.getBCKindBySectName(sectionname, kind) == true)
+					cgZne.pPatchesBC.push_back(pPatch);
+				else
+					cgZne.pPatchesAbut.push_back(pPatch);
+
+				pPatch->alloc(n_elems, n_verts_in_elem);
 
 				hsLogMessage("   reading face patch : section %d, Type: %s\n",
 					index_sect, ElementTypeName[itype]);
 
-				cg_elements_read(ctx.iFile, ctx.iBase, cgZneID, index_sect, pPatch->data(), \
+				cg_elements_read(ctx.iFile, ctx.iBase, cgZneID, index_sect, pPatch->get_buf_data(), \
 					& iparentdata);
 
 				pPatch->itype = itype;
@@ -177,7 +184,7 @@ int read_cgns_mesh()
 				// debug output of section
 				for (int i = 0; i < n_elems; i++) {
 					for (int j = 0; j < n_verts_in_elem; j++)
-						std::cout << pPatch->_data.get_val(i, j) << ";";
+						std::cout << pPatch->get_buf().get_val(i, j) << ";";
 					std::cout << std::endl;
 				}
 
@@ -187,20 +194,24 @@ int read_cgns_mesh()
 			// reading elements
 			if (itype == CG_HEXA_8 || itype == CG_TETRA_4) {
 
-				cgZne.cells.allocate(n_elems, n_verts_in_elem);
+				t_CGElemArray* pNewCellSet = new t_CGElemArray();
+
+				cgZne.pCellSets.push_back(pNewCellSet);
+
+				pNewCellSet->alloc(n_elems, n_verts_in_elem);
 
 				hsLogMessage("   reading elements : section %d, Type: %s\n",
 					index_sect, ElementTypeName[itype]);
 
-				cg_elements_read(ctx.iFile, ctx.iBase, cgZneID, index_sect, cgZne.cells.data(), \
+				cg_elements_read(ctx.iFile, ctx.iBase, cgZneID, index_sect, pNewCellSet->get_buf_data(), \
 					& iparentdata);
 
-				cgZne.itype = itype;
+				pNewCellSet->itype = itype;
 
 				// debug output of section
 				for (int i = 0; i < n_elems; i++) {
 					for (int j = 0; j < n_verts_in_elem; j++)
-						std::cout << cgZne.cells.get_val(i, j) << ";";
+						std::cout << pNewCellSet->get_buf().get_val(i, j) << ";";
 					std::cout << std::endl;
 				}
 				continue;
@@ -216,6 +227,10 @@ int read_cgns_mesh()
 
 	// Read grid coordinates
 	if (!loadGridCoords(ctx))
+		return false;
+
+	// Connectivity info
+	if (!parseConnectivity(ctx))
 		return false;
 
 	G_Domain.makeVertexConnectivity();
@@ -234,10 +249,6 @@ int read_cgns_mesh()
 	// Volume conditions info (frozen zones)
 	parseVCs(ctx);
 
-	// Connectivity info
-	if (!parseConnectivity(ctx))
-		return false;
-
 	// checks with some cgns bc-specific funcs
 	if (!check_BCs(ctx))
 		return false;
@@ -255,21 +266,32 @@ void loadCells(t_CGNSContext& ctx) {
 		const int& cgZneID = G_Domain.map_iZne2cgID[iZne];
 		t_Zone& Zne = G_Domain.Zones[iZne];
 		t_CGNSZone& cgZne = ctx.cgZones[iZne];
+		
+		cgsize_t NCellsCG = cgZne.countCells();
+		if (NCellsCG != Zne.getnCells())
+			hsLogError("loadCells: size mismatch of cells: %ld in CGNS Zone, %ld in Zone", 
+			NCellsCG, Zne.getnCells());
 
-		if (cgZne.cells.nRows != Zne.getnCells()) hsLogMessage("loadCells: size mismatch of CGNS and working Zones");
+		int iCell = 0;
 
-		for (int i = 0; i < Zne.getnCells(); i++) {
+		for (int i = 0; i < cgZne.pCellSets.size(); i++) {
 
-			t_Cell& cell = Zne.getCell(i);
+			const t_CGElemArray& cg_cells = *cgZne.pCellSets[i];
 
-			cell.setKind(getElementKind(cgZne.itype));
+			for (int j = 0; j < cg_cells.get_buf().nRows; j++) {
 
-			// additional check
-			if (cell.NVerts != cgZne.cells.nCols) hsLogMessage("loadCells: wrong number of vertices in cell");
-			// cgns IDs are 1-based, we use zero-based ids
-			for (int j = 0; j < cell.NVerts; j++) {
-				lint Vert_ID = cgZne.cells.get_val(i, j) - 1;
-				cell.pVerts[j] = &(Zne.getVert(Vert_ID));
+				t_Cell& cell = Zne.getCell(iCell);
+
+				cell.setKind(getElementKind(cg_cells.itype));
+
+				for (int k = 0; k < cg_cells.get_buf().nCols; k++) {
+					// cgns IDs are 1-based, we use zero-based ids
+					lint Vert_ID = cg_cells.get_buf().get_val(j, k) - 1;
+					cell.pVerts[k] = &(Zne.getVert(Vert_ID));
+				}
+
+				iCell++;
+
 			}
 		}
 		//std::cout << "______________________Debug, Zone Verts:\n";
@@ -277,7 +299,7 @@ void loadCells(t_CGNSContext& ctx) {
 		//for (int i = 0; i < Zne.getnCells(); i++) {
 		//	const t_Cell& cell = Zne.getCell(i);
 		//	for (int j = 0; j < cell.NVerts; j++)
-		//		std::cout << Zne.getCell(i).getVert(j).Id<< ";";
+		//		std::cout << cell.getVert(j).Id<< ";";
 		//	std::cout << std::endl;
 		//}
 
@@ -286,8 +308,86 @@ void loadCells(t_CGNSContext& ctx) {
 };
 
 
+static bool parse_1to1_connectivity_patch(const t_CGNSContext& ctx,
+	const int iZne, const int cgPatchID, t_CGFacePatch& cgFacePatch) {
+	return true;
+};
 
-static bool parseConnectivity(t_CGNSContext& ctx) { return true; }
+static bool parseConnectivity(t_CGNSContext& ctx) {
+
+	for (int iZne = 0; iZne < G_Domain.nZones; ++iZne)
+	{
+		const int& cgZneID = G_Domain.map_iZne2cgID[iZne];
+		t_Zone& zne = G_Domain.Zones[iZne];
+		t_CGNSZone& cgZne = ctx.cgZones[iZne];
+
+		int n1to1 = 0;
+
+		if (G_State.mpiRank == 0)
+			cg_n1to1(ctx.iFile, ctx.iBase, cgZneID, &n1to1);
+
+		int NPatchesAbut = 0;
+
+		if (G_State.mpiRank == 0)
+			cg_nconns(ctx.iFile, ctx.iBase, cgZneID, &NPatchesAbut);
+
+		//ier = cg_nconns(int fn, int B, int Z, int* nconns)
+		//cg_conn_info();
+		//cg_conn_read();
+		
+		//MPI_Bcast(&cgZne.nPatches, 1, MPI_INT, 0, PETSC_COMM_WORLD);
+
+		if (NPatchesAbut + n1to1 < 1 && G_Domain.nZones > 1) {
+			hsLogError("Missing inter-zone 1-to-1 connectivity in '%s'#%d", zne.getName(), cgZneID);
+			//return false;
+		}
+
+		if (n1to1 > 0 )
+			hsLogError(
+				"parseConnectivity: 1-to-1 connectivity detected, remake grid with generalized connectivity");
+
+		if (NPatchesAbut != cgZne.pPatchesAbut.size()) {
+			hsLogError("parseConnectivity:Wrong number of abutted patches");
+			//return false;
+		}
+
+		// Loop through connectivity patches
+		for (int cgPatchId = 1; cgPatchId <= NPatchesAbut; ++cgPatchId)
+		{
+			t_CGFacePatch& cgFacePatch = *cgZne.pPatchesAbut[cgPatchId - 1];
+
+			char connectname[128];
+			CG_GridLocation_t location;
+			CG_GridConnectivityType_t connect_type;
+			CG_PointSetType_t ptset_type;
+			cgsize_t npnts;
+
+			char donorname[128];
+			CG_ZoneType_t donor_zonetype;
+			CG_PointSetType_t donor_ptset_type;
+			CG_DataType_t donor_datatype;
+			cgsize_t ndata_donor[128];
+			int ier = cg_conn_info(ctx.iFile, ctx.iBase, cgZneID, cgPatchId, connectname,
+				&location, &connect_type,
+				&ptset_type, &npnts, donorname,
+				&donor_zonetype, &donor_ptset_type,
+				&donor_datatype, ndata_donor);
+
+			// ndata*3 for tris ndata*4 for quads
+			cgsize_t pnts[64];
+			cgsize_t donor_data[64];
+			ier = cg_conn_read(ctx.iFile, ctx.iBase, cgZneID, cgPatchId,
+				pnts, donor_datatype, donor_data);
+
+			int bla = 1;
+
+			//if (!parse_1to1_connectivity_patch(ctx, iZne, cgPatchId, cgFacePatch))
+			//	return false;
+		}
+
+	}
+	return true;
+}
 
 static bool check_BCs(t_CGNSContext& ctx) { 
 
@@ -370,9 +470,8 @@ static bool check_BCs(t_CGNSContext& ctx) {
 
 	}
 
-	
-	
-	return true; }
+	return true; 
+}
 // parse BCs after they have already been read into ctx
 // face lists in zones must be initialized too
 static bool parseBCs(t_CGNSContext& ctx) {
@@ -383,16 +482,16 @@ static bool parseBCs(t_CGNSContext& ctx) {
 		t_Zone& Zne = G_Domain.Zones[iZne];
 		t_CGNSZone& cgZne = ctx.cgZones[iZne];
 
-		for (int ipatch = 0; ipatch < cgZne.pFacePatches.size(); ipatch++) {
+		for (int ipatch = 0; ipatch < cgZne.pPatchesBC.size(); ipatch++) {
 
-			const t_CGFacePatch& fpatch_cg = *cgZne.pFacePatches[ipatch];
+			const t_CGFacePatch& fpatch_cg = *cgZne.pPatchesBC[ipatch];
 
 			t_FaceBCKind bc_kind;
 			bool ok = G_BCList.getBCKindBySectName(fpatch_cg.nameOfSect, bc_kind);
 			//ok if the patch is a bc patch (not a zone-2-zone patch)
 			if (ok) {
-				int nF = fpatch_cg._data.nRows;
-				int NVertsInFace = fpatch_cg._data.nCols;
+				int nF = fpatch_cg.get_buf().nRows;
+				int NVertsInFace = fpatch_cg.get_buf().nCols;
 				t_Face* flist = new t_Face[nF];
 
 				for (int iF = 0; iF < nF; iF++) {
@@ -405,7 +504,7 @@ static bool parseBCs(t_CGNSContext& ctx) {
 
 					for (int j = 0; j < NVertsInFace; j++) {
 
-						cgsize_t iVert = fpatch_cg._data.get_val(iF, j);
+						cgsize_t iVert = fpatch_cg.get_buf().get_val(iF, j);
 						// cg Id is 1-based, we make our 0-based
 						face.pVerts[j] = Zne.getpVert(iVert - 1);
 					}

@@ -9,38 +9,69 @@
 
 using t_BufCGSize = t_BufInds<cgsize_t>;
 
+// array of typical cgns elements like face, cell
+// or smth else defined as set of vertices
+struct t_CGElemArray {
+
+	CG_ElementType_t itype;
+
+	// container to store indices of vertices
+	t_BufCGSize _buf;
+	// array to store cg ids of elements
+	cgsize_t* _ids;
+
+	t_BufCGSize& get_buf() { return _buf; }
+	const t_BufCGSize& get_buf() const{ return _buf; }
+
+	cgsize_t* get_buf_data() { return _buf.data(); }
+	const cgsize_t* get_buf_data() const{ return _buf.data(); }
+
+	void alloc(cgsize_t n_elems, int n_verts_in_elem) {
+
+		_buf.allocate(n_elems, n_verts_in_elem);
+		delete[] _ids;
+		_ids = new cgsize_t[n_elems];
+	}
+
+	t_CGElemArray() :_buf(0, 0), itype(CG_ElementTypeNull) { _ids = new cgsize_t[0]; }
+
+	~t_CGElemArray() { delete[] _ids; }
+
+
+};
+
 // patch of fixed element type, mixed elements not supported
-struct t_CGFacePatch
+struct t_CGFacePatch : public t_CGElemArray
 {
 
 	std::string nameOfSect;
 
-	CG_ElementType_t itype;
-
-	t_BufCGSize _data;
-
-	cgsize_t* data() { return _data.data(); }
-
-	t_CGFacePatch(const std::string& name):nameOfSect(name), _data(0,0) { ; }
-	// TODO: compiler wants it, don't know why
-	t_CGFacePatch() :_data(0, 0), nameOfSect("") { }
-	t_CGFacePatch(t_CGFacePatch& p):_data(0,0){ nameOfSect = p.nameOfSect; }
+	t_CGFacePatch(const std::string& name):nameOfSect(name), t_CGElemArray() { ; }
 };
 
 struct t_CGNSZone
 {
+	// vector of arrays of cells {[Tetra], [HEXA-8], ...}
+	std::vector<t_CGElemArray*> pCellSets;
 
-	// TODO: later there will be mixed elements, and sections must be joint together
-	// for now assuming one type of elements read from one section
-	t_BufCGSize cells;
+	// bc patches
+	std::vector<t_CGFacePatch*> pPatchesBC;
+	// abutting patches
+	std::vector<t_CGFacePatch*> pPatchesAbut;
 
-	CGNS_ENUMT(ElementType_t) itype;
+	cgsize_t countCells() {
+		cgsize_t N=0;
+		for (int i = 0; i < pCellSets.size(); i++) 
+			N += pCellSets[i]->get_buf().nRows;
+		return N;
+	}
 
-	// Zone connectivity info
-	std::vector<t_CGFacePatch*> pFacePatches;
-
-	t_CGNSZone() : pFacePatches(), cells(0,0) { ; }
-	~t_CGNSZone() { for (int i = 0; i < pFacePatches.size(); i++) delete pFacePatches[i]; }
+	t_CGNSZone() : pPatchesAbut(), pPatchesBC(), pCellSets() { ; }
+	~t_CGNSZone() { 
+		for (int i = 0; i < pCellSets.size(); i++) delete pCellSets[i];
+		for (int i = 0; i < pPatchesAbut.size(); i++) delete pPatchesAbut[i]; 
+		for (int i = 0; i < pPatchesBC.size(); i++) delete pPatchesBC[i];
+	}
 };
 
 struct t_CGNSContext
