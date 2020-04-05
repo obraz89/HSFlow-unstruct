@@ -54,8 +54,7 @@ int read_cgns_mesh()
 	t_CGNSContext ctx;
 
 	const char* gridFN = g_genOpts.strGridFN.c_str();
-		//"box-hexa-simple-2blk.cgns";
-	//char gridFN[] = "test_case/box-tetra-simple.cgns";
+
 	if (cg_open(gridFN, CG_MODE_READ, &ctx.iFile) != CG_OK)
 	{
 		hsLogMessage("Can't open grid file '%s' for reading (%s)",
@@ -163,13 +162,13 @@ int read_cgns_mesh()
 
 			// reading face patches
 			if (itype == CG_QUAD_4 || itype == CG_TRI_3) {
-				t_CGFacePatch* pPatch = new t_CGFacePatch(sectionname);
+				t_CGSection* pPatch = new t_CGSection(sectionname);
 
 				t_FaceBCKind kind;
 				if (G_BCList.getBCKindBySectName(sectionname, kind) == true)
-					cgZne.pPatchesBC.push_back(pPatch);
+					cgZne.addSection(pPatch, t_CGSectionKind::BC);
 				else
-					cgZne.pPatchesAbut.push_back(pPatch);
+					cgZne.addSection(pPatch, t_CGSectionKind::Abutted);
 
 				pPatch->alloc(n_elems, n_verts_in_elem);
 
@@ -194,9 +193,9 @@ int read_cgns_mesh()
 			// reading elements
 			if (itype == CG_HEXA_8 || itype == CG_TETRA_4) {
 
-				t_CGElemArray* pNewCellSet = new t_CGElemArray();
+				t_CGSection* pNewCellSet = new t_CGSection();
 
-				cgZne.pCellSets.push_back(pNewCellSet);
+				cgZne.addSection(pNewCellSet, t_CGSectionKind::Cell);
 
 				pNewCellSet->alloc(n_elems, n_verts_in_elem);
 
@@ -274,9 +273,9 @@ void loadCells(t_CGNSContext& ctx) {
 
 		int iCell = 0;
 
-		for (int i = 0; i < cgZne.pCellSets.size(); i++) {
+		for (int i = 0; i < cgZne.getSectsCell().size(); i++) {
 
-			const t_CGElemArray& cg_cells = *cgZne.pCellSets[i];
+			const t_CGSection& cg_cells = cgZne.getSectionCell(i);
 
 			for (int j = 0; j < cg_cells.get_buf().nRows; j++) {
 
@@ -309,7 +308,7 @@ void loadCells(t_CGNSContext& ctx) {
 
 
 static bool parse_1to1_connectivity_patch(const t_CGNSContext& ctx,
-	const int iZne, const int cgPatchID, t_CGFacePatch& cgFacePatch) {
+	const int iZne, const int cgPatchID, t_CGSection& cgFacePatch) {
 	return true;
 };
 
@@ -346,7 +345,7 @@ static bool parseConnectivity(t_CGNSContext& ctx) {
 			hsLogError(
 				"parseConnectivity: 1-to-1 connectivity detected, remake grid with generalized connectivity");
 
-		if (NPatchesAbut != cgZne.pPatchesAbut.size()) {
+		if (NPatchesAbut != cgZne.getSectsAbut().size()) {
 			hsLogError("parseConnectivity:Wrong number of abutted patches");
 			//return false;
 		}
@@ -354,7 +353,7 @@ static bool parseConnectivity(t_CGNSContext& ctx) {
 		// Loop through connectivity patches
 		for (int cgPatchId = 1; cgPatchId <= NPatchesAbut; ++cgPatchId)
 		{
-			t_CGFacePatch& cgFacePatch = *cgZne.pPatchesAbut[cgPatchId - 1];
+			t_CGSection& cgFacePatch = cgZne.getSectionAbut(cgPatchId - 1);
 
 			char connectname[128];
 			CG_GridLocation_t location;
@@ -482,12 +481,12 @@ static bool parseBCs(t_CGNSContext& ctx) {
 		t_Zone& Zne = G_Domain.Zones[iZne];
 		t_CGNSZone& cgZne = ctx.cgZones[iZne];
 
-		for (int ipatch = 0; ipatch < cgZne.pPatchesBC.size(); ipatch++) {
+		for (int ipatch = 0; ipatch < cgZne.getSectsBC().size(); ipatch++) {
 
-			const t_CGFacePatch& fpatch_cg = *cgZne.pPatchesBC[ipatch];
+			const t_CGSection& fpatch_cg = cgZne.getSectionBC(ipatch);
 
 			t_FaceBCKind bc_kind;
-			bool ok = G_BCList.getBCKindBySectName(fpatch_cg.nameOfSect, bc_kind);
+			bool ok = G_BCList.getBCKindBySectName(fpatch_cg.name, bc_kind);
 			//ok if the patch is a bc patch (not a zone-2-zone patch)
 			if (ok) {
 				int nF = fpatch_cg.get_buf().nRows;
