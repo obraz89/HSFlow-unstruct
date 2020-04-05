@@ -107,7 +107,8 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(MPI_DIR)\lib;$(CGNS_DIR)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libzlib.lib;libhdf5.lib;cgns.lib;msmpi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libzlib.lib;libhdf5.lib;cgns.lib;msmpi.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -158,6 +159,7 @@
     <ClInclude Include="include\logging.h" />
     <ClInclude Include="include\matrix_small.h" />
     <ClInclude Include="include\Mesh-CGNS.h" />
+    <ClInclude Include="include\optParse.h" />
     <ClInclude Include="include\PluginBase.h" />
     <ClInclude Include="include\rs_procs.h" />
     <ClInclude Include="include\settings.h" />

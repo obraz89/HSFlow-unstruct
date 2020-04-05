@@ -28,6 +28,15 @@ inline void copy_n(const T* from, size_t count, T* to)
 }
 
 //
+// File system utilities
+//
+bool hs_file_exists(const std::string& fn);
+time_t hs_file_mtime(const std::string& fn);
+bool hs_dir_exists(const std::string& dn);
+bool hs_dir_create(const std::string& dn);
+//-----------------------------------------------------------------------------
+
+//
 // Math functions
 //
 

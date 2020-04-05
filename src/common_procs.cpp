@@ -2,6 +2,15 @@
 
 #include "common_procs.h"
 
+// stat(), getcwd() functions
+#if defined(_WINDOWS)
+#include <direct.h>  // mkdir
+#define stat  _stat64
+#define getcwd  _getcwd
+#else
+#include <unistd.h>
+#endif
+
 void ComputeTriangleAreaNormal(const t_Vec3(&pnts)[3], t_Vec3& norm, double& area) {
 
 	t_Vec3 v1 = pnts[1] - pnts[0];
@@ -67,5 +76,83 @@ void ComputeQuadAreaNormal_v2(const t_Vec3(&pnts)[4], t_Vec3& norm, double& area
 void ComputeQuadAreaNormal(const t_Vec3(&pnts)[4], t_Vec3& norm, double& area) {
 	ComputeQuadAreaNormal_v2(pnts, norm, area);
 }
+
+/**
+ * Checks for a file existence
+ *
+ * @param fn file name
+ *
+ * @return true if exist, false otherwise
+ */
+bool hs_file_exists(const std::string& fn)
+{
+	struct stat buf;
+	if (stat(fn.c_str(), &buf) == 0)
+		return bool(buf.st_mode & S_IFREG);
+
+	return false;
+}
+//-----------------------------------------------------------------------------
+
+/**
+ * Checks for a directory existence
+ *
+ * @param dn directory name
+ *
+ * @return true if exist, false otherwise
+ */
+bool hs_dir_exists(const std::string& dn)
+{
+	struct stat buf;
+	if (stat(dn.c_str(), &buf) == 0)
+		return bool(buf.st_mode & S_IFDIR);
+
+	return false;
+}
+//-----------------------------------------------------------------------------
+
+
+/**
+ * Get file/directory modification time
+ *
+ * @param fn file name
+ *
+ * @return modification time, -1 on error
+ */
+time_t hs_file_mtime(const std::string& fn)
+{
+	struct stat buf;
+	if (stat(fn.c_str(), &buf) == 0)
+		return buf.st_mtime;
+
+	return time_t(-1);
+}
+//-----------------------------------------------------------------------------
+
+/**
+ * Create a directory, only a last component of dirname without parents(!)
+ *
+ * @param dn directory name
+ *
+ * @return true if created, false otherwise
+ */
+bool hs_dir_create(const std::string& dn)
+{
+	if (hs_dir_exists(dn))
+		return true;
+
+	int rc = 0;
+
+#if defined(_WINDOWS)
+	rc = _mkdir(dn.c_str());
+#else
+	mode_t nMode = 0777; // UNIX style permissions, will be reduced by umask
+	rc = mkdir(dn.c_str(), nMode);
+#endif
+
+	return rc == 0;
+}
+//-----------------------------------------------------------------------------
+
 
 

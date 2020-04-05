@@ -1,22 +1,3 @@
-/*   Program read_grid_unst   */
-/*
-Reads simple 3-D unstructured grid from a CGNS file
-(created using write_grid_unst.c).
-
-The CGNS grid file 'grid_c.cgns' must already exist.
-
-Example compilation for this program is (change paths if needed!):
-
-cc -I ../.. -c read_grid_unst.c
-cc -o read_grid_unst_c read_grid_unst.o -L ../../lib -lcgns
-
-(../../lib is the location where the compiled
-library libcgns.a is located)
-*/
-
-#include <stdio.h>
-#include <iostream>
-
 #include "Mesh-CGNS.h"
 
 #include "logging.h"
@@ -24,6 +5,8 @@ library libcgns.a is located)
 #include "common_procs.h"
 
 #include "bc_data.h"
+
+#include "settings.h"
 
 //
 // Forward declarations
@@ -64,15 +47,14 @@ int read_cgns_mesh()
 
 	CGNS_ENUMT(ElementType_t) itype;
 
-	// READ X, Y, Z GRID POINTS FROM CGNS FILE
-	// open CGNS file for read-only
 	int res = CG_OK;
 
 	char szName[CG_MAX_NAME_LENGTH];  // names in CGNS file
 
 	t_CGNSContext ctx;
 
-	char gridFN[] = "test_case/box-hexa-simple-2blk.cgns";
+	const char* gridFN = g_genOpts.strGridFN.c_str();
+		//"box-hexa-simple-2blk.cgns";
 	//char gridFN[] = "test_case/box-tetra-simple.cgns";
 	if (cg_open(gridFN, CG_MODE_READ, &ctx.iFile) != CG_OK)
 	{
