@@ -123,6 +123,7 @@ int main(int argc, char* argv[])
 	err = EXIT_SUCCESS;
 
 fin:
+	//hsflow::TLog::destroy();  // flushes remaining messages
 	delete[] G_Domain.Zones;
 	return err;
 }

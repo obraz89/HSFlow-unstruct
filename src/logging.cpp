@@ -177,7 +177,11 @@ void TLog::Impl::log(ELogLevel level, const std::string& msg)
 	default:            s =              msg;
 	}
 
-	log_string(s.c_str(), from_all_ranks);
+	// TODO: restore mpi logging for mpi cases
+	// now using only master output
+	//log_string(s.c_str(), from_all_ranks);
+	log_string(s.c_str(), false);
+	
 }
 //-----------------------------------------------------------------------------
 
