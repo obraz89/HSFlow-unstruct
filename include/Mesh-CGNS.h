@@ -32,10 +32,9 @@ struct t_CGSection {
 		_buf.allocate(n_elems, n_verts_in_elem);
 	}
 
-	t_CGSection() :
-		_buf(0, 0), itype(CG_ElementTypeNull), id_start(0), id_end(0), name("") {}
-	t_CGSection(const char* sect_name) :
-		_buf(0, 0), itype(CG_ElementTypeNull), id_start(0), id_end(0), name(sect_name) {}
+	t_CGSection() = delete;
+	t_CGSection(const char* sect_name, cgsize_t istart, cgsize_t iend) :
+		_buf(0, 0), itype(CG_ElementTypeNull), id_start(istart), id_end(iend), name(sect_name) {}
 
 	~t_CGSection() {  }
 
@@ -49,6 +48,36 @@ enum struct t_CGSectionKind{
 	Undefined
 };
 
+
+// Element connectivity set
+// 1-to-1 connectivity
+// IMPORTANT: this is NOT vertex connectivity (used in structured code)
+// it is more general element-to-element connectivity
+// _buf stores pairs of connections: {id_my, id_dnr}
+class t_CGConnSet {
+	cgsize_t idZoneMy, idZoneDnr;
+	t_BufCGSize _buf;
+
+public:
+	t_BufCGSize& get_buf() { return _buf; }
+	const t_BufCGSize& get_buf() const { return _buf; }
+
+	cgsize_t* get_buf_data() { return _buf.data(); }
+	const cgsize_t* get_buf_data() const { return _buf.data(); }
+
+	void getConnIds(cgsize_t i, cgsize_t& id_my, cgsize_t& id_dnr) const{
+		id_my = _buf.get_val(0, i);
+		id_dnr = _buf.get_val(1, i);
+	};
+
+	t_CGConnSet() = delete;
+	t_CGConnSet(cgsize_t id_Z_My, cgsize_t id_Z_Dnr, cgsize_t N):
+		idZoneMy(id_Z_My), idZoneDnr(id_Z_Dnr), _buf(0,0) {
+		_buf.allocate(2, N);
+	}
+
+};
+
 class t_CGNSZone
 {
 	// vector of arrays of cells {[Tetra], [HEXA-8], ...}
@@ -60,6 +89,10 @@ class t_CGNSZone
 	std::vector<t_CGSection*> pSectsAbut;
 
 	std::vector<t_CGSection*> pSectsAll;
+
+	std::vector<t_CGConnSet*> pConns;
+
+	std::string name;
 public:
 	const std::vector<t_CGSection*>& getSectsCell() const { return pSectsCell; }
 	const std::vector<t_CGSection*>& getSectsBC() const { return pSectsBC; }
@@ -73,6 +106,11 @@ public:
 
 	t_CGSection& getSectionAbut(int i) { return *pSectsAbut[i]; }
 	const t_CGSection& getSectionAbut(int i) const { return *pSectsAbut[i]; }
+
+	const std::vector<t_CGConnSet*>& getConns() const { return pConns; }
+
+	void setName(const char* a_name) { name = std::string(a_name); };
+	const std::string& getName() { return name; };
 
 
 	cgsize_t countCells() {
@@ -104,11 +142,14 @@ public:
 
 	}
 
-	t_CGNSZone() : pSectsCell(), pSectsBC(), pSectsAbut() { ; }
+	void addConn(t_CGConnSet* pCon) { pConns.push_back(pCon); }
+
+	t_CGNSZone() : pSectsCell(), pSectsBC(), pSectsAbut(), name("") { ; }
 	~t_CGNSZone() { 
 		for (int i = 0; i < pSectsCell.size(); i++) delete pSectsCell[i];
 		for (int i = 0; i < pSectsAbut.size(); i++) delete pSectsAbut[i];
 		for (int i = 0; i < pSectsBC.size(); i++) delete pSectsBC[i];
+		for (int i = 0; i < pConns.size(); i++) delete pConns[i];
 	}
 };
 
@@ -121,6 +162,11 @@ struct t_CGNSContext
 
 	t_CGNSContext() : cgZones(NULL) { ; }
 	~t_CGNSContext() { delete[] cgZones; }
+
+	cgsize_t getCGZoneIDByName(const char* name) {
+		return map_ZneName2Idx[name] + 1;
+	};
+
 };
 
 int read_cgns_mesh();

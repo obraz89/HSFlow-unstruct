@@ -115,6 +115,7 @@ int read_cgns_mesh()
 		// CGNS documentation: midlevel/structural.html#zone
 		// isize = {NVertex, NCell3D, NBoundVertex}
 		Zne.initialize(isize[0], isize[1]);
+		cgZne.setName(zonename); Zne.setName(zonename);
 
 		const cgsize_t& nVerts = Zne.getnVerts();
 		const cgsize_t& nCells = Zne.getnCells();
@@ -162,7 +163,8 @@ int read_cgns_mesh()
 
 			// reading face patches
 			if (itype == CG_QUAD_4 || itype == CG_TRI_3) {
-				t_CGSection* pPatch = new t_CGSection(sectionname);
+
+				t_CGSection* pPatch = new t_CGSection(sectionname, istart, iend);
 
 				t_FaceBCKind kind;
 				if (G_BCList.getBCKindBySectName(sectionname, kind) == true)
@@ -193,7 +195,7 @@ int read_cgns_mesh()
 			// reading elements
 			if (itype == CG_HEXA_8 || itype == CG_TETRA_4) {
 
-				t_CGSection* pNewCellSet = new t_CGSection();
+				t_CGSection* pNewCellSet = new t_CGSection(sectionname, istart, iend);
 
 				cgZne.addSection(pNewCellSet, t_CGSectionKind::Cell);
 
@@ -306,12 +308,6 @@ void loadCells(t_CGNSContext& ctx) {
 
 };
 
-
-static bool parse_1to1_connectivity_patch(const t_CGNSContext& ctx,
-	const int iZne, const int cgPatchID, t_CGSection& cgFacePatch) {
-	return true;
-};
-
 static bool parseConnectivity(t_CGNSContext& ctx) {
 
 	for (int iZne = 0; iZne < G_Domain.nZones; ++iZne)
@@ -372,16 +368,27 @@ static bool parseConnectivity(t_CGNSContext& ctx) {
 				&donor_zonetype, &donor_ptset_type,
 				&donor_datatype, ndata_donor);
 
-			// ndata*3 for tris ndata*4 for quads
-			cgsize_t pnts[64];
-			cgsize_t donor_data[64];
+			cgsize_t cgZneDnrID = ctx.getCGZoneIDByName(donorname);
+
+			t_CGConnSet* pConnNew = new t_CGConnSet(cgZneID, cgZneDnrID, npnts);
+
+			cgsize_t* pnts = pConnNew->get_buf_data();
+			cgsize_t* pnts_dnr = pnts + npnts;
+
 			ier = cg_conn_read(ctx.iFile, ctx.iBase, cgZneID, cgPatchId,
-				pnts, donor_datatype, donor_data);
+				pnts, donor_datatype, pnts_dnr);
 
-			int bla = 1;
+			cgZne.addConn(pConnNew);
 
-			//if (!parse_1to1_connectivity_patch(ctx, iZne, cgPatchId, cgFacePatch))
-			//	return false;
+			// debug 
+			cgsize_t id_my, id_dnr;
+			for (int i = 0; i < npnts; i++) {
+				const t_CGConnSet& conn = *cgZne.getConns().back();
+				conn.getConnIds(i, id_my, id_dnr);
+				hsLogMessage("Connectivity elem:%ld <-> %ld", id_my, id_dnr);
+			}
+
+			
 		}
 
 	}

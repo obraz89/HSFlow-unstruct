@@ -310,7 +310,7 @@ struct t_ZoneFacePatch {
 
 class t_Zone {
 
-	char szName[40];  // name of the zone, initialized by '\0'
+	std::string name;  // name of the zone, initialized by '\0'
 
 	int id;
 
@@ -330,7 +330,8 @@ public:
 
 	void setId(int a_id) { id = a_id; }
 
-	const char* getName() const { return &szName[0]; }
+	void setName(const char* a_name) { name = std::string(a_name); }
+	const char* getName() const { return name.c_str(); }
 
 	const lint& getnVerts() const { return nVerts; }
 	const lint& getnCells() const { return nCells; }
