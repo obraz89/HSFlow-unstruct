@@ -241,8 +241,8 @@ int read_cgns_mesh()
 	// set up connections from verts to real cells
 	G_Domain.makeVertexConnectivity();
 
-	//G_GhostManager.setDom(G_Domain);
-	//G_GhostManager.initialize(ctx);
+	G_GhostManager.setDom(G_Domain);
+	G_GhostManager.initialize(ctx);
 
 	G_Domain.makeCellConnectivity();
 
@@ -598,66 +598,11 @@ static bool loadGridCoords(t_CGNSContext& ctx) {
 }
 
 // ************** Ghost preparations ***********************
-// converting elem2elem connectivity (which is face2face)
-// into cell2cell connectivity
-void t_CGNSContext::getGhostsZiFromZj_Neig(int cgZneID_I, int cgZneID_J, 
-	std::vector<cgsize_t>& ids_my,std::vector<cgsize_t>& ids_dnr) const{
 
-	const t_CGNSZone& cgZneMy = cgZones[cgZneID_I-1];
-	const t_CGNSZone& cgZneDnr = cgZones[cgZneID_J - 1];
-
-	const std::vector<t_CGConnSet*>& pConns = cgZneMy.getConns();
-
-	ids_my.resize(0); 
-	ids_dnr.resize(0);
-
-	for (int i = 0; i < pConns.size(); i++) {
-
-		const t_CGConnSet& conn = *pConns[i];
-
-		if (conn.getZoneIDDnr() == cgZneID_J) {
-
-			for (int j = 0; j < conn.get_buf().nRows; j++) {
-				cgsize_t id_my, id_dnr;
-				conn.getConnIds(j, id_my, id_dnr);
-
-				// now we need to find cell that has that face...
-
-				// first get ids of nodes
-				std::vector<cgsize_t> verts_cg_ids_my = cgZneMy.getVertsOfElem(id_my);
-				std::vector<cgsize_t> verts_cg_ids_dnr = cgZneDnr.getVertsOfElem(id_dnr);
-
-				// get internal zero-based indices of vertices
-				std::vector<cgsize_t> verts_ids_my = verts_cg_ids_my;
-				for (int k = 0; k < verts_ids_my.size(); k++) verts_ids_my[k] -= 1;
-
-				std::vector<cgsize_t> verts_ids_dnr = verts_cg_ids_dnr;
-				for (int k = 0; k < verts_ids_dnr.size(); k++) verts_ids_dnr[k] -= 1;
-
-				// now we need to use vertexConnectivity
-				const t_Zone& ZneMy = G_Domain.Zones[cgZneID_I - 1];
-				const t_Zone& ZneDnr = G_Domain.Zones[cgZneID_J - 1];
-
-				cgsize_t cell_id_my = ZneMy.getNeigAbutCellId(verts_ids_my);
-				cgsize_t cell_id_dnr = ZneDnr.getNeigAbutCellId(verts_ids_dnr);
-
-				// restore 1-based indexes
-				ids_my.push_back(cell_id_my + 1);
-				ids_dnr.push_back(cell_id_dnr + 1);
-
-			}
-
-
-		}
-
-	}
-
-	// now ids store ids of cells for zone_J that are neighbors of abutting cells from zone_I (ghosts)
-
-};
 
 // assuming that every element-to-element connection is face-2-face connection
 // number of direct ghosts is just number of elems in all connections.
+// this function is needed to load cells while Ghost Manager is not initialized yet
 cgsize_t t_CGNSContext::getNumOfGhostsForZone(int cgZoneID) const {
 
 	cgsize_t nneig_cells = 0;

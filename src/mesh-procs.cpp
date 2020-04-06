@@ -7,6 +7,8 @@
 
 #include <vector>
 
+#include "ghost_manager.h"
+
 //************************************* Cell methods
 void t_Cell::setKind(t_CellKind a_Kind) {
 
@@ -417,11 +419,35 @@ std::vector<t_Cell*> t_Zone::getNeigCellsOfCellFace(const t_Cell& cell, int face
 
 };
 
+int t_Zone::getFacePos(lint cell_id, const std::vector<lint> vert_ids) const {
+
+	const t_Cell& cell = getCell(cell_id);
+
+	t_CellFaceList flst(cell);
+
+	t_SetOfpVerts verts; for (int i = 0; i < 4; i++) verts[i] = nullptr;
+	verts.setSize(vert_ids.size());
+	for (int i = 0; i < verts.size(); i++) verts[i] = getpVert(vert_ids[i]);
+
+	for (int j = 0; j < cell.NFaces; j++) {
+
+		t_SetOfpVerts face_verts = flst.getVertices(j);
+
+		if (t_SetOfpVerts::cmp_weak(verts, face_verts))
+			return j;
+
+	}
+
+	hsLogError("t_Zone:getFacePos(iCell, vert_ids) failed, icell=%ld", cell_id);
+	return -1;
+
+};
+
 // for a given set of vertices (usually forming a face)
 // find a cell that owns them all
 // IMPORTANT: to be used only with abutted faces
 // for inner face it will find the first cell or the second
-lint t_Zone::getNeigAbutCellId(std::vector<lint> vert_ids) const {
+void t_Zone::getNeigAbutCellId(const std::vector<lint>& vert_ids,lint& cell_id, int& face_pos) const {
 
 	int npoints = vert_ids.size();
 
@@ -440,8 +466,11 @@ lint t_Zone::getNeigAbutCellId(std::vector<lint> vert_ids) const {
 					if (cell.getVert(k).Id == vert_ids[p])
 						n_coincidence++;
 
-			if (n_coincidence == npoints)
-				return cell.Id;
+			if (n_coincidence == npoints) {
+				cell_id = cell.Id;
+				face_pos = getFacePos(cell_id, vert_ids);
+				return;
+			}
 
 		}
 
@@ -454,16 +483,10 @@ lint t_Zone::getNeigAbutCellId(std::vector<lint> vert_ids) const {
 
 void t_Zone::makeCellConnectivity() {
 
-	// make the list of all faces in each zone
-	// also detect boundary faces : faces that have only 1 cell attached to it
-
 	// 1) construct pairs of cells that have common face:
 	//		a)  iterate over cells that are neighbors of face vertexes => list of "adjacent" cells
 	//		b) for each of "adjacent" cells get all faces
 	//		c) if face vertexes of adjacent cell coincide with vertexes of the cell, they are really adjacent
-
-	// count number of faces
-	lint nFaces = 0;
 
 	t_Cell *pcell_base, *pcell_neig;
 
@@ -518,6 +541,37 @@ void t_Zone::makeCellConnectivity() {
 
 	}
 
+	// real-2-real connections are set, now add real-2-ghost connections
+	int ZoneID = this->idGlob;
+	for (int j = 0; j < G_Domain.nZones; j++) {
+
+		// ghost nodes from zone j for zoneID
+		const t_GhostLayer& glayer = G_GhostManager.getGhostLayer(ZoneID, j);
+
+		if (glayer.size() > 0) {
+			lint offset = G_GhostManager.calcIndOffset(ZoneID, j);
+			for (int k = 0; k < glayer.size(); k++) {
+
+				const t_Cell2GhostData gdata = glayer.data[k];
+
+				t_Cell& cell_base = getCell(gdata.id_my);
+				int face_pos_my = gdata.face_pos_my;
+
+				t_Cell& cell_neig = *getpCell(offset+k);
+
+				cell_base.pCellsNeig[face_pos_my] = &cell_neig;
+				cell_base.FaceIndNeig[face_pos_my] = gdata.face_pos_dnr;
+
+				// currently backward references are not required
+				// TODO: this may be used later
+				cell_neig.pCellsNeig[gdata.face_pos_dnr] = &cell_base;
+				cell_neig.FaceIndNeig[gdata.face_pos_dnr] = face_pos_my;
+
+			}
+		}
+
+	}
+
 }
 // make list of faces
 // store only one face per intercell
@@ -553,8 +607,12 @@ void t_Zone::makeFaces() {
 				if (cell_base.pCellsNeig[j] != nullptr) {
 
 					const t_Cell& cell_neig = *cell_base.pCellsNeig[j];
-					int neig_face_ind = cell_base.FaceIndNeig[j];
-					faces_skipped[cell_neig.Id*MaxNumFacesInCell + neig_face_ind] = true;
+					// skip face for real cell
+					if (isRealCell(cell_neig.Id)) {
+						int neig_face_ind = cell_base.FaceIndNeig[j];
+						faces_skipped[cell_neig.Id * MaxNumFacesInCell + neig_face_ind] = true;
+					}
+
 
 				}
 
@@ -584,6 +642,10 @@ void t_Zone::makeFaces() {
 				init_face2cell_conn(iFace, cell_base, j);
 				cell_base.calcFaceNormalAreaOutward(j, face.Normal, face.Area);
 				iFace++;
+
+				//debug
+				if (face.BCKind == t_FaceBCKind::Fluid)
+					hsLogMessage("fluid face: Face_id=%ld, owner_cell_id=%ld", iFace, cell_base.Id);
 
 			}
 		}

@@ -205,13 +205,6 @@ struct t_CGNSContext
 		return map_ZneName2Idx[name] + 1;
 	};
 
-	// get list of ghosts for zone i from zone j
-
-	// most simple variant: ghosts are just first neighbors of abutting cells
-	void getGhostsZiFromZj_Neig(
-		int cgZneID_I, int cgZneID_J,
-		std::vector<cgsize_t>& ids_my, std::vector<cgsize_t>& ids_dnr) const;
-
 	cgsize_t getNumOfGhostsForZone(int cgZoneID) const;
 	
 

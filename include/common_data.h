@@ -368,7 +368,14 @@ public:
 	std::vector<t_Cell*> getNeigCellsOfCellFace(const t_Cell& cell, int face_ind) const;
 	void init_face2cell_conn(lint a_id, t_Cell& cell, int face_ind);
 
-	lint getNeigAbutCellId(std::vector<lint> vert_ids) const;
+	int getFacePos(lint cell_id, const std::vector<lint> vert_ids) const;
+
+	void getNeigAbutCellId(const std::vector<lint>& vert_ids, lint& cell_id, int& face_pos) const;
+
+	bool isRealCell(lint cell_id) {
+		// indices of real nodes are [0...nCellsReal-1]
+		return (0<=cell_id && cell_id <= nCellsReal-1);
+	}
 
 	// flow solver
 
