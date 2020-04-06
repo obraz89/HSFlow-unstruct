@@ -312,29 +312,41 @@ class t_Zone {
 
 	std::string name;  // name of the zone, initialized by '\0'
 
-	int id;
 
+	// Global 0-based id of a zone on current worker
+	int idGlob;
+	// for now all vertices in the zone are real
 	lint nVerts;
-
-	lint nCells;
-
+	// cells are stored as plain array
+	lint nCellsReal;
+	// total number of cells, real+ghosts
+	lint nCellsTot;
+	// number of faces in zone
 	lint nFaces;
-
+	// verts are real verts of the zone
 	t_Vert *Verts;
+	// plain array of cells, layout:
+	// first nCellsReal are real cells
+	// then comes ghostcells from zone0, then from zone1, etc...
 	t_Cell *Cells;
+	// real cells are decomposed into faces,
+	// each face is stored once (no duplicates)
 	t_Face *Faces;
 
 public:
 
-	void initialize(lint nVerts, lint nCells);
+	void initialize(lint a_nVerts, lint a_nCellsReal, lint a_nCellsTot);
 
-	void setId(int a_id) { id = a_id; }
+	void setIdGlob(int a_id) { idGlob = a_id; }
+	int getIdGlob() const { return idGlob; }
 
 	void setName(const char* a_name) { name = std::string(a_name); }
 	const char* getName() const { return name.c_str(); }
 
 	const lint& getnVerts() const { return nVerts; }
-	const lint& getnCells() const { return nCells; }
+	const lint& getnCellsTot() const { return nCellsTot; }
+	const lint& getnCellsReal() const { return nCellsReal; }
+	lint getnCellsGhost() const { return nCellsTot - nCellsReal; }
 
 	t_Cell& getCell(lint cell_ID) { return Cells[cell_ID]; }
 	const t_Cell& getCell(lint cell_ID) const{ return Cells[cell_ID]; }
@@ -355,6 +367,8 @@ public:
 
 	std::vector<t_Cell*> getNeigCellsOfCellFace(const t_Cell& cell, int face_ind) const;
 	void init_face2cell_conn(lint a_id, t_Cell& cell, int face_ind);
+
+	lint getNeigAbutCellId(std::vector<lint> vert_ids) const;
 
 	// flow solver
 
@@ -384,9 +398,9 @@ struct DLLIMPEXP t_Domain
 	t_Zone* Zones;
 
 	// Global grid info
-	double gridCellScaleMin, gridCellScaleMax;
-	bool grid_update_distance_to_walls();
-	bool grid_make_symmetric_boco(const std::string& boco_name);
+	//double gridCellScaleMin, gridCellScaleMax;
+	//bool grid_update_distance_to_walls();
+	//bool grid_make_symmetric_boco(const std::string& boco_name);
 
 	void makeVertexConnectivity();
 	void makeCellConnectivity();
@@ -398,10 +412,10 @@ struct DLLIMPEXP t_Domain
 	void makeTimeStep();
 
 	// Gas parameters
-	double(*pfunViscosity)(const double&) = nullptr;
+	//double(*pfunViscosity)(const double&) = nullptr;
 
 	// Info for input-output
-	std::map<std::string, double> mapCasePrms_real;
+	//std::map<std::string, double> mapCasePrms_real;
 };
 
 DLLIMPEXP extern t_Domain G_Domain;

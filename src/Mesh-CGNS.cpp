@@ -8,6 +8,8 @@
 
 #include "settings.h"
 
+#include "ghost_manager.h"
+
 //
 // Forward declarations
 //
@@ -92,7 +94,7 @@ int read_cgns_mesh()
 	// Allocate memory for whole computational domain
 	G_Domain.Zones = new t_Zone[G_Domain.nZones];
 
-	for (int i = 0; i < G_Domain.nZones; i++) G_Domain.Zones[i].setId(i);
+	for (int i = 0; i < G_Domain.nZones; i++) G_Domain.Zones[i].setIdGlob(i);
 
 	// Temporary zones data used on CGNS file parsing
 	ctx.cgZones = new t_CGNSZone[G_Domain.nZones];
@@ -114,11 +116,12 @@ int read_cgns_mesh()
 
 		// CGNS documentation: midlevel/structural.html#zone
 		// isize = {NVertex, NCell3D, NBoundVertex}
-		Zne.initialize(isize[0], isize[1]);
 		cgZne.setName(zonename); Zne.setName(zonename);
 
-		const cgsize_t& nVerts = Zne.getnVerts();
-		const cgsize_t& nCells = Zne.getnCells();
+		cgZne.setNVertsNCells(isize[0], isize[1]);
+
+		const cgsize_t& nVerts = cgZne.getNVerts();
+		const cgsize_t& nCells = cgZne.getNCells();
 
 		hsLogMessage("Number of Verts:%d", nVerts);
 
@@ -224,21 +227,33 @@ int read_cgns_mesh()
 
 	}
 
+	// update ctx with connectivity info
+	if (!parseConnectivity(ctx))
+		return false;
+
+	// get sizes of zones and read real cells from cgns ctx
 	loadCells(ctx);
 
 	// Read grid coordinates
 	if (!loadGridCoords(ctx))
 		return false;
 
-	// Connectivity info
-	if (!parseConnectivity(ctx))
-		return false;
-
+	// set up connections from verts to real cells
 	G_Domain.makeVertexConnectivity();
+
+	//G_GhostManager.setDom(G_Domain);
+	//G_GhostManager.initialize(ctx);
 
 	G_Domain.makeCellConnectivity();
 
 	G_Domain.makeFaces();
+
+	// checks with some cgns bc-specific funcs
+	if (!check_BCs(ctx))
+		return false;
+	// update mesh with bc sets
+	if (!parseBCs(ctx))
+		return false;
 
 	if (G_Domain.checkNormalOrientations()) 
 		hsLogMessage("check Face Normal Orientations : Ok");
@@ -248,14 +263,7 @@ int read_cgns_mesh()
 	G_Domain.calcUnitOstrogradResid();
 
 	// Volume conditions info (frozen zones)
-	parseVCs(ctx);
-
-	// checks with some cgns bc-specific funcs
-	if (!check_BCs(ctx))
-		return false;
-	// update mesh with bc sets
-	if (!parseBCs(ctx))
-		return false;
+	//parseVCs(ctx);
 
 	return 0;
 }
@@ -269,10 +277,23 @@ void loadCells(t_CGNSContext& ctx) {
 		t_CGNSZone& cgZne = ctx.cgZones[iZne];
 		
 		cgsize_t NCellsCG = cgZne.countCells();
-		if (NCellsCG != Zne.getnCells())
-			hsLogError("loadCells: size mismatch of cells: %ld in CGNS Zone, %ld in Zone", 
-			NCellsCG, Zne.getnCells());
 
+		// check that ncells is ok
+		if (NCellsCG != cgZne.getNCells())
+			hsLogError("loadCells: number of cells in cgZne is different from what was read from cgns file!");
+
+		cgsize_t NGhosts = ctx.getNumOfGhostsForZone(cgZneID);
+		// Zone stores real cells + some ghost cells
+
+		cgsize_t NCellsTot = NCellsCG + NGhosts;
+
+		Zne.initialize(cgZne.getNVerts(), NCellsCG, NCellsTot);
+
+		if (NCellsCG > Zne.getnCellsTot())
+			hsLogError("loadCells: failed to initialize Zne: %ld cells in CGNS Zone, %ld cells in Zone", 
+			NCellsCG, Zne.getnCellsTot());
+
+		// filling in real cells
 		int iCell = 0;
 
 		for (int i = 0; i < cgZne.getSectsCell().size(); i++) {
@@ -295,6 +316,9 @@ void loadCells(t_CGNSContext& ctx) {
 
 			}
 		}
+
+		// real cells are in place, ghost cells will be loaded later...
+
 		//std::cout << "______________________Debug, Zone Verts:\n";
 		// debug output of sections
 		//for (int i = 0; i < Zne.getnCells(); i++) {
@@ -339,7 +363,8 @@ static bool parseConnectivity(t_CGNSContext& ctx) {
 
 		if (n1to1 > 0 )
 			hsLogError(
-				"parseConnectivity: 1-to-1 connectivity detected, remake grid with generalized connectivity");
+				"parseConnectivity: 1-to-1 vertex connectivity detected, \
+				 remake grid with generalized connectivity (via faces' connectivity)");
 
 		if (NPatchesAbut != cgZne.getSectsAbut().size()) {
 			hsLogError("parseConnectivity:Wrong number of abutted patches");
@@ -372,6 +397,9 @@ static bool parseConnectivity(t_CGNSContext& ctx) {
 
 			t_CGConnSet* pConnNew = new t_CGConnSet(cgZneID, cgZneDnrID, npnts);
 
+			// a little bit dirty reading:
+			// read points and donor points into the same buf array but with
+			// corresponding shifts
 			cgsize_t* pnts = pConnNew->get_buf_data();
 			cgsize_t* pnts_dnr = pnts + npnts;
 
@@ -568,6 +596,81 @@ static bool loadGridCoords(t_CGNSContext& ctx) {
 
 	return true;
 }
+
+// ************** Ghost preparations ***********************
+// converting elem2elem connectivity (which is face2face)
+// into cell2cell connectivity
+void t_CGNSContext::getGhostsZiFromZj_Neig(int cgZneID_I, int cgZneID_J, 
+	std::vector<cgsize_t>& ids_my,std::vector<cgsize_t>& ids_dnr) const{
+
+	const t_CGNSZone& cgZneMy = cgZones[cgZneID_I-1];
+	const t_CGNSZone& cgZneDnr = cgZones[cgZneID_J - 1];
+
+	const std::vector<t_CGConnSet*>& pConns = cgZneMy.getConns();
+
+	ids_my.resize(0); 
+	ids_dnr.resize(0);
+
+	for (int i = 0; i < pConns.size(); i++) {
+
+		const t_CGConnSet& conn = *pConns[i];
+
+		if (conn.getZoneIDDnr() == cgZneID_J) {
+
+			for (int j = 0; j < conn.get_buf().nRows; j++) {
+				cgsize_t id_my, id_dnr;
+				conn.getConnIds(j, id_my, id_dnr);
+
+				// now we need to find cell that has that face...
+
+				// first get ids of nodes
+				std::vector<cgsize_t> verts_cg_ids_my = cgZneMy.getVertsOfElem(id_my);
+				std::vector<cgsize_t> verts_cg_ids_dnr = cgZneDnr.getVertsOfElem(id_dnr);
+
+				// get internal zero-based indices of vertices
+				std::vector<cgsize_t> verts_ids_my = verts_cg_ids_my;
+				for (int k = 0; k < verts_ids_my.size(); k++) verts_ids_my[k] -= 1;
+
+				std::vector<cgsize_t> verts_ids_dnr = verts_cg_ids_dnr;
+				for (int k = 0; k < verts_ids_dnr.size(); k++) verts_ids_dnr[k] -= 1;
+
+				// now we need to use vertexConnectivity
+				const t_Zone& ZneMy = G_Domain.Zones[cgZneID_I - 1];
+				const t_Zone& ZneDnr = G_Domain.Zones[cgZneID_J - 1];
+
+				cgsize_t cell_id_my = ZneMy.getNeigAbutCellId(verts_ids_my);
+				cgsize_t cell_id_dnr = ZneDnr.getNeigAbutCellId(verts_ids_dnr);
+
+				// restore 1-based indexes
+				ids_my.push_back(cell_id_my + 1);
+				ids_dnr.push_back(cell_id_dnr + 1);
+
+			}
+
+
+		}
+
+	}
+
+	// now ids store ids of cells for zone_J that are neighbors of abutting cells from zone_I (ghosts)
+
+};
+
+// assuming that every element-to-element connection is face-2-face connection
+// number of direct ghosts is just number of elems in all connections.
+cgsize_t t_CGNSContext::getNumOfGhostsForZone(int cgZoneID) const {
+
+	cgsize_t nneig_cells = 0;
+
+	const t_CGNSZone& cgZne = cgZones[cgZoneID-1];
+
+	for (auto c : cgZne.getConns()) {
+		nneig_cells+= c->get_buf().nCols;
+	}
+
+	return nneig_cells;
+
+};
 
 
 

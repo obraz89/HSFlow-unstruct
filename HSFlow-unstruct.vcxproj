@@ -155,6 +155,7 @@
     <ClInclude Include="include\dll_import-export.h" />
     <ClInclude Include="include\flow_model.h" />
     <ClInclude Include="include\flow_params.h" />
+    <ClInclude Include="include\ghost_manager.h" />
     <ClInclude Include="include\IniFile.hpp" />
     <ClInclude Include="include\logging.h" />
     <ClInclude Include="include\matrix_small.h" />
@@ -169,6 +170,7 @@
     <ClCompile Include="src\common_procs.cpp" />
     <ClCompile Include="src\flow_model.cpp" />
     <ClCompile Include="src\flow_params.cpp" />
+    <ClCompile Include="src\ghost_manager.cpp" />
     <ClCompile Include="src\HSFlow-shared.cpp" />
     <ClCompile Include="src\logging.cpp" />
     <ClCompile Include="src\main.cpp" />

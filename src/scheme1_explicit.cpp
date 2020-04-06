@@ -30,7 +30,7 @@ void t_Zone::makeTimeStep(double dt) {
 
 	t_ConsVars dU;
 
-	for (int i = 0; i < nCells; i++) {
+	for (int i = 0; i < nCellsReal; i++) {
 
 		const t_Cell& cell = getCell(i);
 

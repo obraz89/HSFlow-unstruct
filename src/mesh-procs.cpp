@@ -318,18 +318,21 @@ void t_Zone::init_face2cell_conn(lint a_id, t_Cell& cell, int face_ind) {
 
 //************************************* Zone methods
 
-void t_Zone::initialize(lint a_nVerts, lint a_nCells) {
+void t_Zone::initialize(lint a_nVerts, lint a_nCellsReal, lint a_nCellsTot) {
 
 	nVerts = a_nVerts;
-	nCells = a_nCells;
+	nCellsReal = a_nCellsReal;
+	nCellsTot = a_nCellsTot;
 
-	Verts = new t_Vert[nVerts]; Cells = new t_Cell[nCells];
+	Verts = new t_Vert[nVerts]; Cells = new t_Cell[nCellsTot];
 
 	// zero-based ids
 	for (lint i = 0; i < nVerts; i++) Verts[i].Id = i;
-	for (lint i = 0; i < nCells; i++) Cells[i].Id = i;
+	for (lint i = 0; i < nCellsTot; i++) Cells[i].Id = i;
 };
 
+// make connectivity of real vertices to real vertices
+// the lists of Neig Cells will be updated later with ghost cells
 void t_Zone::makeVertexConnectivity() {
 
 	t_Cell* pCell;
@@ -339,7 +342,7 @@ void t_Zone::makeVertexConnectivity() {
 	for (lint i = 0; i < nVerts; i++) getpVert(i)->NNeigCells = 0;
 
 	// first count Neighbor cells for each vertex
-	for (lint i = 0; i < nCells; i++) {
+	for (lint i = 0; i < nCellsReal; i++) {
 
 		pCell = getpCell(i);
 
@@ -362,7 +365,7 @@ void t_Zone::makeVertexConnectivity() {
 	for (lint i = 0; i < nVerts; i++) IndBuf[i] = 0;
 
 	// initialize reference to neighbor cells for each vertex
-	for (lint i = 0; i < nCells; i++) {
+	for (lint i = 0; i < nCellsReal; i++) {
 
 		pCell = getpCell(i);
 
@@ -389,6 +392,7 @@ void t_Zone::makeVertexConnectivity() {
 // get cells that owns at least one of vertices of the particular cell face
 // (excluding cell itself)
 // TODO: vector push_back performance ?
+// TODO: ghosts
 std::vector<t_Cell*> t_Zone::getNeigCellsOfCellFace(const t_Cell& cell, int face_ind) const{
 
 	std::vector<t_Cell*> vec_pcells(0);
@@ -413,10 +417,45 @@ std::vector<t_Cell*> t_Zone::getNeigCellsOfCellFace(const t_Cell& cell, int face
 
 };
 
+// for a given set of vertices (usually forming a face)
+// find a cell that owns them all
+// IMPORTANT: to be used only with abutted faces
+// for inner face it will find the first cell or the second
+lint t_Zone::getNeigAbutCellId(std::vector<lint> vert_ids) const {
+
+	int npoints = vert_ids.size();
+
+	for (int i = 0; i < npoints; i++) {
+
+		const t_Vert& vert = getVert(vert_ids[i]);
+
+		for (int j = 0; j < vert.NNeigCells; j++) {
+
+			const t_Cell& cell = *vert.pNeigCells[j];
+
+			int n_coincidence = 0;
+
+			for (int k = 0; k < cell.NVerts; k++)
+				for (int p = 0; p < npoints; p++)
+					if (cell.getVert(k).Id == vert_ids[p])
+						n_coincidence++;
+
+			if (n_coincidence == npoints)
+				return cell.Id;
+
+		}
+
+	}
+
+	hsLogMessage("t_Zone::getNeigCellId: failed to find cell that has vertices:");
+	for (int i = 0; i < npoints; i++) hsLogMessage("Vert %d:%ld", i, vert_ids[i]);
+
+};
+
 void t_Zone::makeCellConnectivity() {
 
 	// make the list of all faces in each zone
-	// also detect bc faces : faces that have only 1 cell attached to it
+	// also detect boundary faces : faces that have only 1 cell attached to it
 
 	// 1) construct pairs of cells that have common face:
 	//		a)  iterate over cells that are neighbors of face vertexes => list of "adjacent" cells
@@ -430,7 +469,7 @@ void t_Zone::makeCellConnectivity() {
 
 	t_SetOfpVerts vrtxset_base, vrtxset_neig;
 
-	for (lint i = 0; i < nCells; i++) {
+	for (lint i = 0; i < nCellsReal; i++) {
 
 		pcell_base = getpCell(i);
 
@@ -486,18 +525,18 @@ void t_Zone::makeCellConnectivity() {
 // 2) allocate & initialize
 void t_Zone::makeFaces() {
 
-	lint nFaceMax = nCells*MaxNumFacesInCell;
+	lint nFaceMax = nCellsReal*MaxNumFacesInCell;
 
-	bool* faces_skipped = new bool[nCells*MaxNumFacesInCell];
+	bool* faces_skipped = new bool[nCellsReal*MaxNumFacesInCell];
 
-	t_Face* faces_long = new t_Face[nCells*MaxNumFacesInCell];
+	t_Face* faces_long = new t_Face[nCellsReal*MaxNumFacesInCell];
 
 	for (int i = 0; i < nFaceMax; i++) faces_skipped[i] = false;
 
 	nFaces = 0;
 
 	// counting faces & making skip list
-	for (lint i = 0; i < nCells; i++) {
+	for (lint i = 0; i < nCellsReal; i++) {
 
 		const t_Cell& cell_base = getCell(i);
 
@@ -526,13 +565,13 @@ void t_Zone::makeFaces() {
 	}
 
 	// debug messages
-	hsLogMessage("Zone #%d has %d faces, initializing Face list", id, nFaces);
+	hsLogMessage("Zone #%d has %d faces, initializing Face list", idGlob, nFaces);
 
 	Faces = new t_Face[nFaces];
 
 	// initializing faces
 	int iFace = 0;
-	for (lint i = 0; i < nCells; i++) {
+	for (lint i = 0; i < nCellsReal; i++) {
 
 		t_Cell& cell_base = getCell(i);
 
@@ -625,7 +664,7 @@ bool t_Domain::checkNormalOrientations() {
 
 		const t_Zone& zne = G_Domain.Zones[iZone];
 
-		for (int iCell = 0; iCell < zne.getnCells(); iCell++) {
+		for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
 
 			const t_Cell& cell = zne.getCell(iCell);
 
@@ -669,7 +708,7 @@ double t_Domain::calcUnitOstrogradResid() {
 
 		const t_Zone& zne = G_Domain.Zones[iZone];
 
-		for (int iCell = 0; iCell < zne.getnCells(); iCell++) {
+		for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
 
 			const t_Cell& cell = zne.getCell(iCell);
 

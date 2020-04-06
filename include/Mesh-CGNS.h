@@ -65,6 +65,9 @@ public:
 	cgsize_t* get_buf_data() { return _buf.data(); }
 	const cgsize_t* get_buf_data() const { return _buf.data(); }
 
+	cgsize_t getZoneIDMy() const{ return idZoneMy; }
+	cgsize_t getZoneIDDnr() const{ return idZoneDnr; }
+
 	void getConnIds(cgsize_t i, cgsize_t& id_my, cgsize_t& id_dnr) const{
 		id_my = _buf.get_val(0, i);
 		id_dnr = _buf.get_val(1, i);
@@ -93,6 +96,8 @@ class t_CGNSZone
 	std::vector<t_CGConnSet*> pConns;
 
 	std::string name;
+
+	int NVerts, NCells;
 public:
 	const std::vector<t_CGSection*>& getSectsCell() const { return pSectsCell; }
 	const std::vector<t_CGSection*>& getSectsBC() const { return pSectsBC; }
@@ -108,6 +113,10 @@ public:
 	const t_CGSection& getSectionAbut(int i) const { return *pSectsAbut[i]; }
 
 	const std::vector<t_CGConnSet*>& getConns() const { return pConns; }
+
+	void setNVertsNCells(cgsize_t nv, cgsize_t nc) { NVerts = nv; NCells = nc; }
+	cgsize_t getNVerts() const { return NVerts; }
+	cgsize_t getNCells() const { return NCells; }
 
 	void setName(const char* a_name) { name = std::string(a_name); };
 	const std::string& getName() { return name; };
@@ -142,6 +151,35 @@ public:
 
 	}
 
+	std::vector<cgsize_t> getVertsOfElem(cgsize_t id) const{
+
+		std::vector<cgsize_t> vert_ids;
+
+		for (int i = 0; i < pSectsAll.size(); i++) {
+
+			const t_CGSection& sect = *pSectsAll[i];
+
+			if (sect.id_start <= id && id <= sect.id_end) {
+
+				int nverts = sect.get_buf().nCols;
+
+				vert_ids.resize(sect.get_buf().nCols);
+
+				cgsize_t irow = id - sect.id_start;
+
+				for (int j = 0; j < nverts; j++)
+					vert_ids[j] = sect.get_buf().get_val(irow, j);
+
+				return vert_ids;
+
+			}
+		}
+
+		hsLogError("t_CGNSZone:getVertsOfElem: can't find the element with id=%ld", id);
+		return vert_ids;
+
+	};
+
 	void addConn(t_CGConnSet* pCon) { pConns.push_back(pCon); }
 
 	t_CGNSZone() : pSectsCell(), pSectsBC(), pSectsAbut(), name("") { ; }
@@ -166,6 +204,16 @@ struct t_CGNSContext
 	cgsize_t getCGZoneIDByName(const char* name) {
 		return map_ZneName2Idx[name] + 1;
 	};
+
+	// get list of ghosts for zone i from zone j
+
+	// most simple variant: ghosts are just first neighbors of abutting cells
+	void getGhostsZiFromZj_Neig(
+		int cgZneID_I, int cgZneID_J,
+		std::vector<cgsize_t>& ids_my, std::vector<cgsize_t>& ids_dnr) const;
+
+	cgsize_t getNumOfGhostsForZone(int cgZoneID) const;
+	
 
 };
 
