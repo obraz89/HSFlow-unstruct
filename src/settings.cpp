@@ -3,6 +3,8 @@
 #include "common_data.h"
 #include "common_procs.h"
 
+#include "flow_common.h"
+
 #include "flow_params.h"
 
 #include "bc_data.h"

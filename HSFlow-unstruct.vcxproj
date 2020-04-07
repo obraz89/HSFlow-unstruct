@@ -153,13 +153,14 @@
     <ClInclude Include="include\common_data.h" />
     <ClInclude Include="include\common_procs.h" />
     <ClInclude Include="include\dll_import-export.h" />
+    <ClInclude Include="include\flow_common.h" />
     <ClInclude Include="include\flow_model.h" />
     <ClInclude Include="include\flow_params.h" />
     <ClInclude Include="include\ghost_manager.h" />
     <ClInclude Include="include\IniFile.hpp" />
     <ClInclude Include="include\logging.h" />
     <ClInclude Include="include\matrix_small.h" />
-    <ClInclude Include="include\Mesh-CGNS.h" />
+    <ClInclude Include="include\CGNS-ctx.h" />
     <ClInclude Include="include\optParse.h" />
     <ClInclude Include="include\PluginBase.h" />
     <ClInclude Include="include\rs_procs.h" />
@@ -176,7 +177,7 @@
     <ClCompile Include="src\logging.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\matrix_small.cpp" />
-    <ClCompile Include="src\Mesh-CGNS.cpp" />
+    <ClCompile Include="src\CGNS-ctx.cpp" />
     <ClCompile Include="src\mesh-procs.cpp" />
     <ClCompile Include="src\PluginBase.cpp" />
     <ClCompile Include="src\rs_procs.cpp" />

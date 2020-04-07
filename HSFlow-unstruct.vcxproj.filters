@@ -30,9 +30,6 @@
     <ClInclude Include="include\logging.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\Mesh-CGNS.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\common_procs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -66,11 +63,14 @@
     <ClInclude Include="include\ghost_manager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\CGNS-ctx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\flow_common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Mesh-CGNS.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\logging.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -111,6 +111,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ghost_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CGNS-ctx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\flow_common.cpp">

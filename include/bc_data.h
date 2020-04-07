@@ -2,11 +2,13 @@
 
 #include "PluginBase.h"
 
-#include "common_data.h"
-
 #include <vector>
 
 #include "IniFile.hpp"
+
+#include "common_data.h"
+
+#include "flow_model.h"
 
 // base class for information of face-type boundary conditions
 class t_BCDataFace : public TPlugin{

@@ -7,6 +7,8 @@
 
 #include <vector>
 
+#include "flow_common.h"
+
 #include "ghost_manager.h"
 
 //************************************* Cell methods

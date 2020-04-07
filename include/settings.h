@@ -2,8 +2,6 @@
 
 #include "IniFile.hpp"
 
-#include "common_data.h"
-
 //
 // Constants
 //

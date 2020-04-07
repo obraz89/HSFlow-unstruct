@@ -1,9 +1,11 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-#include "Mesh-CGNS.h"
+#include "CGNS-ctx.h"
 
 #include "logging.h"
 #include "common_data.h"
+
+#include "flow_common.h"
 
 #include "flow_model.h"
 
@@ -114,7 +116,9 @@ int main(int argc, char* argv[])
 	if (!load_settings())
 		goto fin;
 
-	read_cgns_mesh();
+	G_CGNSCtx.readMesh(g_genOpts.strGridFN);
+
+	G_Domain.initializeFromCtx();
 
 	initialize_flow_model();
 

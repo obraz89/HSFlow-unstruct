@@ -2,6 +2,8 @@
 
 #include <cmath>
 
+#include "flow_common.h"
+
 #include "flow_model.h"
 
 #include "rs_procs.h"

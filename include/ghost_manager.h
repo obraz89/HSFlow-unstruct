@@ -2,7 +2,9 @@
 
 #include "common_data.h"
 
-#include "Mesh-CGNS.h"
+#include "flow_common.h"
+
+#include "CGNS-ctx.h"
 
 // sell-2-ghost connection data
 // real cell C from some zone (Z_my) abutting ghost cell G via face F

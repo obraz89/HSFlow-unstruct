@@ -98,6 +98,9 @@ class t_CGNSZone
 	std::string name;
 
 	int NVerts, NCells;
+
+	double* x_coords, * y_coords, * z_coords;
+
 public:
 	const std::vector<t_CGSection*>& getSectsCell() const { return pSectsCell; }
 	const std::vector<t_CGSection*>& getSectsBC() const { return pSectsBC; }
@@ -118,8 +121,12 @@ public:
 	cgsize_t getNVerts() const { return NVerts; }
 	cgsize_t getNCells() const { return NCells; }
 
+	double*& getXCoords() { return x_coords; }
+	double*& getYCoords() { return y_coords; }
+	double*& getZCoords() { return z_coords; }
+
 	void setName(const char* a_name) { name = std::string(a_name); };
-	const std::string& getName() { return name; };
+	const std::string& getName() const{ return name; };
 
 
 	cgsize_t countCells() {
@@ -188,6 +195,8 @@ public:
 		for (int i = 0; i < pSectsAbut.size(); i++) delete pSectsAbut[i];
 		for (int i = 0; i < pSectsBC.size(); i++) delete pSectsBC[i];
 		for (int i = 0; i < pConns.size(); i++) delete pConns[i];
+
+		delete[] x_coords, y_coords, z_coords;
 	}
 };
 
@@ -195,6 +204,8 @@ struct t_CGNSContext
 {
 	int iFile, iBase;
 	std::map<std::string, int>  map_ZneName2Idx;
+
+	int nZones;
 
 	t_CGNSZone* cgZones;
 
@@ -206,8 +217,22 @@ struct t_CGNSContext
 	};
 
 	cgsize_t getNumOfGhostsForZone(int cgZoneID) const;
+
+	bool _parseConnectivity();
+
+	bool checkBCs();
+
+	bool loadGridCoords();
+
+	bool readMesh(std::string fn);
+
+	bool writeMesh();
+
+	bool readField();
+
+	bool writeField();
 	
 
 };
 
-int read_cgns_mesh();
+extern t_CGNSContext G_CGNSCtx;
