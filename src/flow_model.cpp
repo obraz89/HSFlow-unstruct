@@ -1,5 +1,7 @@
 #include "flow_model.h"
 
+#include "flow_params.h"
+
 t_FlowModelParams G_FlowModelParams;
 
 void initialize_flow_model() {
@@ -138,5 +140,28 @@ void calcCVFlux(const t_PrimVars& pv, t_ConsVars& cv, t_Flux& f) {
 double calcSoundSpeed(const t_PrimVars& pvs) {
 
 	return sqrt(G_FlowModelParams.Gamma * pvs.getP() / pvs.getR());
+
+}
+
+double calcGMaMaInv() {
+	double M2 = G_FreeStreamParams.getMach() * G_FreeStreamParams.getMach();
+	return 1.0 / (G_FlowModelParams.Gamma * M2);
+}
+
+t_ConsVars calcConsVarsInf() {
+
+	t_PrimVars prv;
+
+	const t_FlowParamsFreeStream& fp = G_FreeStreamParams;
+
+	prv.setR(1.0);
+
+	prv.setUVW(fp.getUInf());
+
+	prv.setP(calcGMaMaInv());
+
+	t_ConsVars csv = prv.calcConsVars();
+
+	return csv;
 
 }

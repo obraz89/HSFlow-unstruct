@@ -118,6 +118,8 @@ int main(int argc, char* argv[])
 
 	initialize_flow_model();
 
+	G_Domain.initializeFlow();
+
 	G_Domain.makeTimeStep();
 
 	err = EXIT_SUCCESS;

@@ -39,14 +39,18 @@ public:
 	t_PrimVars(const t_Vec<NConsVars>& v) :t_VecConsVars(v) {}
 	t_ConsVars calcConsVars() const;
 	t_PrimVars& setByCV(const t_ConsVars& cv);
-	double getR() const { return data[0]; }
-	double getU() const { return data[1]; }
-	double getP() const { return data[4]; }
-	//double calcRhoE() const;
 
+	double getR() const { return data[0]; }
+	void setR(double val) { data[0] = val; }
+
+	double getU() const { return data[1]; }
+	void setU(double val) { data[1] = val; }
 	void setUVW(const t_Vec3& v) {
 		for (int i = 0; i < 3; i++) data[i + 1] = v[i];
 	}
+	double getP() const { return data[4]; }
+	void setP(double val) { data[4] = val; }
+	//double calcRhoE() const;
 
 };
 
@@ -74,3 +78,6 @@ void calcCVFlux(const t_PrimVars& pv, t_ConsVars& cv, t_Flux& f);
 
 // non-dimensional speed of sound
 double calcSoundSpeed(const t_PrimVars& pvs); 
+
+// non-dimensional conservative variables at infinity
+t_ConsVars calcConsVarsInf();

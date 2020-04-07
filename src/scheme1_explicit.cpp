@@ -32,7 +32,7 @@ void t_Zone::makeTimeStep(double dt) {
 
 	for (int i = 0; i < nCellsReal; i++) {
 
-		const t_Cell& cell = getCell(i);
+		t_Cell& cell = getCell(i);
 
 		for (int j = 0; j < cell.NFaces; j++) {
 
@@ -45,6 +45,8 @@ void t_Zone::makeTimeStep(double dt) {
 			dU += coef*face.Flux;
 
 		}
+
+		cell.ConsVars += dU;
 
 	}
 
@@ -66,23 +68,18 @@ void t_Zone::calcFaceFlux(lint iFace) {
 
 	if (face.BCKind == t_FaceBCKind::Fluid) {
 
-		const t_PrimVars& pvl = face.pMyCell->PrimVars;
-		const t_PrimVars& pvr = face.pOppCell->PrimVars;
+		t_PrimVars pvl = face.pMyCell->ConsVars.calcPrimVars();
+		t_PrimVars pvr = face.pOppCell->ConsVars.calcPrimVars();
 
 		// rotate everything to local rf
-
-		t_PrimVars pvl_loc = pvl;
-		pvl_loc.rotate(R);
-
-		t_PrimVars pvr_loc = pvr;
-		pvr_loc.rotate(R);
+		pvl.rotate(R);
+		pvr.rotate(R);
 
 		t_Flux flux_loc;
 
-		calcRusanovFlux(pvl_loc, pvr_loc, flux_loc);
+		calcRusanovFlux(pvl, pvr, flux_loc);
 
 		// rotate flux back
-
 		R.set_inv(mat_rot_coefs);
 
 		face.Flux = flux_loc.rotate(R);

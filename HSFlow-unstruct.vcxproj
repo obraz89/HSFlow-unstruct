@@ -168,6 +168,7 @@
   <ItemGroup>
     <ClCompile Include="src\bc_data.cpp" />
     <ClCompile Include="src\common_procs.cpp" />
+    <ClCompile Include="src\flow_common.cpp" />
     <ClCompile Include="src\flow_model.cpp" />
     <ClCompile Include="src\flow_params.cpp" />
     <ClCompile Include="src\ghost_manager.cpp" />

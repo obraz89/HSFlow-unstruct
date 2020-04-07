@@ -145,7 +145,7 @@ void  t_GhostManager::exchangeCSV() {
 			for (int k = 0; k < glayer->size(); k++) {
 
 				lint offset = calcIndOffset(i, j);
-				ZoneMy.getCell(offset + k).PrimVars = ZoneDnr.getCell(glayer->data[k].id_dnr).PrimVars;
+				ZoneMy.getCell(offset + k).ConsVars = ZoneDnr.getCell(glayer->data[k].id_dnr).ConsVars;
 
 			}
 

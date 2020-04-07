@@ -223,7 +223,7 @@ struct t_Cell {
 
 	// Flow Data
 
-	t_PrimVars PrimVars;
+	t_ConsVars ConsVars;
 
 	int NCellsNeig() { int ret=0; 
 		for (int i = 0; i < MaxNumFacesInCell; i++) 
@@ -423,6 +423,8 @@ struct DLLIMPEXP t_Domain
 
 	// Info for input-output
 	//std::map<std::string, double> mapCasePrms_real;
+
+	void initializeFlow();
 };
 
 DLLIMPEXP extern t_Domain G_Domain;

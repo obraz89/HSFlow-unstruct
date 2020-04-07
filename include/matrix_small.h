@@ -49,6 +49,7 @@ template<int N> t_Vec<N> operator*(double val, const t_Vec<N>& vec) {
 	return vec*val;
 };
 
+// this version of sign return 0 for 0 value
 template <typename T> int sign(T val) {
 	return (T(0) < val) - (val < T(0));
 }
