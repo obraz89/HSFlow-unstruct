@@ -387,7 +387,7 @@ public:
 
 };
 
-struct DLLIMPEXP t_Domain
+struct t_Domain
 {
 	int nu,	  // number of dependent (unknown) variables
 		nDim; // number of independent variables (problem dimensions)
@@ -425,6 +425,10 @@ struct DLLIMPEXP t_Domain
 	//std::map<std::string, double> mapCasePrms_real;
 
 	void initializeFlow();
+
+	// for debug
+	void dump_flow();
+	void dump_geom();
 };
 
-DLLIMPEXP extern t_Domain G_Domain;
+extern t_Domain G_Domain;

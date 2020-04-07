@@ -4,6 +4,8 @@
 
 #include "ghost_manager.h"
 
+#include <fstream>
+
 void t_Domain::initializeFlow() {
 
 	t_ConsVars cvs = calcConsVarsInf();
@@ -24,5 +26,37 @@ void t_Domain::initializeFlow() {
 	}
 	// set ghost values
 	G_GhostManager.exchangeCSV();
+
+}
+
+void t_Domain::dump_flow() {
+
+	std::string fn("dump_flow.txt");
+
+	std::ofstream ofstr(fn);
+
+	for (int iZone = 0; iZone < nZones; iZone++) {
+
+		t_Zone& zne = Zones[iZone];
+
+		t_Cell* pcell;
+
+		ofstr << "=========Zone #" << iZone << "===========\n";
+
+		for (int i = 0; i < zne.getnCellsTot(); i++) {
+
+			pcell = zne.getpCell(i);
+			ofstr <<"cell #"<<i << pcell->ConsVars.to_str();
+		}
+
+	}
+
+	ofstr.flush();
+
+}
+
+void t_Domain::dump_geom() {
+
+
 
 }

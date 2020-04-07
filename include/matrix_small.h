@@ -43,6 +43,14 @@ public:
 			ret += data[i] * v[i]; 
 		return ret;
 	}
+
+	std::string to_str() {
+		std::ostringstream ostr;
+		ostr << "{";
+			for (int i = 0; i < N; i++) ostr << data[i] << ";";
+		ostr << "}\n";
+		return ostr.str();
+	}
 };
 
 template<int N> t_Vec<N> operator*(double val, const t_Vec<N>& vec) {
