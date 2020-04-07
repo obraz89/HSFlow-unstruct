@@ -33,9 +33,6 @@
     <ClInclude Include="include\common_procs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\flow_model.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\matrix_small.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -69,6 +66,12 @@
     <ClInclude Include="include\flow_common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\flow_model_perfect_gas.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\flux_euler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\logging.cpp">
@@ -89,9 +92,6 @@
     <ClCompile Include="src\scheme1_explicit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\flow_model.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\matrix_small.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -104,9 +104,6 @@
     <ClCompile Include="src\settings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\bc_data.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\PluginBase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -117,6 +114,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\flow_common.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\flow_model_perfect_gas.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\flux-euler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\bc_data_euler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

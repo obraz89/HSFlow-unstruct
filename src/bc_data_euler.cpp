@@ -6,6 +6,9 @@
 
 #include <sstream>
 
+#include "flux_euler.h"
+#include "flow_model_perfect_gas.h"
+
 #pragma warning(push)
 // Disable Visual Studio warnings
 #pragma warning(disable:4996)  // strtok may be unsafe ... ignoring)

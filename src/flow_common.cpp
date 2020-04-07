@@ -2,16 +2,13 @@
 
 #include "flow_common.h"
 
-
-// TODO: remove this dependency, how to store flux for different models?
-#include "flow_model.h"
-
 #include "ghost_manager.h"
 
 #include <fstream>
 
 #include "CGNS-ctx.h"
 
+// TODO: remove dependence from model by inheritances
 #include "bc_data.h"
 
 t_CellKind getElementKind(CG_ElementType_t cg_type) {
@@ -215,29 +212,6 @@ void t_Domain::loadBCs() {
 		}
 	}
 };     // boundary conditions
-
-void t_Domain::initializeFlow() {
-
-	t_ConsVars cvs = calcConsVarsInf();
-
-	// set real cell values
-	for (int iZone = 0; iZone < nZones; iZone++) {
-
-		t_Zone& zne = Zones[iZone];
-
-		t_Cell* pcell;
-
-		for (int i = 0; i < zne.getnCellsReal(); i++) {
-
-			pcell = zne.getpCell(i);
-			pcell->ConsVars = cvs;
-		}
-
-	}
-	// set ghost values
-	G_GhostManager.exchangeCSV();
-
-}
 
 void t_Domain::dump_flow() {
 

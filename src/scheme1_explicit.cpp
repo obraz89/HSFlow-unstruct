@@ -4,7 +4,7 @@
 
 #include "flow_common.h"
 
-#include "flow_model.h"
+#include "flow_model_perfect_gas.h"
 
 #include "rs_procs.h"
 

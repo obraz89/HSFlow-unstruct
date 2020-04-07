@@ -1,5 +1,7 @@
 #include "rs_procs.h"
 
+#include "flow_model_perfect_gas.h"
+
 #include <cmath>
 
 // Davis estimate for wave speeds
@@ -17,9 +19,9 @@ void calcWaveSpeedDavisEstim(
 
 	double cl, cm, cr;
 
-	cl = calcSoundSpeed(pvl);
-	cm = calcSoundSpeed(pvm);
-	cr = calcSoundSpeed(pvr);
+	cl = calcSoundSpeedByRP(pvl.getR(), pvl.getP());
+	cm = calcSoundSpeedByRP(pvm.getR(), pvm.getP());
+	cr = calcSoundSpeedByRP(pvr.getR(), pvr.getP());
 
 	// sl is minimum of (ul-cl, ur-cr, um-cm)
 	sl = fmin(ul - cl, ur - cr);

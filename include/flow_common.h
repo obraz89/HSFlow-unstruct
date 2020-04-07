@@ -2,8 +2,8 @@
 
 #include "common_data.h"
 
-// TODO: remove this dependency (how to store flux ?)
-#include "flow_model.h"
+// TODO: remove dependence from model by inheritances
+#include "flux_euler.h"
 
 static const int MaxNumVertsInFace = 4;
 
@@ -22,8 +22,6 @@ struct t_Vert;
 using t_SetOfpVerts = t_TSet<const t_Vert*, MaxNumVertsInFace>;
 
 struct t_Zone;
-
-
 
 struct t_Cell;
 

@@ -1,16 +1,12 @@
-#include "flow_model.h"
+#include "flux_euler.h"
 
 #include "flow_params.h"
 
-t_FlowModelParams G_FlowModelParams;
+#include "flow_model_perfect_gas.h"
 
-void initialize_flow_model() {
-
-	G_FlowModelParams.Gamma = 1.4;
-
-	G_FlowModelParams.Pr = 0.72;
-
-}
+// TODO: t_Domain::initializeFlow ? remove link by inheritance
+#include "flow_common.h"
+#include "ghost_manager.h"
 
 //******************************************t_VecConsVars
 
@@ -21,11 +17,11 @@ t_VecConsVars& t_VecConsVars::rotate(const t_SqMat3& R) {
 	// components 2-4 rotated as 3d vector
 	t_Vec3 res, v;
 
-	for (int i = 0; i < 3; i++) v[i] = data[i+1];
+	for (int i = 0; i < 3; i++) v[i] = data[i + 1];
 
 	res = R * v;
 
-	for (int i = 0; i < 3; i++) data[i+1] = res[i];
+	for (int i = 0; i < 3; i++) data[i + 1] = res[i];
 
 	// fifth component is scalar - not changed
 
@@ -56,10 +52,10 @@ t_PrimVars& t_PrimVars::setByCV(const t_ConsVars& cv) {
 	return *this;
 }
 
-t_ConsVars t_PrimVars::calcConsVars() const{
+t_ConsVars t_PrimVars::calcConsVars() const {
 
 	t_ConsVars csv;
-	
+
 	csv.setByPV(*this);
 
 	return csv;
@@ -88,7 +84,7 @@ t_ConsVars& t_ConsVars::setByPV(const t_PrimVars& pv) {
 
 }
 
-t_PrimVars t_ConsVars::calcPrimVars() const{
+t_PrimVars t_ConsVars::calcPrimVars() const {
 
 	t_PrimVars pvs;
 
@@ -135,19 +131,6 @@ void calcCVFlux(const t_PrimVars& pv, t_ConsVars& cv, t_Flux& f) {
 
 };
 
-// common functions
-
-double calcSoundSpeed(const t_PrimVars& pvs) {
-
-	return sqrt(G_FlowModelParams.Gamma * pvs.getP() / pvs.getR());
-
-}
-
-double calcGMaMaInv() {
-	double M2 = G_FreeStreamParams.getMach() * G_FreeStreamParams.getMach();
-	return 1.0 / (G_FlowModelParams.Gamma * M2);
-}
-
 t_ConsVars calcConsVarsInf() {
 
 	t_PrimVars prv;
@@ -163,5 +146,28 @@ t_ConsVars calcConsVarsInf() {
 	t_ConsVars csv = prv.calcConsVars();
 
 	return csv;
+
+}
+
+void t_Domain::initializeFlow() {
+
+	t_ConsVars cvs = calcConsVarsInf();
+
+	// set real cell values
+	for (int iZone = 0; iZone < nZones; iZone++) {
+
+		t_Zone& zne = Zones[iZone];
+
+		t_Cell* pcell;
+
+		for (int i = 0; i < zne.getnCellsReal(); i++) {
+
+			pcell = zne.getpCell(i);
+			pcell->ConsVars = cvs;
+		}
+
+	}
+	// set ghost values
+	G_GhostManager.exchangeCSV();
 
 }

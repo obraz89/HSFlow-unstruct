@@ -7,18 +7,6 @@
 
 static const int NConsVars = 5;
 
-struct t_FlowModelParams {
-
-	double Gamma;
-
-	double Pr;
-
-};
-
-extern t_FlowModelParams G_FlowModelParams;
-
-void initialize_flow_model();
-
 class t_VecConsVars : public t_Vec<NConsVars> {
 
 public:
@@ -75,9 +63,6 @@ public:
 
 // calc CV & Flux from primitive Vars
 void calcCVFlux(const t_PrimVars& pv, t_ConsVars& cv, t_Flux& f);
-
-// non-dimensional speed of sound
-double calcSoundSpeed(const t_PrimVars& pvs); 
 
 // non-dimensional conservative variables at infinity
 t_ConsVars calcConsVarsInf();

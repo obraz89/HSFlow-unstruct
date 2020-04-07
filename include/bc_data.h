@@ -8,7 +8,8 @@
 
 #include "common_data.h"
 
-#include "flow_model.h"
+#include "flux_euler.h"
+#include "flow_model_perfect_gas.h"
 
 // base class for information of face-type boundary conditions
 class t_BCDataFace : public TPlugin{
