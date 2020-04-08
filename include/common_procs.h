@@ -8,8 +8,6 @@
 
 #include <string>
 #include <ctime>
-
-#include "dll_import-export.h"
 //-----------------------------------------------------------------------------
 
 //

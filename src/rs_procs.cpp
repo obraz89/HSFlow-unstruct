@@ -1,4 +1,4 @@
-#include "rs_procs.h"
+#include "rs_euler.h"
 
 #include "flow_model_perfect_gas.h"
 

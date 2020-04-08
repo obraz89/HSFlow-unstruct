@@ -8,6 +8,7 @@
 
 #include "common_data.h"
 
+// TODO: split bc_data into bc_list (params) & bc_euler (physical implementation)
 #include "flux_euler.h"
 #include "flow_model_perfect_gas.h"
 

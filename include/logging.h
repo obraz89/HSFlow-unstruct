@@ -7,14 +7,13 @@
 #pragma once
 
 #include <string>
-#include "dll_import-export.h"
 
 //-----------------------------------------------------------------------------
 
 //
 // String manipulation
 //
-DLLIMPEXP std::string hs_string_format(const char* fmt, ...)
+std::string hs_string_format(const char* fmt, ...)
 #if defined(__GNUC__)
 __attribute__((format(printf, 1, 2)))  // ask GCC to type-check against a format string
 #endif
@@ -35,7 +34,7 @@ enum ELogLevel
  *  TLog singleton class with pImpl idiom
  *  for logging to both stdout and file-stream
  */
-class DLLIMPEXP TLog
+class TLog
 {
 private:
 	class Impl;
@@ -64,7 +63,7 @@ void hsLogWTime(bool isInit = false);
 //-----------------------------------------------------------------------------
 
 // Log error with source file name
-DLLIMPEXP void hs_log_error_src(const std::string& msg, const char* src, int line);
+void hs_log_error_src(const std::string& msg, const char* src, int line);
 //-----------------------------------------------------------------------------
 
 

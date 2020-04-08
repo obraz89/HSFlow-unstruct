@@ -4,10 +4,6 @@
 
 #include "flow_model_perfect_gas.h"
 
-// TODO: t_Domain::initializeFlow ? remove link by inheritance
-#include "flow_common.h"
-#include "ghost_manager.h"
-
 //******************************************t_VecConsVars
 
 void t_VecConsVars::rotate(const t_SqMat3& R) {

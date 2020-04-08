@@ -1,5 +1,3 @@
-#include "flow_common.h"
-
 #include "flow_model_perfect_gas.h"
 
 #include "flow_params.h"

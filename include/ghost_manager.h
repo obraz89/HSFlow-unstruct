@@ -2,12 +2,14 @@
 
 #include "common_data.h"
 
-#include "flow_common.h"
+#include "mesh.h"
 
 #include "CGNS-ctx.h"
 
 // TODO: ghost_manager should inherit from base class
-#include "flow_euler.h"
+// base class rules connections
+// inherited know physics
+#include "dom_euler.h"
 
 // sell-2-ghost connection data
 // real cell C from some zone (Z_my) abutting ghost cell G via face F
@@ -49,7 +51,7 @@ struct t_GhostLayer {
 // in single-proc version, we can pass complex data types
 class t_GhostManager {
 
-	t_Domain* _pDom;
+	t_Mesh* _pDom;
 
 	// connections between zones
 	// in MPI case, should be initialized via receive from master
@@ -81,7 +83,7 @@ public:
 	void getGhostsZiFromZj_Neig(const t_CGNSContext& ctx, int cgZneID_I, int cgZneID_J,
 		t_GhostLayer& glayer) const;
 
-	void setDom(t_Domain& a_dom) {
+	void setDom(t_Mesh& a_dom) {
 
 		_pDom = &a_dom;
 

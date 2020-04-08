@@ -262,7 +262,7 @@ public:
 
 };
 
-struct t_Domain
+struct t_Mesh
 {
 	int nu,	  // number of dependent (unknown) variables
 		nDim; // number of independent variables (problem dimensions)
@@ -311,7 +311,7 @@ struct t_Domain
 	virtual void dump_flow() = 0;
 	virtual void dump_geom() = 0;
 
-	virtual ~t_Domain() {};
+	virtual ~t_Mesh() {};
 };
 
-extern t_Domain* G_pDomainBase;
+extern t_Mesh* G_pMesh;

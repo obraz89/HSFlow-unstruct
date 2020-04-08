@@ -1,5 +1,3 @@
-#include "common_data.h"
-
 #include "common_procs.h"
 
 // stat(), getcwd() functions

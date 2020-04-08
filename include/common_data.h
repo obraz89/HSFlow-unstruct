@@ -2,8 +2,6 @@
 
 #include <map>
 
-#include "dll_import-export.h"
-
 #include <array>
 #include <vector>
 
@@ -119,4 +117,4 @@ struct TState
 	double initialResidual;
 };
 
-DLLIMPEXP extern TState G_State;
+extern TState G_State;

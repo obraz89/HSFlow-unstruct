@@ -4,6 +4,7 @@
 // Name:        PluginBase.h
 // Purpose:     Base classes for plugins
 // Author:      Andrey V. Novikov
+// Modified:    A. Obraz
 ///////////////////////////////////////////////////////////////////////////////
 
 #pragma once
@@ -165,7 +166,7 @@
 	 *
 	 * Logical group of plugin parameters
 	 */
-	class DLLIMPEXP TPluginParamsGroup
+	class TPluginParamsGroup
 	{
 		friend class TPlugin;
 
@@ -225,7 +226,7 @@
 	 *
 	 * A base class for all plugin classes.
 	 */
-	class DLLIMPEXP TPlugin
+	class TPlugin
 	{
 	protected:
 		std::string _spec;  // specialization

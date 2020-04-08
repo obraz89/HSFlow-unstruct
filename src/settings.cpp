@@ -3,11 +3,11 @@
 #include "common_data.h"
 #include "common_procs.h"
 
-#include "flow_common.h"
-
 #include "flow_params.h"
 
 #include "bc_data.h"
+
+#include "mesh.h"
 
 #include <stdlib.h> // free()
 #include <string.h> // strtok(), strdup()
@@ -178,7 +178,7 @@ bool load_settings() {
 
 	const std::string sIni = std::string() + g_CASE_SETTINGS_DIR + MAIN_INI;
 
-	G_pDomainBase->nDim = 3;
+	G_pMesh->nDim = 3;
 
 	G_State.mpiNProcs = 1;
 

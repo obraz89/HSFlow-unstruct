@@ -1,16 +1,23 @@
 #pragma once
 
-#include "flow_common.h"
+#include "mesh.h"
 
 #include "flux_euler.h"
 
+// Flow solution for a zone:
+// Fluxes - fluxes at faces
+// ConsVars - conservative flow variables at cell centers
 struct t_ZoneFlowData {
 	// fluxes through
 	t_Flux* Fluxes;
 	t_ConsVars* ConsVars;
 };
 
-class t_DomainEuler : public t_Domain {
+// Domain for Euler equations
+// TODO: inherit from common t_Domain
+// (experience needed from several flow cases to produce common interface)
+
+class t_DomainEuler : public t_Mesh {
 
 	t_ZoneFlowData* ZonesSol;
 

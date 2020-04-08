@@ -3,11 +3,18 @@
 #include "CGNS-ctx.h"
 
 #include "logging.h"
-#include "common_data.h"
 
 #include "optParse.h"
 
-#include "flowcase_euler.h"
+#include "common_data.h"
+
+#include "settings.h"
+
+#include "mesh.h"
+
+// model-specific part
+#include "flow_model_perfect_gas.h"
+#include "dom_euler.h"
 
 #if defined(_WINDOWS)
 	#include <direct.h>   // chdir
@@ -107,7 +114,7 @@ int main(int argc, char* argv[])
 	}
 	//hsLogWTime(true);
 
-	G_pDomainBase = &G_Domain;
+	G_pMesh = &G_Domain;
 
 	if (!load_settings())
 		goto fin;

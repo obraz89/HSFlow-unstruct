@@ -152,10 +152,8 @@
     <ClInclude Include="include\bc_data.h" />
     <ClInclude Include="include\common_data.h" />
     <ClInclude Include="include\common_procs.h" />
-    <ClInclude Include="include\dll_import-export.h" />
-    <ClInclude Include="include\flowcase_euler.h" />
-    <ClInclude Include="include\flow_common.h" />
-    <ClInclude Include="include\flow_euler.h" />
+    <ClInclude Include="include\mesh.h" />
+    <ClInclude Include="include\dom_euler.h" />
     <ClInclude Include="include\flow_model_perfect_gas.h" />
     <ClInclude Include="include\flow_params.h" />
     <ClInclude Include="include\ghost_manager.h" />
@@ -166,14 +164,15 @@
     <ClInclude Include="include\CGNS-ctx.h" />
     <ClInclude Include="include\optParse.h" />
     <ClInclude Include="include\PluginBase.h" />
-    <ClInclude Include="include\rs_procs.h" />
+    <ClInclude Include="include\rs_euler.h" />
     <ClInclude Include="include\settings.h" />
+    <ClInclude Include="src\bc_euler.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\bc_data_euler.cpp" />
     <ClCompile Include="src\common_procs.cpp" />
-    <ClCompile Include="src\flow_common.cpp" />
-    <ClCompile Include="src\flow_euler.cpp" />
+    <ClCompile Include="src\mesh.cpp" />
+    <ClCompile Include="src\dom_euler.cpp" />
     <ClCompile Include="src\flow_model_perfect_gas.cpp" />
     <ClCompile Include="src\flow_params.cpp" />
     <ClCompile Include="src\flux-euler.cpp" />
@@ -183,10 +182,8 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\matrix_small.cpp" />
     <ClCompile Include="src\CGNS-ctx.cpp" />
-    <ClCompile Include="src\mesh-procs.cpp" />
     <ClCompile Include="src\PluginBase.cpp" />
     <ClCompile Include="src\rs_procs.cpp" />
-    <ClCompile Include="src\scheme1_explicit.cpp" />
     <ClCompile Include="src\settings.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

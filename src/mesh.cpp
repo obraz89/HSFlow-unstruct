@@ -1,15 +1,30 @@
-#include "logging.h"
-#include "common_data.h"
-#include "common_procs.h"
+#include "mesh.h"
 
-// mainly for debugging
-#include <iostream>
-
-#include <vector>
-
-#include "flow_common.h"
-
+// TODO: put ghost manager inside mesh ?
 #include "ghost_manager.h"
+
+#include <fstream>
+
+#include "CGNS-ctx.h"
+
+// TODO: remove dependence from model by inheritances
+#include "bc_data.h"
+
+t_Mesh* G_pMesh;
+
+t_CellKind getElementKind(CG_ElementType_t cg_type) {
+
+	t_CellKind cell_kind = t_CellKind::None;
+
+	if (cg_type == CG_TETRA_4) {
+		cell_kind = t_CellKind::Tetra;
+	}
+	if (cg_type == CG_HEXA_8) {
+		cell_kind = t_CellKind::Brick;
+	}
+	return cell_kind;
+
+};
 
 //************************************* Cell methods
 void t_Cell::setKind(t_CellKind a_Kind) {
@@ -46,10 +61,10 @@ void t_Cell::setKind(t_CellKind a_Kind) {
 // the computed normal is directed outward of the cell
 // TODO: if grids with non-standard vertex numbering are read
 // additional work should be done to ensure the normal is directed outward of the cell
-void t_Cell::calcFaceNormalAreaOutward(int iface, t_Vec3& norm, double& area) const{
+void t_Cell::calcFaceNormalAreaOutward(int iface, t_Vec3& norm, double& area) const {
 
 	t_CellFaceList flist(*this);
-	
+
 	// compute directly cell face normal
 	t_SetOfpVerts verts = flist.getVertices(iface);
 
@@ -69,19 +84,19 @@ void t_Cell::calcFaceNormalAreaOutward(int iface, t_Vec3& norm, double& area) co
 
 }
 
-t_Vec3 t_Cell::getFaceNormalOutward(int iface) const{
+t_Vec3 t_Cell::getFaceNormalOutward(int iface) const {
 
 	t_Vec3 norm;
 
 	const t_Face* pface = pFaces[iface];
 
 	if (this == pface->pMyCell) norm = pface->Normal;
-	else norm = -1.0*pface->Normal;
+	else norm = -1.0 * pface->Normal;
 
 	return norm;
 }
 
-void t_CellEdgeList::init(const t_Cell& a_Cell){
+void t_CellEdgeList::init(const t_Cell& a_Cell) {
 
 	pCell = &a_Cell;
 
@@ -176,7 +191,7 @@ void t_CellEdgeList::init(const t_Cell& a_Cell){
 	hsLogMessage("t_CellEdgeList: unsupported element type");
 };
 
-t_CellFaceList::t_CellFaceList(const t_Cell& a_Cell){
+t_CellFaceList::t_CellFaceList(const t_Cell& a_Cell) {
 
 	pCell = &a_Cell;
 
@@ -264,7 +279,7 @@ t_CellFaceList::t_CellFaceList(const t_Cell& a_Cell){
 	hsLogMessage("t_CellFaceList: unsupported element type");
 };
 
-const t_SetOfpVerts& t_CellFaceList::getVertices(int indFace) const{
+const t_SetOfpVerts& t_CellFaceList::getVertices(int indFace) const {
 
 	return F2V[indFace];
 };
@@ -278,7 +293,7 @@ t_SetOfpVerts t_Face::getVerts() const {
 };
 
 void t_Zone::init_face2cell_conn(lint a_id, t_Cell& cell, int face_ind) {
-	
+
 	t_Face& face = Faces[a_id];
 
 	face.Id = a_id;
@@ -360,7 +375,7 @@ void t_Zone::makeVertexConnectivity() {
 	// allocate memory
 	for (lint i = 0; i < nVerts; i++) {
 		pVert = getpVert(i);
-		pVert->pNeigCells = new t_Cell*[pVert->NNeigCells];
+		pVert->pNeigCells = new t_Cell * [pVert->NNeigCells];
 	}
 
 	// buffer for current index in neig cell list for each vertex
@@ -397,7 +412,7 @@ void t_Zone::makeVertexConnectivity() {
 // (excluding cell itself)
 // TODO: vector push_back performance ?
 // TODO: ghosts
-std::vector<t_Cell*> t_Zone::getNeigCellsOfCellFace(const t_Cell& cell, int face_ind) const{
+std::vector<t_Cell*> t_Zone::getNeigCellsOfCellFace(const t_Cell& cell, int face_ind) const {
 
 	std::vector<t_Cell*> vec_pcells(0);
 
@@ -449,7 +464,7 @@ int t_Zone::getFacePos(lint cell_id, const std::vector<lint> vert_ids) const {
 // find a cell that owns them all
 // IMPORTANT: to be used only with abutted faces
 // for inner face it will find the first cell or the second
-void t_Zone::getNeigAbutCellId(const std::vector<lint>& vert_ids,lint& cell_id, int& face_pos) const {
+void t_Zone::getNeigAbutCellId(const std::vector<lint>& vert_ids, lint& cell_id, int& face_pos) const {
 
 	int npoints = vert_ids.size();
 
@@ -490,7 +505,7 @@ void t_Zone::makeCellConnectivity() {
 	//		b) for each of "adjacent" cells get all faces
 	//		c) if face vertexes of adjacent cell coincide with vertexes of the cell, they are really adjacent
 
-	t_Cell *pcell_base, *pcell_neig;
+	t_Cell* pcell_base, * pcell_neig;
 
 	t_SetOfpVerts vrtxset_base, vrtxset_neig;
 
@@ -535,7 +550,7 @@ void t_Zone::makeCellConnectivity() {
 
 				}
 
-				
+
 
 			}
 
@@ -544,8 +559,9 @@ void t_Zone::makeCellConnectivity() {
 	}
 
 	// real-2-real connections are set, now add real-2-ghost connections
+	// TODO: all zones involved here, must be a method from ghost manager...
 	int ZoneID = this->idGlob;
-	for (int j = 0; j < G_pDomainBase->nZones; j++) {
+	for (int j = 0; j < G_pMesh->nZones; j++) {
 
 		// ghost nodes from zone j for zoneID
 		const t_GhostLayer& glayer = G_GhostManager.getGhostLayer(ZoneID, j);
@@ -559,7 +575,7 @@ void t_Zone::makeCellConnectivity() {
 				t_Cell& cell_base = getCell(gdata.id_my);
 				int face_pos_my = gdata.face_pos_my;
 
-				t_Cell& cell_neig = *getpCell(offset+k);
+				t_Cell& cell_neig = *getpCell(offset + k);
 
 				cell_base.pCellsNeig[face_pos_my] = &cell_neig;
 				cell_base.FaceIndNeig[face_pos_my] = gdata.face_pos_dnr;
@@ -581,11 +597,11 @@ void t_Zone::makeCellConnectivity() {
 // 2) allocate & initialize
 void t_Zone::makeFaces() {
 
-	lint nFaceMax = nCellsReal*MaxNumFacesInCell;
+	lint nFaceMax = nCellsReal * MaxNumFacesInCell;
 
-	bool* faces_skipped = new bool[nCellsReal*MaxNumFacesInCell];
+	bool* faces_skipped = new bool[nCellsReal * MaxNumFacesInCell];
 
-	t_Face* faces_long = new t_Face[nCellsReal*MaxNumFacesInCell];
+	t_Face* faces_long = new t_Face[nCellsReal * MaxNumFacesInCell];
 
 	for (int i = 0; i < nFaceMax; i++) faces_skipped[i] = false;
 
@@ -602,7 +618,7 @@ void t_Zone::makeFaces() {
 
 			t_SetOfpVerts verts_base = cfacelst.getVertices(j);
 
-			if (faces_skipped[i*MaxNumFacesInCell + j] == false) {
+			if (faces_skipped[i * MaxNumFacesInCell + j] == false) {
 
 				nFaces++;
 				// find adjacent face if this is an intercell face
@@ -637,7 +653,7 @@ void t_Zone::makeFaces() {
 
 		for (int j = 0; j < cell_base.NFaces; j++) {
 
-			if (faces_skipped[i*MaxNumFacesInCell + j] == false) {
+			if (faces_skipped[i * MaxNumFacesInCell + j] == false) {
 
 				t_Face& face = Faces[iFace];
 
@@ -694,39 +710,229 @@ void t_Zone::updateFacesWithBCPatch(const t_Face* face_patch, const int NFacesIn
 
 		}
 		// debug
-		if (!face_found) 
+		if (!face_found)
 			hsLogMessage("Error:t_Zone::updateFacesWithBCPatch:can't find corresponding face");
 
 	}
 
 };
 
-void t_Domain::makeVertexConnectivity() {
+//************************************* Mesh methods
+
+void t_Mesh::initializeFromCtx() {
+
+	nZones = G_CGNSCtx.nZones;
+
+	// assignZonesToProcs() will be here when multiblock is up
+// now we need only G_Domain.map_iZne2cgID
+
+	map_iZne2cgID = new int[this->nZones];
+
+//
+// Default layout: one-to-one mapping of zones indices to CGNS zone IDs
+//
+	for (int b = 0; b < nZones; ++b)
+		map_iZne2cgID[b] = b + 1;
+
+	Zones = new t_Zone[nZones];
+
+	for (int i = 0; i < nZones; i++) { 
+
+		t_Zone& zne = Zones[i];
+		int cg_id = map_iZne2cgID[i];
+		const t_CGNSZone& cgZne = G_CGNSCtx.cgZones[i];
+		
+		zne.setIdGlob(i); 
+
+		zne.setName(cgZne.getName());
+
+
+	
+	}
+
+	// bunch of code from read_cgns_mesh()
+	{
+
+
+		// get sizes of zones and read real cells from cgns ctx
+		loadCells();
+
+		// set up connections from verts to real cells
+		makeVertexConnectivity();
+
+		G_GhostManager.setDom(*this);
+		G_GhostManager.initialize(G_CGNSCtx);
+
+		makeCellConnectivity();
+
+		makeFaces();
+
+
+		// update mesh with bc sets
+		loadBCs();
+
+		if (checkNormalOrientations())
+			hsLogMessage("check Face Normal Orientations : Ok");
+		else
+			hsLogMessage("Error:checkNormalOrientations failed!");
+
+		calcUnitOstrogradResid();
+
+		// Volume conditions info (frozen zones)
+		//parseVCs(ctx);
+
+	}
+
+
+
+}
+
+void t_Mesh::loadCells() {
+
+	const t_CGNSContext& ctx = G_CGNSCtx;
+
+	for (int iZne = 0; iZne < nZones; ++iZne)
+	{
+		const int& cgZneID = map_iZne2cgID[iZne];
+		t_Zone& Zne = Zones[iZne];
+		t_CGNSZone& cgZne = ctx.cgZones[iZne];
+
+		cgsize_t NCellsCG = cgZne.countCells();
+
+		// check that ncells is ok
+		if (NCellsCG != cgZne.getNCells())
+			hsLogError("loadCells: number of cells in cgZne is different from what was read from cgns file!");
+
+		cgsize_t NGhosts = ctx.getNumOfGhostsForZone(cgZneID);
+		// Zone stores real cells + some ghost cells
+
+		cgsize_t NCellsTot = NCellsCG + NGhosts;
+
+		Zne.initialize(cgZne.getNVerts(), NCellsCG, NCellsTot);
+
+		if (NCellsCG > Zne.getnCellsTot())
+			hsLogError("loadCells: failed to initialize Zne: %ld cells in CGNS Zone, %ld cells in Zone",
+				NCellsCG, Zne.getnCellsTot());
+
+		// filling in real cells
+		int iCell = 0;
+
+		for (int i = 0; i < cgZne.getSectsCell().size(); i++) {
+
+			const t_CGSection& cg_cells = cgZne.getSectionCell(i);
+
+			for (int j = 0; j < cg_cells.get_buf().nRows; j++) {
+
+				t_Cell& cell = Zne.getCell(iCell);
+
+				cell.setKind(getElementKind(cg_cells.itype));
+
+				for (int k = 0; k < cg_cells.get_buf().nCols; k++) {
+					// cgns IDs are 1-based, we use zero-based ids
+					lint Vert_ID = cg_cells.get_buf().get_val(j, k) - 1;
+					cell.pVerts[k] = &(Zne.getVert(Vert_ID));
+				}
+
+				iCell++;
+
+			}
+		}
+		// load grid coords
+		for (int i = 0; i < cgZne.getNVerts(); i++) {
+			t_Vert& vert = Zne.getVert(i);
+			vert.xyz[0] = cgZne.getXCoords()[i];
+			vert.xyz[1] = cgZne.getYCoords()[i];
+			vert.xyz[2] = cgZne.getZCoords()[i];
+		}
+
+		//std::cout << "______________________Debug, Zone Verts:\n";
+		// debug output of sections
+		//for (int i = 0; i < Zne.getnCells(); i++) {
+		//	const t_Cell& cell = Zne.getCell(i);
+		//	for (int j = 0; j < cell.NVerts; j++)
+		//		std::cout << cell.getVert(j).Id<< ";";
+		//	std::cout << std::endl;
+		//}
+
+	}
+
+};
+
+// parse BCs after they have already been read into ctx
+// face lists in zones must be initialized too
+void t_Mesh::loadBCs() {
+
+	const t_CGNSContext& ctx = G_CGNSCtx;
+
+	for (int iZne = 0; iZne < this->nZones; ++iZne)
+	{
+		const int cgZneID = iZne + 1;
+		t_Zone& Zne = Zones[iZne];
+		t_CGNSZone& cgZne = ctx.cgZones[iZne];
+
+		for (int ipatch = 0; ipatch < cgZne.getSectsBC().size(); ipatch++) {
+
+			const t_CGSection& fpatch_cg = cgZne.getSectionBC(ipatch);
+
+			t_FaceBCKind bc_kind;
+			bool ok = G_BCList.getBCKindBySectName(fpatch_cg.name, bc_kind);
+			//ok if the patch is a bc patch (not a zone-2-zone patch)
+			if (ok) {
+				int nF = fpatch_cg.get_buf().nRows;
+				int NVertsInFace = fpatch_cg.get_buf().nCols;
+				t_Face* flist = new t_Face[nF];
+
+				for (int iF = 0; iF < nF; iF++) {
+
+					t_Face& face = flist[iF];
+
+					face.BCKind = bc_kind;
+
+					face.NVerts = NVertsInFace;
+
+					for (int j = 0; j < NVertsInFace; j++) {
+
+						cgsize_t iVert = fpatch_cg.get_buf().get_val(iF, j);
+						// cg Id is 1-based, we make our 0-based
+						face.pVerts[j] = Zne.getpVert(iVert - 1);
+					}
+
+				}
+
+				Zne.updateFacesWithBCPatch(flist, nF);
+
+				delete[] flist;
+			}
+		}
+	}
+};     // boundary conditions
+
+void t_Mesh::makeVertexConnectivity() {
 
 	for (int i = 0; i < nZones; i++) Zones[i].makeVertexConnectivity();
 
 }
 
 
-void t_Domain::makeCellConnectivity() {
+void t_Mesh::makeCellConnectivity() {
 
 	for (int i = 0; i < nZones; i++) Zones[i].makeCellConnectivity();
 
 }
 
-void t_Domain::makeFaces() {
+void t_Mesh::makeFaces() {
 
 	for (int i = 0; i < nZones; i++) Zones[i].makeFaces();
 
 }
 
-bool t_Domain::checkNormalOrientations() {
+bool t_Mesh::checkNormalOrientations() {
 
 	bool ok = true;
 
-	for (int iZone = 0; iZone < G_pDomainBase->nZones; iZone++) {
+	for (int iZone = 0; iZone < this->nZones; iZone++) {
 
-		const t_Zone& zne = G_pDomainBase->Zones[iZone];
+		const t_Zone& zne = this->Zones[iZone];
 
 		for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
 
@@ -735,8 +941,8 @@ bool t_Domain::checkNormalOrientations() {
 			t_CellFaceList flist(cell);
 
 			for (int iFace = 0; iFace < cell.NFaces; iFace++) {
-				
-				t_Vec3 norm_cell_face; 
+
+				t_Vec3 norm_cell_face;
 				double area;
 				cell.calcFaceNormalAreaOutward(iFace, norm_cell_face, area);
 
@@ -748,7 +954,7 @@ bool t_Domain::checkNormalOrientations() {
 					//hsLogMessage("Face norm & cell face norm must be the same (scal prod=+1), computed:%lf", scal_prod);
 				}
 				else if (&cell == face.pOppCell) {
-					ok = ok && (scal_prod > -1.001) && (scal_prod<-0.999);
+					ok = ok && (scal_prod > -1.001) && (scal_prod < -0.999);
 					//hsLogMessage("Face norm & cell face norm must be opposite (scal prod=-1), computed:%lf", scal_prod);
 				}
 				else { hsLogMessage("Error:checkNormalOrientations():Broken Face2Cell connectivity"); }
@@ -762,15 +968,15 @@ bool t_Domain::checkNormalOrientations() {
 }
 // calculate residual for a Ostrogradsky theorem
 // for all cells
-double t_Domain::calcUnitOstrogradResid() {
+double t_Mesh::calcUnitOstrogradResid() {
 
 	double max_resid = 0.0;
 	double resid;
 	double area;
 	t_Vec3 norm, sum;
-	for (int iZone = 0; iZone < G_pDomainBase->nZones; iZone++) {
+	for (int iZone = 0; iZone < this->nZones; iZone++) {
 
-		const t_Zone& zne = G_pDomainBase->Zones[iZone];
+		const t_Zone& zne = this->Zones[iZone];
 
 		for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
 
@@ -782,7 +988,7 @@ double t_Domain::calcUnitOstrogradResid() {
 
 				norm = cell.getFaceNormalOutward(k);
 				area = cell.getFace(k).Area;
-				sum+= norm*area;
+				sum += norm * area;
 			}
 
 			resid = sum.norm();
@@ -793,4 +999,6 @@ double t_Domain::calcUnitOstrogradResid() {
 	hsLogMessage("Check volumes (Ostrogradsky): Max resid = %lf", max_resid);
 	return max_resid;
 }
+
+
 
