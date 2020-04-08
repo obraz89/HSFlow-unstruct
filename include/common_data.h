@@ -11,12 +11,17 @@
 
 typedef __int64 lint;
 
-enum struct t_FaceBCKind {
-	Fluid = 0,
-	Inflow,
-	Outflow,
-	Sym,
-	Wall
+// identifier of the particular bc reduced to int
+// usually bc ids count as enum 0,1,2,3,4
+// using magic value -7 for id of fluid cell not to intersect with bc sets
+class t_FaceBCID {
+	int val;
+public:
+	static const int Fluid = -7;
+	void set(int a_val) { val = a_val; }
+	int get() const { return val; }
+	bool operator==(int vv) const{ return val == vv; }
+
 };
 
 enum struct t_CellKind {

@@ -5,7 +5,7 @@
 
 #include "flow_params.h"
 
-#include "bc_data.h"
+#include "bc_common.h"
 
 #include "mesh.h"
 
@@ -235,7 +235,7 @@ bool load_settings() {
 
 	G_FreeStreamParams.init(ini_data, "");
 
-	G_BCList.init(ini_data, "");
+	G_pBCList->init(ini_data, "");
 
 	// for now rewriting ini every time (to get defaults for the first time) 
 	// TODO: replace by TPlugin::save_settings(fn, ini_data); 

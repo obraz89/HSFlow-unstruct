@@ -1,13 +1,11 @@
-#include "bc_data.h"
+#include "bc_euler.h"
 
 #include "flow_params.h"
 
-#include "IniFile.hpp"
-
-#include <sstream>
-
 #include "flux_euler.h"
 #include "flow_model_perfect_gas.h"
+
+#include <sstream>
 
 #pragma warning(push)
 // Disable Visual Studio warnings
@@ -18,7 +16,7 @@ const std::string t_BCDataOutFlow::bc_kind = "bc_outflow";
 const std::string t_BCDataEulerWall::bc_kind = "bc_euler_wall";
 const std::string t_BCDataSym::bc_kind = "bc_sym";
 
-t_BCList G_BCList;
+t_BCListEuler G_BCListEuler;
 
 // my_pvs - variables on the face of a real cell
 // opp_pvs - variables on the face of a virtual cell 
@@ -68,7 +66,7 @@ void t_BCDataSym::yield(const t_PrimVars& my_pvs, t_PrimVars& opp_pvs) {
 
 // BC List
 
-std::string t_BCList::getSupportedBCsStr() {
+std::string t_BCListEuler::getSupportedBCsStr() {
 
 	std::ostringstream ostr;
 
@@ -81,7 +79,48 @@ std::string t_BCList::getSupportedBCsStr() {
 
 }
 
-bool t_BCList::getBCKindBySectName(const std::string& sect_name, t_FaceBCKind& bc_kind) {
+t_FaceBCID t_BCListEuler::getBCID(std::string sectionname) {
+	t_BCKindEuler bc_kind;
+	getBCKindBySectName(sectionname, bc_kind);
+
+	t_FaceBCID faceBCID;
+
+	if ((int)bc_kind == t_FaceBCID::Fluid)
+		hsLogError("BCListEuler: identificator of bc coincide with id of fluid face! Fix it!");
+
+	faceBCID.set((int)bc_kind);
+
+	return faceBCID;
+
+};
+
+void t_BCListEuler::addBCsetByName(std::string bc_set_name, std::string bc_kind_name, std::string& ini_data) {
+
+	t_BCDataFace* pBC = nullptr;
+
+	if (bc_kind_name.compare(t_BCDataInflow::bc_kind) == 0)
+		pBC = new t_BCDataInflow(bc_set_name);
+
+	if (bc_kind_name.compare(t_BCDataOutFlow::bc_kind) == 0)
+		pBC = new t_BCDataOutFlow(bc_set_name);
+
+	if (bc_kind_name.compare(t_BCDataEulerWall::bc_kind) == 0)
+		pBC = new t_BCDataEulerWall(bc_set_name);
+
+	if (bc_kind_name.compare(t_BCDataSym::bc_kind) == 0)
+		pBC = new t_BCDataSym(bc_set_name);
+
+	if (pBC == nullptr)
+		hsLogMessage("Error:t_BCList:Unknown bc type!");
+	else {
+		hsLogMessage("Initializing bc set: %s", &(pBC->get_name()[0]));
+		pBC->init(ini_data, "");
+		_pBCs.emplace(std::make_pair(bc_set_name, pBC));
+	}
+
+}
+
+bool t_BCListEuler::getBCKindBySectName(const std::string& sect_name, t_BCKindEuler& bc_kind) {
 
 	std::string bc_kind_str="";
 	bool ok = false;
@@ -100,16 +139,16 @@ bool t_BCList::getBCKindBySectName(const std::string& sect_name, t_FaceBCKind& b
 	else {
 		ok = true;
 		if (bc_kind_str.compare(t_BCDataInflow::bc_kind) == 0) {
-			bc_kind = t_FaceBCKind::Inflow;
+			bc_kind = t_BCKindEuler::Inflow;
 		}
 		if (bc_kind_str.compare(t_BCDataOutFlow::bc_kind) == 0) {
-			bc_kind = t_FaceBCKind::Outflow;
+			bc_kind = t_BCKindEuler::Outflow;
 		}
 		if (bc_kind_str.compare(t_BCDataEulerWall::bc_kind) == 0) {
-			bc_kind = t_FaceBCKind::Wall;
+			bc_kind = t_BCKindEuler::Wall;
 		}
 		if (bc_kind_str.compare(t_BCDataSym::bc_kind) == 0) {
-			bc_kind = t_FaceBCKind::Sym;
+			bc_kind = t_BCKindEuler::Sym;
 		}
 
 	}
@@ -117,6 +156,16 @@ bool t_BCList::getBCKindBySectName(const std::string& sect_name, t_FaceBCKind& b
 
 };
 
+bool t_BCListEuler::has(std::string sectionname) {
+
+	// unused
+	t_BCKindEuler bc_kind;
+	
+	return getBCKindBySectName(sectionname, bc_kind);
+
+}
+
+/*
 std::vector<std::string> tokenize_str(std::string str) {
 
 	std::vector<std::string> v;
@@ -131,5 +180,6 @@ std::vector<std::string> tokenize_str(std::string str) {
 
 	return v;
 }
+*/
 
 #pragma warning(pop)

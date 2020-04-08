@@ -4,6 +4,8 @@
 
 #include "rs_euler.h"
 
+#include "bc_euler.h"
+
 #include <fstream>
 
 
@@ -104,7 +106,7 @@ void t_DomainEuler::calcFaceFlux(int iZone, lint iFace) {
 	hsLogMessage("Face #%d:", iFace);
 	hsLogMessage(&R.to_str()[0]);
 
-	if (face.BCKind == t_FaceBCKind::Fluid) {
+	if (face.BCId.get() == t_FaceBCID::Fluid) {
 
 		//t_PrimVars pvl = face.pMyCell->ConsVars.calcPrimVars();
 		t_PrimVars pvl = getCellCSV(iZone, face.pMyCell->Id).calcPrimVars();
@@ -128,22 +130,22 @@ void t_DomainEuler::calcFaceFlux(int iZone, lint iFace) {
 		return;
 	}
 
-	if (face.BCKind == t_FaceBCKind::Inflow) {
+	if (face.BCId == (int)t_BCKindEuler::Inflow) {
 		hsLogMessage("Inflow BC Flux: not implemented");
 		return;
 	}
 
-	if (face.BCKind == t_FaceBCKind::Outflow) {
+	if (face.BCId == (int)t_BCKindEuler::Outflow) {
 		hsLogMessage("OutFlow BC Flux: not implemented");
 		return;
 	}
 
-	if (face.BCKind == t_FaceBCKind::Sym) {
+	if (face.BCId == (int)t_BCKindEuler::Sym) {
 		hsLogMessage("Sym BC Flux: not implemented");
 		return;
 	}
 
-	if (face.BCKind == t_FaceBCKind::Wall) {
+	if (face.BCId == (int)t_BCKindEuler::Wall) {
 		hsLogMessage("Wall BC Flux: not implemented");
 		return;
 	}

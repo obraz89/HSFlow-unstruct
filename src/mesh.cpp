@@ -7,8 +7,7 @@
 
 #include "CGNS-ctx.h"
 
-// TODO: remove dependence from model by inheritances
-#include "bc_data.h"
+#include "bc_common.h"
 
 t_Mesh* G_pMesh;
 
@@ -329,7 +328,7 @@ void t_Zone::init_face2cell_conn(lint a_id, t_Cell& cell, int face_ind) {
 
 		face.IndRightCellFace = cell.FaceIndNeig[face_ind];
 
-		face.BCKind = t_FaceBCKind::Fluid;
+		face.BCId.set(t_FaceBCID::Fluid);
 
 	}
 
@@ -662,7 +661,7 @@ void t_Zone::makeFaces() {
 				iFace++;
 
 				//debug
-				if (face.BCKind == t_FaceBCKind::Fluid)
+				if (face.BCId.get() == t_FaceBCID::Fluid)
 					hsLogMessage("fluid face: Face_id=%ld, owner_cell_id=%ld", iFace, cell_base.Id);
 
 			}
@@ -702,7 +701,7 @@ void t_Zone::updateFacesWithBCPatch(const t_Face* face_patch, const int NFacesIn
 					if (t_SetOfpVerts::cmp_weak(vrtxset_base, vrtxset_neig)) {
 						// we found corresponding face
 						// updating info
-						pCellNeig->pFaces[p]->BCKind = face_in_patch.BCKind;
+						pCellNeig->pFaces[p]->BCId = face_in_patch.BCId;
 						face_found = true;
 					}
 				}
@@ -874,8 +873,7 @@ void t_Mesh::loadBCs() {
 
 			const t_CGSection& fpatch_cg = cgZne.getSectionBC(ipatch);
 
-			t_FaceBCKind bc_kind;
-			bool ok = G_BCList.getBCKindBySectName(fpatch_cg.name, bc_kind);
+			bool ok = G_pBCList->has(fpatch_cg.name);
 			//ok if the patch is a bc patch (not a zone-2-zone patch)
 			if (ok) {
 				int nF = fpatch_cg.get_buf().nRows;
@@ -886,7 +884,7 @@ void t_Mesh::loadBCs() {
 
 					t_Face& face = flist[iF];
 
-					face.BCKind = bc_kind;
+					face.BCId = fpatch_cg.BCId;
 
 					face.NVerts = NVertsInFace;
 

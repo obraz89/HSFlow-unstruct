@@ -12,7 +12,10 @@
 
 #include "mesh.h"
 
+#include "bc_common.h"
+
 // model-specific part
+#include "bc_euler.h"
 #include "flow_model_perfect_gas.h"
 #include "dom_euler.h"
 
@@ -115,6 +118,7 @@ int main(int argc, char* argv[])
 	//hsLogWTime(true);
 
 	G_pMesh = &G_Domain;
+	G_pBCList = &G_BCListEuler;
 
 	if (!load_settings())
 		goto fin;

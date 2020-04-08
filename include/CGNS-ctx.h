@@ -21,6 +21,10 @@ struct t_CGSection {
 	// range of 1-based cgns indices for the section
 	cgsize_t id_start, id_end;
 
+	// if this is a boundary patch, store id of its bc
+	// this is defined by BCList manager
+	t_FaceBCID BCId;
+
 	t_BufCGSize& get_buf() { return _buf; }
 	const t_BufCGSize& get_buf() const{ return _buf; }
 

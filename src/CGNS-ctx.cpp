@@ -2,7 +2,7 @@
 
 #include "logging.h"
 
-#include "bc_data.h"
+#include "bc_common.h"
 
 t_CGNSContext G_CGNSCtx;
 
@@ -120,9 +120,11 @@ bool t_CGNSContext::readMesh(std::string gridFN) {
 
 					t_CGSection* pPatch = new t_CGSection(sectionname, istart, iend);
 
-					t_FaceBCKind kind;
-					if (G_BCList.getBCKindBySectName(sectionname, kind) == true)
+					if (G_pBCList->has(sectionname) == true) {
+						t_FaceBCID faceBCID = G_pBCList->getBCID(sectionname);
+						pPatch->BCId = faceBCID;
 						cgZne.addSection(pPatch, t_CGSectionKind::BC);
+					}
 					else
 						cgZne.addSection(pPatch, t_CGSectionKind::Abutted);
 

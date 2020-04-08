@@ -48,9 +48,6 @@
     <ClInclude Include="include\IniFile.hpp">
       <Filter>Header Files\ext</Filter>
     </ClInclude>
-    <ClInclude Include="include\bc_data.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\PluginBase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -80,6 +77,9 @@
     </ClInclude>
     <ClInclude Include="src\bc_euler.h">
       <Filter>Header Files\phys</Filter>
+    </ClInclude>
+    <ClInclude Include="include\bc_common.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -113,9 +113,6 @@
     <ClCompile Include="src\CGNS-ctx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\bc_data_euler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\flow_model_perfect_gas.cpp">
       <Filter>Source Files\phys</Filter>
     </ClCompile>
@@ -130,6 +127,12 @@
     </ClCompile>
     <ClCompile Include="src\dom_euler.cpp">
       <Filter>Source Files\phys</Filter>
+    </ClCompile>
+    <ClCompile Include="src\bc_euler.cpp">
+      <Filter>Source Files\phys</Filter>
+    </ClCompile>
+    <ClCompile Include="src\bc_common.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

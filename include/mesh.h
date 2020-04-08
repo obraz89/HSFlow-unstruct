@@ -52,7 +52,8 @@ struct t_Face {
 
 	int IndLeftCellFace, IndRightCellFace;
 
-	t_FaceBCKind BCKind;
+	// 0 for fluid cell, others values are ids of bcs
+	t_FaceBCID BCId;
 
 	t_Vec3 Normal;
 

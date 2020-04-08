@@ -149,7 +149,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\bc_data.h" />
+    <ClInclude Include="include\bc_common.h" />
     <ClInclude Include="include\common_data.h" />
     <ClInclude Include="include\common_procs.h" />
     <ClInclude Include="include\mesh.h" />
@@ -169,7 +169,8 @@
     <ClInclude Include="src\bc_euler.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\bc_data_euler.cpp" />
+    <ClCompile Include="src\bc_common.cpp" />
+    <ClCompile Include="src\bc_euler.cpp" />
     <ClCompile Include="src\common_procs.cpp" />
     <ClCompile Include="src\mesh.cpp" />
     <ClCompile Include="src\dom_euler.cpp" />
