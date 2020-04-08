@@ -153,7 +153,9 @@
     <ClInclude Include="include\common_data.h" />
     <ClInclude Include="include\common_procs.h" />
     <ClInclude Include="include\dll_import-export.h" />
+    <ClInclude Include="include\flowcase_euler.h" />
     <ClInclude Include="include\flow_common.h" />
+    <ClInclude Include="include\flow_euler.h" />
     <ClInclude Include="include\flow_model_perfect_gas.h" />
     <ClInclude Include="include\flow_params.h" />
     <ClInclude Include="include\ghost_manager.h" />
@@ -171,6 +173,7 @@
     <ClCompile Include="src\bc_data_euler.cpp" />
     <ClCompile Include="src\common_procs.cpp" />
     <ClCompile Include="src\flow_common.cpp" />
+    <ClCompile Include="src\flow_euler.cpp" />
     <ClCompile Include="src\flow_model_perfect_gas.cpp" />
     <ClCompile Include="src\flow_params.cpp" />
     <ClCompile Include="src\flux-euler.cpp" />

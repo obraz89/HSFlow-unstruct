@@ -2,62 +2,54 @@
 
 #include <cmath>
 
-#include "flow_common.h"
-
-#include "flow_model_perfect_gas.h"
+#include "flowcase_euler.h"
 
 #include "rs_procs.h"
 
-void t_Domain::makeTimeStep() {
+void t_DomainEuler::makeTimeStep() {
 
-	double dt=HUGE_VAL;
+	double dt = calcDt();
 
 	for (int iZone = 0; iZone < nZones; iZone++) {
 
-		double dt_z = Zones[iZone].calcDt();
+		t_Zone& zne = Zones[iZone];
 
-		if (dt_z < dt) dt = dt_z;
-	}
+		for (int iFace = 0; iFace < zne.getNFaces(); iFace++) {
+			calcFaceFlux(iZone, iFace);
+		}
 
-	for (int iZone = 0; iZone < nZones; iZone++)
-		Zones[iZone].makeTimeStep(dt);
+		t_ConsVars dU;
 
-}
+		for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
 
-void t_Zone::makeTimeStep(double dt) {
+			t_Cell& cell = zne.getCell(iCell);
 
-	for (int i = 0; i < nFaces; i++) {
-		calcFaceFlux(i);
-	}
+			for (int j = 0; j < cell.NFaces; j++) {
 
-	t_ConsVars dU;
+				const t_Face& face = cell.getFace(j);
 
-	for (int i = 0; i < nCellsReal; i++) {
+				double coef = cell.isMyFace(j) ? 1.0 : -1.0;
 
-		t_Cell& cell = getCell(i);
+				coef *= dt * face.Area / cell.Volume;
 
-		for (int j = 0; j < cell.NFaces; j++) {
+				t_Flux flux = getFlux(iZone, face.Id);
 
-			const t_Face& face = cell.getFace(j);
+				dU += coef * flux;
 
-			double coef = cell.isMyFace(j) ? 1.0 : -1.0;
+			}
 
-			coef *= dt*face.Area / cell.Volume;
-
-			dU += coef*face.Flux;
+			getCellCSV(iZone, iCell) += dU;
 
 		}
 
-		cell.ConsVars += dU;
-
 	}
 
 }
 
-void t_Zone::calcFaceFlux(lint iFace) {
+void t_DomainEuler::calcFaceFlux(int iZone, lint iFace) {
 
-
-	t_Face& face = Faces[iFace];
+	t_Zone& zne = Zones[iZone];
+	t_Face& face = zne.getFace(iFace);
 
 	t_MatRotN mat_rot_coefs;
 	mat_rot_coefs.calc_rot_angles_by_N(face.Normal);
@@ -70,8 +62,10 @@ void t_Zone::calcFaceFlux(lint iFace) {
 
 	if (face.BCKind == t_FaceBCKind::Fluid) {
 
-		t_PrimVars pvl = face.pMyCell->ConsVars.calcPrimVars();
-		t_PrimVars pvr = face.pOppCell->ConsVars.calcPrimVars();
+		//t_PrimVars pvl = face.pMyCell->ConsVars.calcPrimVars();
+		t_PrimVars pvl = getCellCSV(iZone, face.pMyCell->Id).calcPrimVars();
+		//t_PrimVars pvr = face.pOppCell->ConsVars.calcPrimVars();
+		t_PrimVars pvr = getCellCSV(iZone, face.pOppCell->Id).calcPrimVars();
 
 		// rotate everything to local rf
 		pvl.rotate(R);
@@ -83,8 +77,9 @@ void t_Zone::calcFaceFlux(lint iFace) {
 
 		// rotate flux back
 		R.set_inv(mat_rot_coefs);
-
-		face.Flux = flux_loc.rotate(R);
+		flux_loc.rotate(R);
+		//face.Flux = flux_loc.rotate(R);
+		getFlux(iZone, iFace) = flux_loc;
 
 		return;
 	}
@@ -115,7 +110,7 @@ void t_Zone::calcFaceFlux(lint iFace) {
 
 }
 
-double t_Zone::calcDt() {
+double t_DomainEuler::calcDt() {
 
 	return 0.0;
 

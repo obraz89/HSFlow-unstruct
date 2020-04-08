@@ -2,9 +2,6 @@
 
 #include "common_data.h"
 
-// TODO: remove dependence from model by inheritances
-#include "flux_euler.h"
-
 static const int MaxNumVertsInFace = 4;
 
 static const int MaxNumFacesInCell = 6;
@@ -61,8 +58,6 @@ struct t_Face {
 
 	t_Vec3 Center;
 
-	t_Flux Flux;
-
 	double Area;
 
 	t_Face() { pMyCell = nullptr; pOppCell = nullptr; }
@@ -101,10 +96,6 @@ struct t_Cell {
 	t_Vec3 Center;
 
 	double Volume;
-
-	// Flow Data
-
-	t_ConsVars ConsVars;
 
 	int NCellsNeig() {
 		int ret = 0;
@@ -242,6 +233,12 @@ public:
 	t_Vert* getpVert(lint vert_ID) { return &Verts[vert_ID]; }
 	const t_Vert* getpVert(lint vert_ID) const { return &Verts[vert_ID]; }
 
+	t_Face& getFace(lint face_ID) { return Faces[face_ID]; }
+	const t_Face& getFace(lint face_ID) const { return Faces[face_ID]; }
+
+	t_Face* getpFace(lint face_ID) { return &Faces[face_ID]; }
+	const t_Face* getpFace(lint face_ID) const{ return &Faces[face_ID]; }
+
 	void makeVertexConnectivity();
 	void makeCellConnectivity();
 	void makeFaces();
@@ -259,11 +256,7 @@ public:
 		return (0 <= cell_id && cell_id <= nCellsReal - 1);
 	}
 
-	// flow solver
-
-	double calcDt();
-	void makeTimeStep(double dt);
-	void calcFaceFlux(lint iFace);
+	lint getNFaces() const { return nFaces; }
 
 	~t_Zone() { delete[] Verts, Cells, Faces; }
 
@@ -302,8 +295,6 @@ struct t_Domain
 	bool checkNormalOrientations();
 	double calcUnitOstrogradResid();
 
-	void makeTimeStep();
-
 	// Gas parameters
 	//double(*pfunViscosity)(const double&) = nullptr;
 
@@ -312,11 +303,15 @@ struct t_Domain
 
 	void initializeFromCtx();
 
-	void initializeFlow();
+	virtual void allocateFlowSolution() = 0;
+
+	virtual void initializeFlow() = 0;
 
 	// for debug
-	void dump_flow();
-	void dump_geom();
+	virtual void dump_flow() = 0;
+	virtual void dump_geom() = 0;
+
+	virtual ~t_Domain() {};
 };
 
-extern t_Domain G_Domain;
+extern t_Domain* G_pDomainBase;

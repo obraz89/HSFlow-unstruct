@@ -67,8 +67,8 @@ void t_GhostManager::getGhostsZiFromZj_Neig(const t_CGNSContext& ctx, int cgZneI
 				for (int k = 0; k < verts_ids_dnr.size(); k++) verts_ids_dnr[k] -= 1;
 
 				// now we need to use vertexConnectivity
-				const t_Zone& ZneMy = G_Domain.Zones[cgZneID_I - 1];
-				const t_Zone& ZneDnr = G_Domain.Zones[cgZneID_J - 1];
+				const t_Zone& ZneMy = G_pDomainBase->Zones[cgZneID_I - 1];
+				const t_Zone& ZneDnr = G_pDomainBase->Zones[cgZneID_J - 1];
 
 				int face_pos_my, face_pos_dnr;
 
@@ -145,7 +145,8 @@ void  t_GhostManager::exchangeCSV() {
 			for (int k = 0; k < glayer->size(); k++) {
 
 				lint offset = calcIndOffset(i, j);
-				ZoneMy.getCell(offset + k).ConsVars = ZoneDnr.getCell(glayer->data[k].id_dnr).ConsVars;
+				G_Domain.getCellCSV(i, offset + k) = G_Domain.getCellCSV(j, glayer->data[k].id_dnr);
+				//ZoneMy.getCell(offset + k).ConsVars = ZoneDnr.getCell(glayer->data[k].id_dnr).ConsVars;
 
 			}
 

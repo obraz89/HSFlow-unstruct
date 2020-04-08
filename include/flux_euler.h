@@ -2,9 +2,6 @@
 
 #include "matrix_small.h"
 
-// TODO: for perfect gas imply that NPrimVars = NConsVars
-//static const int NPrimVars = 5;
-
 static const int NConsVars = 5;
 
 class t_VecConsVars : public t_Vec<NConsVars> {
@@ -12,7 +9,9 @@ class t_VecConsVars : public t_Vec<NConsVars> {
 public:
 	t_VecConsVars() :t_Vec<NConsVars>() {}
 	t_VecConsVars(const t_Vec<NConsVars>& v) : t_Vec<NConsVars>(v) {}
-	t_VecConsVars& rotate(const t_SqMat3& R);
+	// Conservative & Primitive vectors rotate the same way
+	virtual void rotate(const t_SqMat3& R);
+	virtual std::string to_str() const {return t_Vec<NConsVars>::to_str(); }
 
 };
 
@@ -20,7 +19,9 @@ class t_ConsVars;
 
 // vector of primitive flow variables 
 // (rho, u, v, w, p)
-class t_PrimVars : public t_VecConsVars {
+// for perfect gas imply that NPrimVars = NConsVars
+// for this reason PrimVars inherit from t_VecConsVars
+class t_PrimVars : public t_VecConsVars  {
 public:
 	t_PrimVars() :t_VecConsVars() {};
 	t_PrimVars(const t_VecConsVars& v) :t_VecConsVars(v) {}
@@ -40,6 +41,8 @@ public:
 	void setP(double val) { data[4] = val; }
 	//double calcRhoE() const;
 
+	void setValAtInf();
+
 };
 
 // vector of conservative flow variables
@@ -50,9 +53,11 @@ public:
 	t_ConsVars(const t_VecConsVars& v) :t_VecConsVars(v) {}
 	t_ConsVars& setByPV(const t_PrimVars& pv);
 	t_PrimVars calcPrimVars() const;
+
+	void setValAtInf();
 };
 
-class t_Flux : public t_VecConsVars {
+class t_Flux : public t_VecConsVars{
 public:
 	t_Flux() :t_VecConsVars() {}
 	t_Flux(const t_VecConsVars& v) :t_VecConsVars(v) {}
@@ -64,5 +69,4 @@ public:
 // calc CV & Flux from primitive Vars
 void calcCVFlux(const t_PrimVars& pv, t_ConsVars& cv, t_Flux& f);
 
-// non-dimensional conservative variables at infinity
-t_ConsVars calcConsVarsInf();
+

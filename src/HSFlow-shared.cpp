@@ -22,6 +22,3 @@
 
 
 TState G_State;    // solving state
-
-// Computational domain composed of blocks with own grid and field
-t_Domain G_Domain;

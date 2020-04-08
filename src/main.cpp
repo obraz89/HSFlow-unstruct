@@ -5,15 +5,9 @@
 #include "logging.h"
 #include "common_data.h"
 
-#include "flow_common.h"
-
-#include "flow_model_perfect_gas.h"
-
-#include "flow_params.h"
-
-#include "settings.h"
-
 #include "optParse.h"
+
+#include "flowcase_euler.h"
 
 #if defined(_WINDOWS)
 	#include <direct.h>   // chdir
@@ -113,12 +107,16 @@ int main(int argc, char* argv[])
 	}
 	//hsLogWTime(true);
 
+	G_pDomainBase = &G_Domain;
+
 	if (!load_settings())
 		goto fin;
 
 	G_CGNSCtx.readMesh(g_genOpts.strGridFN);
 
 	G_Domain.initializeFromCtx();
+
+	G_Domain.allocateFlowSolution();
 
 	initialize_flow_model();
 

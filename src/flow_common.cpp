@@ -11,6 +11,8 @@
 // TODO: remove dependence from model by inheritances
 #include "bc_data.h"
 
+t_Domain* G_pDomainBase;
+
 t_CellKind getElementKind(CG_ElementType_t cg_type) {
 
 	t_CellKind cell_kind = t_CellKind::None;
@@ -32,7 +34,7 @@ void t_Domain::initializeFromCtx() {
 	// assignZonesToProcs() will be here when multiblock is up
 // now we need only G_Domain.map_iZne2cgID
 
-	map_iZne2cgID = new int[G_Domain.nZones];
+	map_iZne2cgID = new int[G_pDomainBase->nZones];
 
 //
 // Default layout: one-to-one mapping of zones indices to CGNS zone IDs
@@ -170,7 +172,7 @@ void t_Domain::loadBCs() {
 
 	const t_CGNSContext& ctx = G_CGNSCtx;
 
-	for (int iZne = 0; iZne < G_Domain.nZones; ++iZne)
+	for (int iZne = 0; iZne < G_pDomainBase->nZones; ++iZne)
 	{
 		const int cgZneID = iZne + 1;
 		t_Zone& Zne = Zones[iZne];
@@ -213,34 +215,3 @@ void t_Domain::loadBCs() {
 	}
 };     // boundary conditions
 
-void t_Domain::dump_flow() {
-
-	std::string fn("dump_flow.txt");
-
-	std::ofstream ofstr(fn);
-
-	for (int iZone = 0; iZone < nZones; iZone++) {
-
-		t_Zone& zne = Zones[iZone];
-
-		t_Cell* pcell;
-
-		ofstr << "=========Zone #" << iZone << "===========\n";
-
-		for (int i = 0; i < zne.getnCellsTot(); i++) {
-
-			pcell = zne.getpCell(i);
-			ofstr <<"cell #"<<i << pcell->ConsVars.to_str();
-		}
-
-	}
-
-	ofstr.flush();
-
-}
-
-void t_Domain::dump_geom() {
-
-
-
-}

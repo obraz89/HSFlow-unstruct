@@ -10,7 +10,7 @@
 
 //******************************************t_VecConsVars
 
-t_VecConsVars& t_VecConsVars::rotate(const t_SqMat3& R) {
+void t_VecConsVars::rotate(const t_SqMat3& R) {
 
 	// first component is scalar - not changed
 
@@ -24,8 +24,6 @@ t_VecConsVars& t_VecConsVars::rotate(const t_SqMat3& R) {
 	for (int i = 0; i < 3; i++) data[i + 1] = res[i];
 
 	// fifth component is scalar - not changed
-
-	return *this;
 
 }
 
@@ -60,6 +58,18 @@ t_ConsVars t_PrimVars::calcConsVars() const {
 
 	return csv;
 }
+
+void t_PrimVars::setValAtInf() {
+
+	const t_FlowParamsFreeStream& fp = G_FreeStreamParams;
+
+	setR(1.0);
+
+	setUVW(fp.getUInf());
+
+	setP(calcGMaMaInv());
+
+}
 //******************************************ConsVars
 
 t_ConsVars& t_ConsVars::setByPV(const t_PrimVars& pv) {
@@ -93,6 +103,22 @@ t_PrimVars t_ConsVars::calcPrimVars() const {
 	return pvs;
 }
 
+
+void t_ConsVars::setValAtInf() {
+
+	t_PrimVars prv;
+
+	const t_FlowParamsFreeStream& fp = G_FreeStreamParams;
+
+	prv.setR(1.0);
+
+	prv.setUVW(fp.getUInf());
+
+	prv.setP(calcGMaMaInv());
+
+	*this = prv.calcConsVars();
+
+}
 //******************************************Flux
 // we are in some reference frame (x,y,z) which is rotation from global (X,Y,Z)
 // compute inviscid face flux through area with normal (1;0;0) 
@@ -130,44 +156,3 @@ void calcCVFlux(const t_PrimVars& pv, t_ConsVars& cv, t_Flux& f) {
 	f.calc(pv);
 
 };
-
-t_ConsVars calcConsVarsInf() {
-
-	t_PrimVars prv;
-
-	const t_FlowParamsFreeStream& fp = G_FreeStreamParams;
-
-	prv.setR(1.0);
-
-	prv.setUVW(fp.getUInf());
-
-	prv.setP(calcGMaMaInv());
-
-	t_ConsVars csv = prv.calcConsVars();
-
-	return csv;
-
-}
-
-void t_Domain::initializeFlow() {
-
-	t_ConsVars cvs = calcConsVarsInf();
-
-	// set real cell values
-	for (int iZone = 0; iZone < nZones; iZone++) {
-
-		t_Zone& zne = Zones[iZone];
-
-		t_Cell* pcell;
-
-		for (int i = 0; i < zne.getnCellsReal(); i++) {
-
-			pcell = zne.getpCell(i);
-			pcell->ConsVars = cvs;
-		}
-
-	}
-	// set ghost values
-	G_GhostManager.exchangeCSV();
-
-}

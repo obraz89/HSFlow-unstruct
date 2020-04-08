@@ -44,7 +44,7 @@ public:
 		return ret;
 	}
 
-	std::string to_str() {
+	std::string to_str() const{
 		std::ostringstream ostr;
 		ostr << "{";
 			for (int i = 0; i < N; i++) ostr << data[i] << ";";

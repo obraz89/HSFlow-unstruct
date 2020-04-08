@@ -545,7 +545,7 @@ void t_Zone::makeCellConnectivity() {
 
 	// real-2-real connections are set, now add real-2-ghost connections
 	int ZoneID = this->idGlob;
-	for (int j = 0; j < G_Domain.nZones; j++) {
+	for (int j = 0; j < G_pDomainBase->nZones; j++) {
 
 		// ghost nodes from zone j for zoneID
 		const t_GhostLayer& glayer = G_GhostManager.getGhostLayer(ZoneID, j);
@@ -724,9 +724,9 @@ bool t_Domain::checkNormalOrientations() {
 
 	bool ok = true;
 
-	for (int iZone = 0; iZone < G_Domain.nZones; iZone++) {
+	for (int iZone = 0; iZone < G_pDomainBase->nZones; iZone++) {
 
-		const t_Zone& zne = G_Domain.Zones[iZone];
+		const t_Zone& zne = G_pDomainBase->Zones[iZone];
 
 		for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
 
@@ -768,9 +768,9 @@ double t_Domain::calcUnitOstrogradResid() {
 	double resid;
 	double area;
 	t_Vec3 norm, sum;
-	for (int iZone = 0; iZone < G_Domain.nZones; iZone++) {
+	for (int iZone = 0; iZone < G_pDomainBase->nZones; iZone++) {
 
-		const t_Zone& zne = G_Domain.Zones[iZone];
+		const t_Zone& zne = G_pDomainBase->Zones[iZone];
 
 		for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
 

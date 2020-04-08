@@ -6,6 +6,9 @@
 
 #include "CGNS-ctx.h"
 
+// TODO: ghost_manager should inherit from base class
+#include "flow_euler.h"
+
 // sell-2-ghost connection data
 // real cell C from some zone (Z_my) abutting ghost cell G via face F
 // id_my - id of cell C in this zone (Z_my)  

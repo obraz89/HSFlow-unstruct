@@ -178,7 +178,7 @@ bool load_settings() {
 
 	const std::string sIni = std::string() + g_CASE_SETTINGS_DIR + MAIN_INI;
 
-	G_Domain.nDim = 3;
+	G_pDomainBase->nDim = 3;
 
 	G_State.mpiNProcs = 1;
 
