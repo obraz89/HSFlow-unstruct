@@ -28,8 +28,8 @@ public:
  // so use iniFile capabilities directly instead of plugin params
  */
 class t_BCList : public TPlugin{
-
-	std::map<std::string, t_BCDataFace*>  _pBCs;
+protected:
+	std::vector<t_BCDataFace*>  _pBCs;
 
 public:
 	virtual void addBCsetByName(std::string name, std::string bc_kind_str, std::string& ini_data) = 0;
@@ -71,9 +71,8 @@ public:
 	};
 
 	virtual ~t_BCList() {
-		std::map<std::string, t_BCDataFace*>::iterator it;
 
-		for (auto elem : _pBCs) delete elem.second;
+		for (auto elem : _pBCs) delete elem;
 
 	}
 

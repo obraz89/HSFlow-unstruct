@@ -104,8 +104,6 @@ public:
 
 class t_BCListEuler : public t_BCList {
 
-	std::map<std::string, t_BCDataFace*>  _pBCs;
-
 public:
 	// implement TPugin
 	t_BCListEuler() { default_settings(); }
@@ -121,12 +119,6 @@ public:
 	void init(std::string& ini_data, const std::string& spec) {
 
 		t_BCList::init(ini_data, spec);
-
-	}
-
-	~t_BCListEuler() {
-
-		for (auto elem : _pBCs) delete elem.second;
 
 	}
 

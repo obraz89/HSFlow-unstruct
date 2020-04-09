@@ -80,17 +80,26 @@ std::string t_BCListEuler::getSupportedBCsStr() {
 }
 
 t_FaceBCID t_BCListEuler::getBCID(std::string sectionname) {
+
+	t_FaceBCID face_id;
 	t_BCKindEuler bc_kind;
-	getBCKindBySectName(sectionname, bc_kind);
 
-	t_FaceBCID faceBCID;
+	bool ok = false;
 
-	if ((int)bc_kind == t_FaceBCID::Fluid)
+	for (int i = 0; i < _pBCs.size(); i++) {
+		if (getBCKindBySectName(_pBCs[i]->getSectName(), bc_kind)) {
+			face_id.set(i);
+			ok = true;
+			break;
+		}
+	}
+	if (!ok)
+		hsLogError("t_BCListEuler:getBCID: failed to find bc with name=%s", sectionname.c_str());
+
+	if (face_id.get() == t_FaceBCID::Fluid)
 		hsLogError("BCListEuler: identificator of bc coincide with id of fluid face! Fix it!");
 
-	faceBCID.set((int)bc_kind);
-
-	return faceBCID;
+	return face_id;
 
 };
 
@@ -115,7 +124,7 @@ void t_BCListEuler::addBCsetByName(std::string bc_set_name, std::string bc_kind_
 	else {
 		hsLogMessage("Initializing bc set: %s", &(pBC->get_name()[0]));
 		pBC->init(ini_data, "");
-		_pBCs.emplace(std::make_pair(bc_set_name, pBC));
+		_pBCs.push_back(pBC);
 	}
 
 }
@@ -126,8 +135,8 @@ bool t_BCListEuler::getBCKindBySectName(const std::string& sect_name, t_BCKindEu
 	bool ok = false;
 
 	for (auto elem : _pBCs) {
-		if (sect_name.compare(elem.second->getSectName())==0) {
-			bc_kind_str = elem.second->getBCKindName();
+		if (sect_name.compare(elem->getSectName())==0) {
+			bc_kind_str = elem->getBCKindName();
 		}
 	};
 
