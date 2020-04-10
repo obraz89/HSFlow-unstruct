@@ -1,6 +1,6 @@
 #include "dom_euler.h"
 
-#include "ghost_manager.h"
+#include "ghost_euler.h"
 
 #include "rs_euler.h"
 
@@ -48,7 +48,7 @@ void t_DomainEuler::initializeFlow() {
 
 	}
 	// set ghost values
-	G_GhostManager.exchangeCSV();
+	G_GhostMngEu.exchangeCSV();
 
 }
 

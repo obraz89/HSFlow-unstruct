@@ -1,7 +1,6 @@
 #include "mesh.h"
 
-// TODO: put ghost manager inside mesh ?
-#include "ghost_manager.h"
+#include "ghost_common.h"
 
 #include <fstream>
 
@@ -563,10 +562,10 @@ void t_Zone::makeCellConnectivity() {
 	for (int j = 0; j < G_pMesh->nZones; j++) {
 
 		// ghost nodes from zone j for zoneID
-		const t_GhostLayer& glayer = G_GhostManager.getGhostLayer(ZoneID, j);
+		const t_GhostLayer& glayer = G_pGhostMngBase->getGhostLayer(ZoneID, j);
 
 		if (glayer.size() > 0) {
-			lint offset = G_GhostManager.calcIndOffset(ZoneID, j);
+			lint offset = G_pGhostMngBase->calcIndOffset(ZoneID, j);
 			for (int k = 0; k < glayer.size(); k++) {
 
 				const t_Cell2GhostData gdata = glayer.data[k];
@@ -718,7 +717,7 @@ void t_Zone::updateFacesWithBCPatch(const t_Face* face_patch, const int NFacesIn
 
 //************************************* Mesh methods
 
-void t_Mesh::initializeFromCtx() {
+void t_Mesh::initializeFromCtxStage1() {
 
 	nZones = G_CGNSCtx.nZones;
 
@@ -727,62 +726,51 @@ void t_Mesh::initializeFromCtx() {
 
 	map_iZne2cgID = new int[this->nZones];
 
-//
-// Default layout: one-to-one mapping of zones indices to CGNS zone IDs
-//
+	//
+	// Default layout: one-to-one mapping of zones indices to CGNS zone IDs
+	//
 	for (int b = 0; b < nZones; ++b)
 		map_iZne2cgID[b] = b + 1;
 
 	Zones = new t_Zone[nZones];
 
-	for (int i = 0; i < nZones; i++) { 
+	for (int i = 0; i < nZones; i++) {
 
 		t_Zone& zne = Zones[i];
 		int cg_id = map_iZne2cgID[i];
 		const t_CGNSZone& cgZne = G_CGNSCtx.cgZones[i];
-		
-		zne.setIdGlob(i); 
+
+		zne.setIdGlob(i);
 
 		zne.setName(cgZne.getName());
 
 
-	
-	}
-
-	// bunch of code from read_cgns_mesh()
-	{
-
-
-		// get sizes of zones and read real cells from cgns ctx
-		loadCells();
-
-		// set up connections from verts to real cells
-		makeVertexConnectivity();
-
-		G_GhostManager.setDom(*this);
-		G_GhostManager.initialize(G_CGNSCtx);
-
-		makeCellConnectivity();
-
-		makeFaces();
-
-
-		// update mesh with bc sets
-		loadBCs();
-
-		if (checkNormalOrientations())
-			hsLogMessage("check Face Normal Orientations : Ok");
-		else
-			hsLogMessage("Error:checkNormalOrientations failed!");
-
-		calcUnitOstrogradResid();
-
-		// Volume conditions info (frozen zones)
-		//parseVCs(ctx);
 
 	}
 
+	// get sizes of zones and read real cells from cgns ctx
+	loadCells();
 
+	// set up connections from verts to real cells
+	makeVertexConnectivity();
+
+}
+void t_Mesh::initializeFromCtxStage2() {
+
+	makeCellConnectivity();
+
+	makeFaces();
+
+
+	// update mesh with bc sets
+	loadBCs();
+
+	if (checkNormalOrientations())
+		hsLogMessage("check Face Normal Orientations : Ok");
+	else
+		hsLogMessage("Error:checkNormalOrientations failed!");
+
+	calcUnitOstrogradResid();
 
 }
 

@@ -1,3 +1,12 @@
+/**************************************
+// Name:        ghost-common.h
+// Purpose:     interface of basic ghost manager
+// Author:      A. Obraz
+**************************************/
+/**************************************
+Ghost manager handles connections
+between zones by layers of ghost cells
+**************************************/
 #pragma once
 
 #include "common_data.h"
@@ -5,11 +14,6 @@
 #include "mesh.h"
 
 #include "CGNS-ctx.h"
-
-// TODO: ghost_manager should inherit from base class
-// base class rules connections
-// inherited know physics
-#include "dom_euler.h"
 
 // sell-2-ghost connection data
 // real cell C from some zone (Z_my) abutting ghost cell G via face F
@@ -42,14 +46,15 @@ struct t_GhostLayer {
 
 // Zones are connected via layers of ghost cells;
 // t_GhostManager stores connection of ghosts to real nodes
-// and also does exchanges of information between zones
 
 // this is a single-proc variant
 // TODO: this can be upgraded to MPI version
 
 // In MPI version, data should be serialized
 // in single-proc version, we can pass complex data types
-class t_GhostManager {
+class t_GhostMngBase {
+
+protected:
 
 	t_Mesh* _pDom;
 
@@ -83,7 +88,7 @@ public:
 	void getGhostsZiFromZj_Neig(const t_CGNSContext& ctx, int cgZneID_I, int cgZneID_J,
 		t_GhostLayer& glayer) const;
 
-	void setDom(t_Mesh& a_dom) {
+	virtual void setDom(t_Mesh& a_dom) {
 
 		_pDom = &a_dom;
 
@@ -91,14 +96,12 @@ public:
 
 	}
 
-	void exchangeCSV();
+	t_GhostMngBase(): _pGLayers(), _pDom(nullptr) {}
 
+	// physical methods implemented by children
+	virtual void exchangeCSV() = 0;
 
-	t_GhostManager(): _pGLayers() {}
-
-
-
-	~t_GhostManager() { for (int i = 0; i < _pGLayers.size(); i++) delete _pGLayers[i]; }
+	virtual ~t_GhostMngBase() { for (int i = 0; i < _pGLayers.size(); i++) delete _pGLayers[i]; }
 };
 
-extern t_GhostManager G_GhostManager ;
+extern t_GhostMngBase* G_pGhostMngBase ;

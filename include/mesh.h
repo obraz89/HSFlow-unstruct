@@ -302,7 +302,9 @@ struct t_Mesh
 	// Info for input-output
 	//std::map<std::string, double> mapCasePrms_real;
 
-	void initializeFromCtx();
+	void initializeFromCtxStage1();
+
+	void initializeFromCtxStage2();
 
 	virtual void allocateFlowSolution() = 0;
 

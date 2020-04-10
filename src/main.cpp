@@ -18,6 +18,7 @@
 #include "bc_euler.h"
 #include "flow_model_perfect_gas.h"
 #include "dom_euler.h"
+#include "ghost_euler.h"
 
 #if defined(_WINDOWS)
 	#include <direct.h>   // chdir
@@ -117,15 +118,32 @@ int main(int argc, char* argv[])
 	}
 	//hsLogWTime(true);
 
-	G_pMesh = &G_Domain;
-	G_pBCList = &G_BCListEuler;
+	// important section:
+	// initialize references for bases
+	// TODO: this can be a part of "before-main" initializers
+	// but currently trying to avoid this...
+	{
+		G_pMesh = &G_Domain;
+		G_pBCList = &G_BCListEuler;
+		G_pGhostMngBase = &G_GhostMngEu;
+	}
 
 	if (!load_settings())
 		goto fin;
 
 	G_CGNSCtx.readMesh(g_genOpts.strGridFN);
 
-	G_Domain.initializeFromCtx();
+	// load cells & vertices
+	// make vertex connectivity so ghost manager is able to do some funcs
+	G_Domain.initializeFromCtxStage1();
+
+	// initialize ghost manager, it uses some basic funcs of mesh
+	// requires first stage of mesh init
+	G_GhostMngEu.setDom(G_Domain);
+	G_GhostMngEu.initialize(G_CGNSCtx);
+
+	// cell connectivity, face list
+	G_Domain.initializeFromCtxStage2();
 
 	G_Domain.allocateFlowSolution();
 

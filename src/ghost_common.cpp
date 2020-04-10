@@ -1,10 +1,21 @@
-#include "ghost_manager.h"
+/**************************************
+// Name:        ghost-common.cpp
+// Purpose:     Basics of ghost manager
+// Author:      A. Obraz
+**************************************/
+/**************************************
+Ghost manager handles connections 
+between zones by layers of ghost cells
+**************************************/
+#include "ghost_common.h"
 
-//#include "flow_model.h"
+#include "CGNS-ctx.h"
 
-t_GhostManager G_GhostManager;
+t_GhostMngBase* G_pGhostMngBase;
 
-void t_GhostManager::initialize(const t_CGNSContext& ctx) {
+// initialize directly from cgns ctx
+// at this moment mesh is not fully initialized
+void t_GhostMngBase::initialize(const t_CGNSContext& ctx) {
 
 	for (int i = 0; i < _pDom->nZones; i++) {
 
@@ -33,7 +44,7 @@ void t_GhostManager::initialize(const t_CGNSContext& ctx) {
 // first one is real for zone_I, second is ghost for zone_I
 // IMPORTANT: this function make calls to t_Zone functions
 // that require Vertex connectivity being initialized
-void t_GhostManager::getGhostsZiFromZj_Neig(const t_CGNSContext& ctx, int cgZneID_I, int cgZneID_J,
+void t_GhostMngBase::getGhostsZiFromZj_Neig(const t_CGNSContext& ctx, int cgZneID_I, int cgZneID_J,
 	t_GhostLayer& glayer) const {
 
 	const t_CGNSZone& cgZneMy = ctx.cgZones[cgZneID_I - 1];
@@ -96,7 +107,7 @@ void t_GhostManager::getGhostsZiFromZj_Neig(const t_CGNSContext& ctx, int cgZneI
 
 };
 
-lint t_GhostManager::calcNumOfGhostCells(int zone_id) const{
+lint t_GhostMngBase::calcNumOfGhostCells(int zone_id) const{
 
 	lint num_of_ghosts = 0;
 
@@ -112,8 +123,11 @@ lint t_GhostManager::calcNumOfGhostCells(int zone_id) const{
 };
 
 // calculate Offset in cell numbering for zone with id=zone_id_my
-// so Cells[Offset] is the first ghost node
-lint t_GhostManager::calcIndOffset(int zone_id_my, int zone_id_dnr) const{
+// so Cells[Offset] is the first ghost node 
+// provided by zone with id zone_id_dnr
+// NB: zone cell order: 
+// [real cells][ghost from zone 0][ghost from zone 1]...[ghosts from zone N-1]
+lint t_GhostMngBase::calcIndOffset(int zone_id_my, int zone_id_dnr) const{
 
 	const t_Zone& Zne = _pDom->Zones[zone_id_my];
 
@@ -127,30 +141,5 @@ lint t_GhostManager::calcIndOffset(int zone_id_my, int zone_id_dnr) const{
 	}
 
 	return offset;
-
-};
-
-// this is like send and receive 
-void  t_GhostManager::exchangeCSV() {
-
-	for (int i = 0; i < _pDom->nZones; i++) {
-
-		for (int j = 0; j < _pDom->nZones; j++) {
-
-			t_Zone& ZoneMy = _pDom->Zones[i];
-			t_Zone& ZoneDnr = _pDom->Zones[j];
-
-			t_GhostLayer* glayer = _pGLayers[getPlainInd(i, j)];
-
-			for (int k = 0; k < glayer->size(); k++) {
-
-				lint offset = calcIndOffset(i, j);
-				G_Domain.getCellCSV(i, offset + k) = G_Domain.getCellCSV(j, glayer->data[k].id_dnr);
-				//ZoneMy.getCell(offset + k).ConsVars = ZoneDnr.getCell(glayer->data[k].id_dnr).ConsVars;
-
-			}
-
-		}
-	}
 
 };
