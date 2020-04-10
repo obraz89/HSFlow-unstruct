@@ -70,6 +70,7 @@ public:
 
 	const t_Vec3& getUInf() const { return UInf; }
 	double getMach() const { return Mach; }
+	double getTinfDim() const { return TinfDim; }
 
 };
 

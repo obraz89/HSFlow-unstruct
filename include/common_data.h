@@ -120,6 +120,59 @@ struct TState
 
 					 /// L_inf norm of residual at 0-th Newton's iteration at current step
 	double initialResidual;
+
+	// TODO: these are scheme parameters, separate them later
+
+	double timeStart;
+	double timeCurrent;
+};
+
+/**
+ * Several arrays packed (stacked up) into one. Dynamic version.
+ * Each subarray consists of several POD elements.
+ *
+ * @tparam T - type of the element, POD
+ */
+template<typename T>
+class TpakArraysDyn
+{
+	T* _data = nullptr;
+	unsigned N = 0;   // number of subarrays
+	unsigned M = 0;   // number of elements per subarray
+
+	TpakArraysDyn(TpakArraysDyn&) = delete;
+	void operator=(TpakArraysDyn&) = delete;
+
+public:
+	TpakArraysDyn() = default;
+	TpakArraysDyn(unsigned aN, unsigned aM) : N(aN), M(aM) {
+		_data = new T[size()];
+	}
+	void reset(unsigned aN, unsigned aM) {
+		delete[] _data;
+		N = aN;  M = aM;
+		_data = new T[size()];
+	}
+
+	T* data() {
+		return _data;
+	}
+	/// Total elements count in all subarrays
+	unsigned size() const {
+		return N * M;
+	}
+
+	/// Subarray pointer
+	T* operator[](const unsigned m) {
+		return _data + m * M;
+	}
+	/// Subarray elements count
+	unsigned subsize() const {
+		return M;
+	}
+	~TpakArraysDyn() {
+		delete[] _data;
+	}
 };
 
 extern TState G_State;

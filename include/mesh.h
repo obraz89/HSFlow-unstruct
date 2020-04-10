@@ -265,8 +265,8 @@ public:
 
 struct t_Mesh
 {
-	int nu,	  // number of dependent (unknown) variables
-		nDim; // number of independent variables (problem dimensions)
+
+	int nDim; // number of independent variables (problem dimensions)
 
 			  // Physical equations of the problem
 			  //
@@ -306,9 +306,12 @@ struct t_Mesh
 
 	void initializeFromCtxStage2();
 
+	// interface for the flow domain
 	virtual void allocateFlowSolution() = 0;
-
 	virtual void initializeFlow() = 0;
+	virtual double loadField(std::string FieldName) = 0;
+	virtual int getNu() const= 0;
+	virtual std::vector<std::string> getFuncNamesIO() = 0;
 
 	// for debug
 	virtual void dump_flow() = 0;

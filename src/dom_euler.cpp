@@ -6,7 +6,11 @@
 
 #include "bc_euler.h"
 
+#include "settings.h"
+
 #include <fstream>
+
+#include "io-field.h"
 
 
 t_DomainEuler G_Domain;
@@ -33,22 +37,175 @@ void t_DomainEuler::allocateFlowSolution() {
 
 void t_DomainEuler::initializeFlow() {
 
-	// set real cell values
-	for (int iZone = 0; iZone < nZones; iZone++) {
+	double time = -1;
 
-		t_Zone& zne = Zones[iZone];
+	if (g_genOpts.strInitFieldFN.empty()) {
+		// set real cell values
+		for (int iZone = 0; iZone < nZones; iZone++) {
 
-		t_Cell* pcell;
+			t_Zone& zne = Zones[iZone];
 
-		for (int i = 0; i < zne.getnCellsReal(); i++) {
+			t_Cell* pcell;
 
-			pcell = zne.getpCell(i);
-			getCellCSV(iZone, i).setValAtInf();
+			for (int i = 0; i < zne.getnCellsReal(); i++) {
+
+				pcell = zne.getpCell(i);
+				getCellCSV(iZone, i).setValAtInf();
+			}
+
 		}
 
+		time = 0.0;
 	}
+	else {
+
+		hsLogMessage("* Reading initial field '%s'...",
+			g_genOpts.strInitFieldFN.c_str());
+
+		time = loadField(g_genOpts.strInitFieldFN);
+		if (time < 0)
+			hsLogError("Failed to load cgns field");
+
+	}
+
+	// Set initial time in time-stepping
+	G_State.timeStart =
+		(g_genOpts.timeStart >= 0) ? g_genOpts.timeStart : time;
+
+	
 	// set ghost values
 	G_GhostMngEu.exchangeCSV();
+
+}
+
+std::vector<std::string> t_DomainEuler::getFuncNamesIO() {
+	std::vector<std::string> fnames;
+	fnames.push_back("VelocityX");
+	fnames.push_back("VelocityY");
+	fnames.push_back("VelocityZ");
+	fnames.push_back("Pressure");
+	fnames.push_back("Temperature");
+
+	return fnames;
+}
+
+double t_DomainEuler::loadField(std::string fileName) {
+
+	double time = -1.0;
+
+	//TLogSyncGuard logGuard;
+
+	int f = -1;
+	const int iBase = 1;  // assume only one base in the file
+
+	char ok = 1;
+	if (G_State.mpiRank == 0) do
+	{
+		ok = 0;
+
+		if (cg_open(fileName.c_str(), CG_MODE_READ, &f) != CG_OK)
+		{
+			hsLogError("Can't open field file '%s' for reading: %s",
+				fileName.c_str(), cg_get_error());
+			break;
+		}
+
+		char szName[33];
+
+		// Space dimensions
+		int dimCell = 0, dimPhys = 0;
+		if (cg_base_read(f, iBase, szName, &dimCell, &dimPhys) != CG_OK)
+		{
+			hsLogError("Can't read CGNS base node from '%s' ( %s )",
+				fileName.c_str(), cg_get_error());
+			break;
+		}
+
+		if (dimCell != G_Domain.nDim) {
+			hsLogError("CGNS: Inconsistent space dimensions");
+			break;
+		}
+
+		// Number of zones (aka blocks)
+		int nZones = 0;  cg_nzones(f, iBase, &nZones);
+		if (nZones != G_Domain.nZones) {
+			hsLogError("CGNS: Inconsistent number of zones");
+			break;
+		}
+
+		// Get time
+		time = 0.0;
+		do {
+			int nTmSteps = 0;  cg_biter_read(f, iBase, szName, &nTmSteps);
+			if (nTmSteps < 1) break;
+
+			if (cg_goto(f, iBase, "BaseIterativeData_t", 1, NULL) != CG_OK)
+				break;
+
+			int nArrs = 0;  cg_narrays(&nArrs);
+			if (nArrs < 1)  break;
+
+			for (int ai = 1; ai <= nArrs; ++ai)
+			{
+				CG_DataType_t type;  int dim;  cgsize_t len[3];
+				cg_array_info(ai, szName, &type, &dim, len);
+				if (strcmp(szName, "TimeValues") == 0) {
+					cg_array_read_as(ai, CG_RealDouble, &time);
+					break;
+				}
+			}
+		} while (false);
+
+		ok = 1;
+	} while (false); // if( G_State.mpiRank == 0 )
+
+	//MPI_Bcast(&ok, 1, MPI_CHAR, 0/*root*/, PETSC_COMM_WORLD);
+	if (!ok)
+		return -1;
+
+	//MPI_Bcast(&time, 1, MPI_DOUBLE, 0/*root*/, PETSC_COMM_WORLD);
+
+	// Loop through zones
+	for (int zi = 0; zi < nZones; ++zi)
+	{
+		t_Zone& zne = Zones[zi];
+		const int NCellsReal = zne.getnCellsReal();
+		const int NVerts = zne.getnVerts();
+
+		// Data of the zone excluding ghosts!!!
+		TpakArraysDyn<double> newField, newGrid;
+
+		if ( G_State.mpiRank == 0)
+		{
+			newField.reset(NConsVars, NCellsReal);
+			newGrid.reset(this->nDim, NVerts);
+		}
+		if (G_State.mpiRank == 0)
+		{
+			if (!read_zone_cgns(f, iBase, zi, newGrid, newField))  ok = 0;
+
+			// Send data from root to the zone's owner
+			//const int& rankDst = G_State.map_zone2rank[zi];
+			//if (rankDst != 0)  // don't send to myself
+			//	MPI_Ssend(newField.data(), (ok ? newField.size() : 0), MPI_DOUBLE, rankDst, mpiTag, PETSC_COMM_WORLD);
+		}
+		else if (G_Domain.bs <= zi && zi <= G_Domain.be)
+		{
+			//MPI_Recv(newField.data(), newField.size(), MPI_DOUBLE, 0/*root*/, mpiTag, PETSC_COMM_WORLD, MPI_STATUS_IGNORE);
+		}
+
+		// TODO: Copy field to internal structs
+
+	}
+
+	//MPI_Bcast(&ok, 1, MPI_CHAR, 0/*root*/, PETSC_COMM_WORLD);
+	if (!ok)
+		return -1;
+
+	if (G_State.mpiRank == 0)
+		cg_close(f);
+
+	return time;
 
 }
 

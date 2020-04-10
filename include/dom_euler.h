@@ -31,8 +31,14 @@ public:
 		return ZonesSol[zone_id].Fluxes[face_id];
 	}
 
+	// implement domain virtuals
 	void allocateFlowSolution();
 	void initializeFlow();
+	double loadField(std::string fieldName);
+	int getNu() const { return NConsVars; }
+	std::vector<std::string> getFuncNamesIO();
+
+
 	void makeTimeStep();
 	double calcDt();
 	void calcFaceFlux(int iZone, lint iFace);
