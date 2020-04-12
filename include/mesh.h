@@ -166,6 +166,13 @@ struct t_CellEdgeList {
 
 
 };
+// cells are stored as continuous range of cells with same kind
+// layout must be the same as in original mesh
+struct t_CellKindRange {
+	t_CellKind kind;
+	lint idStart;
+	lint idEnd;
+};
 
 struct t_ZoneFacePatch {
 
@@ -224,6 +231,8 @@ public:
 
 	t_Cell& getCell(lint cell_ID) { return Cells[cell_ID]; }
 	const t_Cell& getCell(lint cell_ID) const { return Cells[cell_ID]; }
+
+	std::vector<t_CellKindRange> getCellsOffsets() const;
 
 	t_Cell* getpCell(lint cell_ID) { return &Cells[cell_ID]; }
 	const t_Cell* getpCell(lint cell_ID) const { return &Cells[cell_ID]; }

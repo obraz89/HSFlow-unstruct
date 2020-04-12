@@ -158,6 +158,9 @@ int main(int argc, char* argv[])
 	err = EXIT_SUCCESS;
 
 fin:
+	// DEBUG: testing offsets 
+	//std::vector<t_CellKindRange> offsets = G_Domain.Zones[0].getCellsOffsets();
+
 	//hsflow::TLog::destroy();  // flushes remaining messages
 	delete[] G_Domain.Zones;
 	return err;

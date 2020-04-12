@@ -715,6 +715,43 @@ void t_Zone::updateFacesWithBCPatch(const t_Face* face_patch, const int NFacesIn
 
 };
 
+std::vector<t_CellKindRange> t_Zone::getCellsOffsets() const{
+
+	std::vector<t_CellKindRange> offsets;
+
+	t_CellKind last_kind, cur_kind;
+
+	last_kind = t_CellKind::None;
+
+	for (int i = 0; i < nCellsReal; i++) {
+
+		const t_Cell& cur_cell = getCell(i);
+
+		// finishing range when new offset starts 
+		if ((cur_cell.Kind != last_kind)) {
+			if (offsets.size() > 0) {
+				t_CellKindRange& last_offset = offsets.back();
+				last_offset.idEnd = i - 1;
+
+			}
+			t_CellKindRange cell_range;
+			cell_range.kind = cur_cell.Kind;
+			cell_range.idStart = i;
+			offsets.push_back(cell_range);
+
+			last_kind = cur_cell.Kind;
+
+		}
+
+	}
+
+	// updating last_range
+	offsets.back().idEnd = nCellsReal - 1;
+
+	return offsets;
+
+}
+
 //************************************* Mesh methods
 
 void t_Mesh::initializeFromCtxStage1() {
