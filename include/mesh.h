@@ -98,6 +98,8 @@ struct t_Cell {
 
 	double Volume;
 
+	double Diameter;
+
 	int NCellsNeig() {
 		int ret = 0;
 		for (int i = 0; i < MaxNumFacesInCell; i++)
