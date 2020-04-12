@@ -63,7 +63,7 @@ void t_PrimVars::setValAtInf() {
 
 	setUVW(fp.getUInf());
 
-	setP(calcGMaMaInv());
+	setP(1.0/calcGMaMa());
 
 }
 //******************************************ConsVars
@@ -110,7 +110,7 @@ void t_ConsVars::setValAtInf() {
 
 	prv.setUVW(fp.getUInf());
 
-	prv.setP(calcGMaMaInv());
+	prv.setP(1.0/calcGMaMa());
 
 	*this = prv.calcConsVars();
 

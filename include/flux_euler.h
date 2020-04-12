@@ -34,6 +34,10 @@ public:
 
 	double getU() const { return data[1]; }
 	void setU(double val) { data[1] = val; }
+
+	double getV() const { return data[2]; }
+	double getW() const { return data[3]; }
+
 	void setUVW(const t_Vec3& v) {
 		for (int i = 0; i < 3; i++) data[i + 1] = v[i];
 	}
