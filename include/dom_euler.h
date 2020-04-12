@@ -73,7 +73,7 @@ public:
 
 
 	void makeTimeStep();
-	double calcDt();
+	double calcDt() const;
 	void calcFaceFlux(int iZone, lint iFace);
 	void dump_flow();
 	void dump_geom();

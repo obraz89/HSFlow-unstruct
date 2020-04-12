@@ -397,9 +397,36 @@ void t_DomainEuler::calcFaceFlux(int iZone, lint iFace) {
 
 }
 
-double t_DomainEuler::calcDt() {
+double t_DomainEuler::calcDt() const{
 
-	return 0.0;
+	double dt = HUGE_VAL;
+
+	for (int iZone = 0; iZone < nZones; iZone++) {
+
+		const t_Zone& Zne = Zones[iZone];
+
+		for (int iCell = 0; iCell < Zne.getnCellsReal(); iCell++) {
+
+			const t_Cell& cell = Zne.getCell(iCell);
+
+			const t_ConsVars& csv = getCellCSV(iZone, iCell);
+
+			t_PrimVars pv = csv.calcPrimVars();
+
+			double c = calcSoundSpeedByRP(pv.getR(), pv.getP());
+
+			// rough estimates of |U-c|, |U| and |U+c| is just abs(U)+c
+			double v_max = pv.getUVW().norm() + c;
+
+			double dt_cur = g_genOpts.CFL * cell.Diameter / v_max;
+
+			if (dt_cur < dt) dt = dt_cur;
+
+		}
+
+	}
+
+	return dt;
 
 }
 
