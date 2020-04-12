@@ -22,7 +22,13 @@ double calcSoundSpeedByRP(double rho, double pressure) {
 
 }
 
-double calcGMaMaInv() {
+double calcTempByRP(double rho, double pressure) {
+
+	return calcGMaMa() * pressure / rho;
+
+}
+
+double calcGMaMa() {
 	double M2 = G_FreeStreamParams.getMach() * G_FreeStreamParams.getMach();
-	return 1.0 / (G_FlowModelParams.Gamma * M2);
+	return G_FlowModelParams.Gamma * M2;
 }

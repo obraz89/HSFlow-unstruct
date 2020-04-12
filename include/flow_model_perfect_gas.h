@@ -19,5 +19,7 @@ void initialize_flow_model();
 // non-dimensional speed of sound
 double calcSoundSpeedByRP(double rho, double pressure); 
 
+double calcTempByRP(double rho, double pressure);
+
 // 1/(gamma*Mach*Mach)
-double calcGMaMaInv();
+double calcGMaMa();
