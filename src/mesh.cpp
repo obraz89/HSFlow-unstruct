@@ -94,6 +94,58 @@ t_Vec3 t_Cell::getFaceNormalOutward(int iface) const {
 	return norm;
 }
 
+t_CellTetraList::t_CellTetraList(const t_Cell& cell):Size(0), VertsTmp() {
+	if (cell.Kind == t_CellKind::Tetra) {
+		Tetras[0] = cell;
+		Size = 1;
+		return;
+	}
+	if (cell.Kind == t_CellKind::Brick) {
+
+		Size = 12;
+
+		t_CellFaceList flist(cell);
+
+		// 1 temporary vertex required : cell center
+		t_Vert cell_center;
+		cell_center.xyz = cell.Center;
+
+		VertsTmp.push_back(cell_center);
+
+		int iTetra = 0;
+
+		for (int iFace = 0; iFace < flist.NFaces(); iFace++) {
+
+			t_Cell tetra1, tetra2;
+			tetra1.setKind(t_CellKind::Tetra);
+			tetra2.setKind(t_CellKind::Tetra);
+
+			t_SetOfpVerts& verts = flist.getVertices(iFace);
+
+			// face (v1,v2,v3,v4) + cell center C
+			// make 2 tetras : (v1,v2,v3,C) and (v3,v4,v1,C)
+
+			tetra1.pVerts[0] = verts[0];
+			tetra1.pVerts[1] = verts[1];
+			tetra1.pVerts[2] = verts[2];
+			tetra1.pVerts[3] = &VertsTmp.back();
+
+			Tetras[iTetra++] = tetra1;
+
+			tetra2.pVerts[0] = verts[2];
+			tetra2.pVerts[1] = verts[3];
+			tetra2.pVerts[2] = verts[0];
+			tetra2.pVerts[3] = &VertsTmp.back();
+
+			Tetras[iTetra++] = tetra2;
+
+		}
+
+		return;
+	}
+	hsLogMessage("t_CellTetraList: tetra decomposition for this element not implemented yet");
+}
+
 void t_CellEdgeList::init(const t_Cell& a_Cell) {
 
 	pCell = &a_Cell;
@@ -281,6 +333,52 @@ const t_SetOfpVerts& t_CellFaceList::getVertices(int indFace) const {
 
 	return F2V[indFace];
 };
+
+t_SetOfpVerts& t_CellFaceList::getVertices(int indFace){
+	return F2V[indFace];
+};
+
+void t_Cell::computeCenter() {
+
+	Center.set(0,0,0);
+
+	for (int i = 0; i < NVerts; i++)
+		Center += pVerts[i]->xyz;
+
+	Center *= 1.0 / double(NVerts);
+}
+
+void t_Cell::computeDiameter() {
+
+	Diameter = 0.0;
+	double dst = 0.0;
+	for (int i = 0; i < NVerts; i++) {
+		// estimates for diameter: double distance from vertex to center
+		dst = 2.0*(pVerts[i]->xyz - Center).norm();
+		if (dst > Diameter) Diameter = dst;
+	}
+}
+
+void t_Cell::computeVolume() {
+
+	if (this->Kind == t_CellKind::Tetra) {
+		t_Vec3 rv[3];
+		for (int i = 0; i < 3; i++) 
+			rv[i] = pVerts[i + 1]->xyz - pVerts[0]->xyz;
+		Volume = 1.0/6.0*fabs(rv[0].cross(rv[1]).dot(rv[2]));
+		return;
+	}
+
+	t_CellTetraList tetras(*this);
+
+	Volume = 0.0;
+
+	for (int i = 0; i < tetras.getSize(); i++) {
+		tetras.getTetra(i).computeVolume();
+		Volume += tetras.getTetra(i).Volume;
+	}
+
+}
 //************************************* Face methods
 
 t_SetOfpVerts t_Face::getVerts() const {
@@ -365,7 +463,7 @@ void t_Zone::makeVertexConnectivity() {
 
 		for (int j = 0; j < pCell->NVerts; j++) {
 
-			pVert = pCell->getpVert(j);
+			pVert = getpVert(pCell->getpVert(j)->Id);
 			pVert->NNeigCells++;
 		}
 	}
@@ -388,7 +486,7 @@ void t_Zone::makeVertexConnectivity() {
 
 		for (int j = 0; j < pCell->NVerts; j++) {
 
-			pVert = pCell->getpVert(j);
+			pVert = getpVert(pCell->getpVert(j)->Id);
 			pVert->pNeigCells[IndBuf[pVert->Id]] = pCell;
 			IndBuf[pVert->Id]++;
 		}
@@ -700,7 +798,8 @@ void t_Zone::updateFacesWithBCPatch(const t_Face* face_patch, const int NFacesIn
 					if (t_SetOfpVerts::cmp_weak(vrtxset_base, vrtxset_neig)) {
 						// we found corresponding face
 						// updating info
-						pCellNeig->pFaces[p]->BCId = face_in_patch.BCId;
+						t_Face* face_bc = getpFace(pCellNeig->pFaces[p]->Id);
+						face_bc->BCId = face_in_patch.BCId;
 						face_found = true;
 					}
 				}
@@ -838,6 +937,14 @@ void t_Mesh::loadCells() {
 			hsLogError("loadCells: failed to initialize Zne: %ld cells in CGNS Zone, %ld cells in Zone",
 				NCellsCG, Zne.getnCellsTot());
 
+		// load grid coords
+		for (int i = 0; i < Zne.getnVerts(); i++) {
+			t_Vert& vert = Zne.getVert(i);
+			vert.xyz[0] = cgZne.getXCoords()[i];
+			vert.xyz[1] = cgZne.getYCoords()[i];
+			vert.xyz[2] = cgZne.getZCoords()[i];
+		}
+
 		// filling in real cells
 		int iCell = 0;
 
@@ -857,16 +964,15 @@ void t_Mesh::loadCells() {
 					cell.pVerts[k] = &(Zne.getVert(Vert_ID));
 				}
 
+				cell.computeCenter();
+
+				cell.computeDiameter();
+
+				cell.computeVolume();
+
 				iCell++;
 
 			}
-		}
-		// load grid coords
-		for (int i = 0; i < cgZne.getNVerts(); i++) {
-			t_Vert& vert = Zne.getVert(i);
-			vert.xyz[0] = cgZne.getXCoords()[i];
-			vert.xyz[1] = cgZne.getYCoords()[i];
-			vert.xyz[2] = cgZne.getZCoords()[i];
 		}
 
 		//std::cout << "______________________Debug, Zone Verts:\n";

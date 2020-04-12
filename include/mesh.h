@@ -10,6 +10,9 @@ static const int MaxNumVertsInCell = 8;
 
 static const int MaxNumEdgesInCell = 12;
 
+// max number of tetras when making decomposition of a cell
+static const int MaxNumTetrasFromCell = 12;
+
 using t_BufFace2Vert = t_BufIndsStat<lint, MaxNumFacesInCell, MaxNumVertsInFace>;
 
 using t_BufEdge2Vert = t_BufIndsStat<lint, MaxNumEdgesInCell, 2>;
@@ -32,8 +35,8 @@ struct t_Vert {
 	t_Cell** pNeigCells;
 
 	t_Vec3 xyz;
-
-	~t_Vert() { delete[] pNeigCells; }
+	t_Vert():pNeigCells(nullptr), Id(-1), NNeigCells(0) {}
+	~t_Vert() { if (pNeigCells!=nullptr) delete[] pNeigCells; }
 
 };
 
@@ -85,8 +88,8 @@ struct t_Cell {
 
 	int NFaces;
 
-	t_Vert* pVerts[MaxNumVertsInCell];
-	t_Face* pFaces[MaxNumFacesInCell];
+	const t_Vert* pVerts[MaxNumVertsInCell];
+	const t_Face* pFaces[MaxNumFacesInCell];
 
 	t_Cell* pCellsNeig[MaxNumFacesInCell];
 	// store index of face for neighbor cell that corresponds to the particular face
@@ -115,16 +118,16 @@ struct t_Cell {
 		}
 	}
 
-	t_Vert& getVert(int ind) { return *pVerts[ind]; }
+	//t_Vert& getVert(int ind) { return *pVerts[ind]; }
 	const t_Vert& getVert(int ind) const { return *pVerts[ind]; }
 
-	t_Vert* getpVert(int ind) { return pVerts[ind]; }
+	//t_Vert* getpVert(int ind) { return pVerts[ind]; }
 	const t_Vert* getpVert(int ind) const { return pVerts[ind]; }
 
-	t_Face& getFace(int ind) { return *pFaces[ind]; }
+	//t_Face& getFace(int ind) { return *pFaces[ind]; }
 	const t_Face& getFace(int ind) const { return *pFaces[ind]; }
 
-	t_Face* getpFace(int ind) { return pFaces[ind]; }
+	//t_Face* getpFace(int ind) { return pFaces[ind]; }
 	const t_Face* getpFace(int ind) const { return pFaces[ind]; }
 
 	void setKind(t_CellKind a_Kind);
@@ -133,6 +136,24 @@ struct t_Cell {
 	bool isMyFace(int face_ind) const { return (this == pFaces[face_ind]->pMyCell); }
 
 	t_Vec3 getFaceNormalOutward(int iface) const;
+
+	void computeCenter();
+	void computeDiameter();
+	void computeVolume();
+
+};
+
+// decomposition of cell into tetras
+class t_CellTetraList {
+
+	t_Cell Tetras[MaxNumTetrasFromCell];
+	// tmp verts neede for calcs, like cell center
+	std::vector<t_Vert> VertsTmp;
+	int Size;
+public:
+	int getSize() const { return Size; }
+	t_Cell& getTetra(int ind) { return Tetras[ind]; }
+	t_CellTetraList(const t_Cell& cell);
 
 };
 
@@ -150,6 +171,7 @@ struct t_CellFaceList {
 	t_CellFaceList(const t_Cell& cell);
 
 	const t_SetOfpVerts& getVertices(int indFace) const;
+	t_SetOfpVerts& getVertices(int indFace);
 
 };
 
