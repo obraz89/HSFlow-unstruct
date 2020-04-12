@@ -104,6 +104,44 @@ public:
 	const T& get_val(int i, int j) const { return buf[i][j]; }
 };
 
+/**
+ * Double array wrapper
+ */
+class t_ArrDbl
+{
+	double* _D;
+	size_t _size;
+
+	t_ArrDbl(t_ArrDbl&) = delete;
+	void operator=(t_ArrDbl&) = delete;
+
+public:
+	t_ArrDbl() : _D(nullptr), _size(0) { ; }
+
+	void alloc(size_t size) {
+		_D = new double[size];
+		_size = size;
+	}
+
+	size_t size() const { return _size; }
+
+	void set(size_t n, const double& val) {
+		_D[n] = val;
+	}
+
+	double* data() {
+		return _D;
+	}
+
+	//MPI_Datatype typeMPI() const {
+	//	return MPI_DOUBLE;
+	//}
+
+	~t_ArrDbl() {
+		delete[] _D;
+	}
+};
+
 //
 // Problem solving state
 //

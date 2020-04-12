@@ -14,6 +14,8 @@
 
 #include "bc_common.h"
 
+#include "io-field.h"
+
 // model-specific part
 #include "bc_euler.h"
 #include "flow_model_perfect_gas.h"
@@ -154,6 +156,9 @@ int main(int argc, char* argv[])
 	G_Domain.dump_flow();
 
 	G_Domain.makeTimeStep();
+
+	// TODO: G_Domain.saveFiled()
+	saveField("field", "");
 
 	err = EXIT_SUCCESS;
 

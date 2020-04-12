@@ -14,7 +14,7 @@
 #define CG_BUILD_SCOPE 1
 #endif
 
-#include "mpi.h"
+//#include "mpi.h"
 
 #include "common_data.h"
 
@@ -26,11 +26,12 @@
 
 #include "flow_params.h"
 
+#include "CGNS-ctx.h"
+
 #include <cassert>
 //-----------------------------------------------------------------------------
 
 const char g_szCGBase[] = "HSFlow-unstruct";
-const char* g_cgCoordNames[] = { "CoordinateX", "CoordinateY", "CoordinateZ" };
 
 //-----------------------------------------------------------------------------
 
@@ -41,74 +42,15 @@ static double loadField_cgns(const std::string& fileName, const short time_layer
 
 static bool read_zone_cgns(const int fileID, const int iBase, const int idxZne,
 	const int nxyz[], TpakArraysDyn<double>& grid, TpakArraysDyn<double>& field);
-static double loadField_legacy(const std::string& fileName, const short time_layer);
 
 static bool writeMetaInfoToCGNS(const int fileID, const int iBase, const short time_layer);
-
-//static std::string cgns_face_name(const int zone_idx, const TZoneFacePos face_pos);
 //-----------------------------------------------------------------------------
 
 //
 // Helper classes
 //
 
-/**
- * Double or float array wrapper
- */
-class TDFArray
-{
-	union {
-		double* _D;
-		float* _F;
-		void* _raw;
-	};
-	bool is_double;
 
-	TDFArray() = delete;
-	TDFArray(TDFArray&) = delete;
-	void operator=(TDFArray&) = delete;
-
-public:
-	TDFArray(bool d) : _raw(nullptr), is_double(d) { ; }
-
-	void alloc(size_t size) {
-		if (is_double)
-			_D = new double[size];
-		else
-			_F = new float[size];
-	}
-
-	template<typename T>
-	void set(size_t n, const T& val) {
-		if (is_double)
-			_D[n] = static_cast<double>(val);
-		else
-			_F[n] = static_cast<float>(val);
-	}
-
-	void* data() {
-		return _raw;
-	}
-
-	/// Data type of stored data in CGNS & MPI terms
-	struct TDataType {
-		CG_DataType_t cgns;
-		MPI_Datatype  mpi;
-	};
-	const TDataType type() const {
-		if (is_double)
-			return { CG_RealDouble, MPI_DOUBLE };
-		else
-			return { CG_RealSingle, MPI_FLOAT };
-	}
-
-	~TDFArray() {
-		if (is_double)
-			delete[] _D;
-		else
-			delete[] _F;
-	}
-};
 
 /**
  *  Read zone data from the opened CGNS file
@@ -234,7 +176,7 @@ bool read_zone_cgns(const int fileID, const int iBase, const int idxZne,
  * @return `true` if succeeded and `false` otherwise
 **/
 bool saveField(const std::string& fileName, const std::string& gridFileName,
-	const short time_layer, bool isDouble)
+	const short time_layer)
 {
 
 	int f = -1, fGrid = -1;  // file descriptors for field & grid
@@ -262,7 +204,6 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 
 		if (!gridFileName.empty())
 		{
-			hsLogError("Implement me: write verts & cells to grid file!");
 			//
 			// Create separate grid file
 			//
@@ -342,8 +283,6 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 
 		t_Zone& zne = G_pMesh->Zones[zi];
 
-		//2) write flow from packed arrs provided by domain
-
 		if (G_State.mpiRank == 0)
 		{
 			// Zone size packed in CGNS format
@@ -381,7 +320,7 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 		}
 
 
-		TDFArray Vals(isDouble);
+		t_ArrDbl Vals;
 		Vals.alloc(zne.getnVerts());
 
 		//
@@ -389,8 +328,16 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 		//
 		if (fGrid >= 0)
 		{
-			// TODO: write coords of verts
-			//cg_coord_write(fGrid, iBaseGrid, iZoneGrid, Vals.type().cgns, name, Vals.data(), &iCoord);
+			for (int iCoord = 0; iCoord < 3; iCoord++) {
+				const char* name = g_cgCoordNames[iCoord];
+				int iCoordCG;
+				G_pMesh->getDataAsArr(name, zi, Vals);
+				if (cg_coord_write(fGrid, iBaseGrid, iZoneGrid, 
+					CG_RealDouble, name, Vals.data(), &iCoordCG) != CG_OK) {
+						hsLogError("Can't write grid coords in zone %s#%d ( %s )",
+							zne.getName(), iZone, cg_get_error());
+				};
+			}
 		} // if( fGrid >=0 )
 
 		//
@@ -398,8 +345,51 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 		//
 
 		// 2) write cells here
+		const t_CGNSZone& cgZne = G_CGNSCtx.cgZones[zi];
+		const std::vector<t_CGSection*> SectsCell = cgZne.getSectsCell();
+		for (int iSect = 0; iSect < SectsCell.size(); iSect++) {
+
+			const t_CGSection& Sect = *SectsCell[iSect];
+			int sect_ind_cg_output = -1;
+			const cgsize_t* data = Sect.get_buf_data();
+
+			if (cg_section_write(f, iBase, iZone,
+				Sect.name.c_str(), Sect.itype, Sect.id_start, Sect.id_end,
+				0, data, &sect_ind_cg_output) != CG_OK) {
+				hsLogError("Can't write cell section %s in zone %s#%d ( %s )",
+					Sect.name.c_str(), zne.getName(), iZone, cg_get_error());
+			};
+
+		}
 
 		// 3) write flow solution
+
+		std::vector<std::string> flow_vars = G_pMesh->getFuncNamesIO();
+
+		int iSol;
+
+		cg_sol_write(f, iBase, iZone, "FlowSolution", CG_CellCenter, &iSol);
+
+
+		t_ArrDbl flow_sol_data;
+		flow_sol_data.alloc(zne.getnCellsReal());
+
+		for (int iFlow = 0; iFlow < flow_vars.size(); iFlow++) {
+
+			const char* flow_sol_name = flow_vars[iFlow].c_str();
+			G_pMesh->getDataAsArr(flow_sol_name, zi, flow_sol_data);
+
+			int iFlowCG;
+
+			if (cg_field_write(f, iBase, iZone, iSol,
+				CG_RealDouble, flow_sol_name,
+				flow_sol_data.data(), &iFlowCG) != CG_OK) {
+
+				hsLogError("Can't write %s in zone %s#%d ( %s )",
+					flow_sol_name, zne.getName(), iZone, cg_get_error());
+			};
+
+		}
 
 
 		//
@@ -478,8 +468,8 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 			cg_close(fGrid);
 	}
 
-	MPI_Barrier(MPI_COMM_WORLD);
-	hsLogWTime();
+	//MPI_Barrier(MPI_COMM_WORLD);
+	//hsLogWTime();
 
 	return ok;
 }

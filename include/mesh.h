@@ -320,7 +320,8 @@ struct t_Mesh
 	virtual void initializeFlow() = 0;
 	virtual double loadField(std::string FieldName) = 0;
 	virtual int getNu() const= 0;
-	virtual std::vector<std::string> getFuncNamesIO() = 0;
+	virtual std::vector<std::string> getFuncNamesIO() const = 0;
+	virtual void getDataAsArr(std::string name, int zoneID, t_ArrDbl& Vals) const= 0;
 
 	// for debug
 	virtual void dump_flow() = 0;

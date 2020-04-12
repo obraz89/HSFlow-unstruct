@@ -10,8 +10,6 @@
 
 #include <fstream>
 
-#include "io-field.h"
-
 
 t_DomainEuler G_Domain;
 
@@ -78,7 +76,7 @@ void t_DomainEuler::initializeFlow() {
 
 }
 
-std::vector<std::string> t_DomainEuler::getFuncNamesIO() {
+std::vector<std::string> t_DomainEuler::getFuncNamesIO() const{
 	std::vector<std::string> fnames;
 	fnames.push_back("VelocityX");
 	fnames.push_back("VelocityY");
@@ -87,6 +85,92 @@ std::vector<std::string> t_DomainEuler::getFuncNamesIO() {
 	fnames.push_back("Temperature");
 
 	return fnames;
+}
+
+void t_DomainEuler::getDataAsArr(std::string name, int zoneID, t_ArrDbl& Vals) const {
+
+	const t_Zone& Zne = Zones[zoneID];
+
+	double* data = Vals.data();
+
+	bool isCoord = false;
+
+	// coords
+	{
+		 int iXYZ = -1;
+
+		for (int i = 0; i < 3; i++)
+			if (name.compare(g_cgCoordNames[i])==0) {
+
+				if (Vals.size() != Zne.getnVerts())
+					hsLogError("t_DomainEuler::getDataAsArr: coord size mismatch");
+
+				isCoord = true;
+				iXYZ = i;
+				break;
+			}
+
+		if (isCoord) {
+			for (int iVert = 0; iVert < Zne.getnVerts(); iVert++)
+				data[iVert] = Zne.getVert(iVert).xyz[iXYZ];
+			//return;
+		}
+	}
+
+	// funcs
+	if (!isCoord){
+		if (Vals.size() != Zne.getnCellsReal())
+			hsLogError("t_DomainEuler::getDataAsArr: flow field size mismatch");
+
+		std::vector<std::string> func_names = getFuncNamesIO();
+
+		int func_id = -1;
+
+		for (int i = 0; i < func_names.size(); i++)
+			if (name.compare(func_names[i]) == 0)
+				func_id = i;
+
+		for (int iCell = 0; iCell < Zne.getnCellsReal(); iCell++) {
+			const t_ConsVars& csv = getCellCSV(zoneID, iCell);
+			t_PrimVarsIO pvio(csv);
+			// velocityX
+			if (func_id==0) {
+				data[iCell] = pvio.u;
+				continue;
+			}
+			// velocity Y
+			if (func_id==1) {
+				data[iCell] = pvio.v;
+				continue;
+			}
+			// velocity Z
+			if (func_id==2) {
+				data[iCell] = pvio.w;
+				continue;
+			}
+			// Pressure
+			if (func_id==3) {
+				data[iCell] = pvio.p;
+				continue;
+			}
+			// Pressure
+			if (func_id==4) {
+				data[iCell] = pvio.t;
+				continue;
+			}
+
+			hsLogError("t_DomainEuler::getDataAsArr: unknown name=%s", name.c_str());
+
+		}
+		
+	}
+
+	// debug
+	hsLogMessage("Array from dom_euler: name=%s", name.c_str());
+	for (int i = 0; i < Vals.size(); i++)
+		std::cout << "Val #" << i << "=" << data[i] << ";";
+	std::cout << "\n";
+
 }
 
 double t_DomainEuler::loadField(std::string fileName) {
