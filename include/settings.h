@@ -22,6 +22,8 @@ struct TgenericSettings
 	int numTimeSteps; // number of time steps to do
 	double convergenceResidual; // stop solver at this residual
 
+	double CFL;	// Courant number
+
 	// Automatic increasing of time step size:
 //	struct {
 //		double factor;       // dt *= factor

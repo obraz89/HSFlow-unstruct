@@ -224,6 +224,7 @@ bool load_settings() {
 
 		g_genOpts.strGridFN = iniAD.read_string("gridFN", "grid.cgns");
 		g_genOpts.timeStart = iniAD.read_float("timeStart", -1);
+		g_genOpts.CFL = iniAD.read_float("CFL", 0.5);
 
 	}
 
