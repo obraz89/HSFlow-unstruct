@@ -153,15 +153,17 @@ struct TState
 
 						 //---
 
-	int nTmStep;     // current time step number
-	int nwtIter;     // current Newton's iteration number
+	//int nTmStep;     // current time step number
+	//int nwtIter;     // current Newton's iteration number
 
 					 /// L_inf norm of residual at 0-th Newton's iteration at current step
-	double initialResidual;
+	//double initialResidual;
 
 	// TODO: these are scheme parameters, separate them later
 
 	double time;
+
+	double ResidTot;
 };
 
 /**

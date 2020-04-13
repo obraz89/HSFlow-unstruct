@@ -310,6 +310,8 @@ void t_DomainEuler::makeTimeStep() {
 
 	double dt = calcDt();
 
+	G_State.ResidTot = 0.0;
+
 	for (int iZone = 0; iZone < nZones; iZone++) {
 
 		t_Zone& zne = Zones[iZone];
@@ -340,9 +342,14 @@ void t_DomainEuler::makeTimeStep() {
 
 			getCellCSV(iZone, iCell) += dU;
 
+			// du/dt=rhs, sum all rhs to get resid
+			G_State.ResidTot += dU.norm() / dt;
+
 		}
 
 	}
+
+	hsLogMessage("Time=%.6lf, Resid=%.6e", G_State.time, G_State.ResidTot);
 
 	G_State.time += dt;
 
