@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
 
 	G_Domain.initializeFlow();
 
-	G_Domain.dump_flow();
+	//G_Domain.dump_flow();
 
 	G_Domain.makeTimeStep();
 

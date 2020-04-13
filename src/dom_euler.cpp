@@ -165,10 +165,10 @@ void t_DomainEuler::getDataAsArr(std::string name, int zoneID, t_ArrDbl& Vals) c
 	}
 
 	// debug
-	hsLogMessage("Array from dom_euler: name=%s", name.c_str());
-	for (int i = 0; i < Vals.size(); i++)
-		std::cout << "Val #" << i << "=" << data[i] << ";";
-	std::cout << "\n";
+	//hsLogMessage("Array from dom_euler: name=%s", name.c_str());
+	//for (int i = 0; i < Vals.size(); i++)
+	//	std::cout << "Val #" << i << "=" << data[i] << ";";
+	//std::cout << "\n";
 
 }
 
@@ -409,8 +409,9 @@ void t_DomainEuler::calcFaceFlux(int iZone, lint iFace) {
 	// rotate everything to local rf
 	R.set(mat_rot_coefs);
 
-	hsLogMessage("Face #%d:", iFace);
-	hsLogMessage(R.to_str().c_str());
+	// debug
+	//hsLogMessage("Face #%d:", iFace);
+	//hsLogMessage(R.to_str().c_str());
 
 	pvl.rotate(R);
 	pvr.rotate(R);

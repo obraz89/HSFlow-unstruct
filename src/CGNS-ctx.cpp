@@ -139,11 +139,11 @@ bool t_CGNSContext::readMesh(std::string gridFN) {
 					pPatch->itype = itype;
 
 					// debug output of section
-					for (int i = 0; i < n_elems; i++) {
-						for (int j = 0; j < n_verts_in_elem; j++)
-							std::cout << pPatch->get_buf().get_val(i, j) << ";";
-						std::cout << std::endl;
-					}
+					//for (int i = 0; i < n_elems; i++) {
+					//	for (int j = 0; j < n_verts_in_elem; j++)
+					//		std::cout << pPatch->get_buf().get_val(i, j) << ";";
+					//	std::cout << std::endl;
+					//}
 
 
 					continue;
@@ -166,11 +166,11 @@ bool t_CGNSContext::readMesh(std::string gridFN) {
 					pNewCellSet->itype = itype;
 
 					// debug output of section
-					for (int i = 0; i < n_elems; i++) {
-						for (int j = 0; j < n_verts_in_elem; j++)
-							std::cout << pNewCellSet->get_buf().get_val(i, j) << ";";
-						std::cout << std::endl;
-					}
+					//for (int i = 0; i < n_elems; i++) {
+					//	for (int j = 0; j < n_verts_in_elem; j++)
+					//		std::cout << pNewCellSet->get_buf().get_val(i, j) << ";";
+					//	std::cout << std::endl;
+					//}
 					continue;
 				}
 
@@ -271,12 +271,12 @@ bool t_CGNSContext::_parseConnectivity() {
 			cgZne.addConn(pConnNew);
 
 			// debug 
-			cgsize_t id_my, id_dnr;
-			for (int i = 0; i < npnts; i++) {
-				const t_CGConnSet& conn = *cgZne.getConns().back();
-				conn.getConnIds(i, id_my, id_dnr);
-				hsLogMessage("Connectivity elem:%ld <-> %ld", id_my, id_dnr);
-			}
+			//cgsize_t id_my, id_dnr;
+			//for (int i = 0; i < npnts; i++) {
+			//	const t_CGConnSet& conn = *cgZne.getConns().back();
+			//	conn.getConnIds(i, id_my, id_dnr);
+			//	hsLogMessage("Connectivity elem:%ld <-> %ld", id_my, id_dnr);
+			//}
 
 			
 		}

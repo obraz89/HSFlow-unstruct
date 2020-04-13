@@ -758,8 +758,8 @@ void t_Zone::makeFaces() {
 				iFace++;
 
 				//debug
-				if (face.BCId.get() == t_FaceBCID::Fluid)
-					hsLogMessage("fluid face: Face_id=%ld, owner_cell_id=%ld", iFace, cell_base.Id);
+				//if (face.BCId.get() == t_FaceBCID::Fluid)
+				//	hsLogMessage("fluid face: Face_id=%ld, owner_cell_id=%ld", iFace, cell_base.Id);
 
 			}
 		}
