@@ -21,5 +21,7 @@ double calcSoundSpeedByRP(double rho, double pressure);
 
 double calcTempByRP(double rho, double pressure);
 
+double calcPressureByRT(double rho, double T);
+
 // 1/(gamma*Mach*Mach)
 double calcGMaMa();

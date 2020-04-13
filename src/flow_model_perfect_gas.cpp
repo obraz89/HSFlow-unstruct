@@ -28,6 +28,10 @@ double calcTempByRP(double rho, double pressure) {
 
 }
 
+double calcPressureByRT(double rho, double T) {
+	return 1.0 / calcGMaMa() * rho * T;
+}
+
 double calcGMaMa() {
 	double M2 = G_FreeStreamParams.getMach() * G_FreeStreamParams.getMach();
 	return G_FlowModelParams.Gamma * M2;
