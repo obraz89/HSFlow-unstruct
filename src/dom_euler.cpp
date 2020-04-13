@@ -310,6 +310,8 @@ void t_DomainEuler::makeTimeStep() {
 
 	double dt = calcDt();
 
+	hsLogMessage("Computed dt=%lf", dt);
+
 	G_State.ResidTot = 0.0;
 
 	for (int iZone = 0; iZone < nZones; iZone++) {
@@ -330,7 +332,8 @@ void t_DomainEuler::makeTimeStep() {
 
 				const t_Face& face = cell.getFace(j);
 
-				double coef = cell.isMyFace(j) ? 1.0 : -1.0;
+				// U[n+1] = U[n] - summ(flux_j)
+				double coef = cell.isMyFace(j) ? -1.0 : 1.0;
 
 				coef *= dt * face.Area / cell.Volume;
 
@@ -495,6 +498,46 @@ void t_DomainEuler::dump_flow() {
 	}
 
 	ofstr.flush();
+
+}
+
+void t_DomainEuler::checkFlow() {
+
+	double VolMin = HUGE_VAL;
+	double VolMax = 0.0;
+	double AreaMin = HUGE_VAL;
+	double AreaMax = 0.0;
+	double DiaMin = HUGE_VAL;
+	double DiaMax = 0.0;
+
+	for (int iZone = 0; iZone < nZones; iZone++) {
+
+		const t_Zone& Zne = Zones[iZone];
+
+		for (int iCell = 0; iCell < Zne.getnCellsReal(); iCell++) {
+
+			const t_Cell& cell = Zne.getCell(iCell);
+
+			if (cell.Volume < VolMin) VolMin = cell.Volume;
+			if (cell.Volume > VolMax) VolMax = cell.Volume;
+
+			if (cell.Diameter < DiaMin) DiaMin = cell.Diameter;
+			if (cell.Diameter > DiaMax) DiaMax = cell.Diameter;
+		}
+
+		for (int iFace = 0; iFace < Zne.getNFaces(); iFace++) {
+
+			const t_Face& face = Zne.getFace(iFace);
+
+			if (face.Area < AreaMin) AreaMin = face.Area;
+			if (face.Area > AreaMax) AreaMax = face.Area;
+		}
+	}
+
+	hsLogMessage("Domain info:");
+	hsLogMessage("Min Volume=%lf, Max Volume=%lf", VolMin, VolMax);
+	hsLogMessage("Min Cell Diameter=%lf, Max Cell Diameter=%lf", DiaMin, DiaMax);
+	hsLogMessage("Min Face Area=%lf, Max Face Area=%lf", AreaMin, AreaMax);
 
 }
 

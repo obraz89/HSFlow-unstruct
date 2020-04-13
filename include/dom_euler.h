@@ -86,8 +86,11 @@ public:
 	void makeTimeStep();
 	double calcDt() const;
 	void calcFaceFlux(int iZone, lint iFace);
+
+	// debug
 	void dump_flow();
 	void dump_geom();
+	void checkFlow();
 	~t_DomainEuler();
 };
 

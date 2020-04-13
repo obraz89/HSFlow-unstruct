@@ -157,6 +157,7 @@ int main(int argc, char* argv[])
 
 	//G_Domain.dump_flow();
 	int count = 0;
+
 	for (int iTStep = 0; iTStep < g_genOpts.numTimeSteps; iTStep++) {
 
 		hsLogMessage("Iter #%d:", iTStep);
