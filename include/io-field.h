@@ -34,6 +34,6 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 	const short time_layer = 0);
 
 bool read_zone_cgns(const int fileID, const int iBase, const int idxZne,
-					 TpakArraysDyn<double>& grid, TpakArraysDyn<double>& field);
+					 TpakArraysDyn<double>& field);
 //-----------------------------------------------------------------------------
 

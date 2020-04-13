@@ -26,11 +26,11 @@ struct t_ZoneFlowData {
 struct t_PrimVarsIO {
 
 	double u;
-	double v; 
+	double v;
 	double w;
-	double p; 
+	double p;
 	double t;
-
+	t_PrimVarsIO() {}
 	t_PrimVarsIO(const t_ConsVars& cv) {
 
 		t_PrimVars pv = cv.calcPrimVars();
@@ -41,6 +41,17 @@ struct t_PrimVarsIO {
 		p = pv.getP();
 		t = calcTempByRP(pv.getR(), pv.getP());
 
+	}
+
+	t_ConsVars calcConsVars() const {
+
+		t_PrimVars pv;
+
+		pv.setR(calcRhoByPT(this->p,this->t));
+		pv.setUVW(t_Vec3(u,v,w));
+		pv.setP(p);
+
+		return pv.calcConsVars();
 	}
 
 };

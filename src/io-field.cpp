@@ -38,12 +38,7 @@ const char g_szCGBase[] = "HSFlow-unstruct";
 //
 // Forward declarations
 //
-static double loadField_cgns(const std::string& fileName, const short time_layer);
-
-static bool read_zone_cgns(const int fileID, const int iBase, const int idxZne,
-	const int nxyz[], TpakArraysDyn<double>& grid, TpakArraysDyn<double>& field);
-
-static bool writeMetaInfoToCGNS(const int fileID, const int iBase, const short time_layer);
+bool writeMetaInfoToCGNS(const int fileID, const int iBase, const short time_layer);
 //-----------------------------------------------------------------------------
 
 //
@@ -66,7 +61,7 @@ static bool writeMetaInfoToCGNS(const int fileID, const int iBase, const short t
  *  @return `true` if succeeded and `false` otherwise
 **/
 bool read_zone_cgns(const int fileID, const int iBase, const int idxZne,
-					TpakArraysDyn<double>& grid, TpakArraysDyn<double>& field)
+					TpakArraysDyn<double>& field)
 {
 	const int& cgZneID = G_pMesh->map_iZne2cgID[idxZne];
 	const t_Zone& Zne = G_pMesh->Zones[idxZne];
@@ -74,6 +69,7 @@ bool read_zone_cgns(const int fileID, const int iBase, const int idxZne,
 	// Get zone size and name
 	char szZone[33];
 	cgsize_t isize[3];	// nVerts, nCells, nBoundVerts
+
 	if (cg_zone_read(fileID, iBase, cgZneID, szZone, isize) != CG_OK) {
 		hsLogError("Can't read CGNS zone #%d ( %s )", cgZneID, cg_get_error());
 		return false;
@@ -96,22 +92,6 @@ bool read_zone_cgns(const int fileID, const int iBase, const int idxZne,
 	// Indexes faces
 	cgsize_t irmin = 1;
 	cgsize_t irmax = Zne.getnVerts();
-
-	//
-	// Read grid coordinates
-	//
-	if (grid.size() > 0)
-		for (int iCoord = 0; iCoord < G_pMesh->nDim; ++iCoord)
-		{
-			const char* name = g_cgCoordNames[iCoord];
-			if (cg_coord_read(fileID, iBase, cgZneID, name, CG_RealDouble, &irmin, &irmax, grid[iCoord]) != CG_OK)
-			{
-				hsLogError("Can't read %s from zone '%s'#%d ( %s )",
-					name, szZone, cgZneID, cg_get_error());
-				return false;
-			}
-		} // for iCoord
-
 
 	//
 	// Get solution info

@@ -172,7 +172,7 @@ void t_DomainEuler::getDataAsArr(std::string name, int zoneID, t_ArrDbl& Vals) c
 
 }
 
-double t_DomainEuler::loadField(std::string fileName) {
+double t_DomainEuler::loadField(std::string path_field) {
 
 	double time = -1.0;
 
@@ -186,10 +186,10 @@ double t_DomainEuler::loadField(std::string fileName) {
 	{
 		ok = 0;
 
-		if (cg_open(fileName.c_str(), CG_MODE_READ, &f) != CG_OK)
+		if (cg_open(path_field.c_str(), CG_MODE_READ, &f) != CG_OK)
 		{
 			hsLogError("Can't open field file '%s' for reading: %s",
-				fileName.c_str(), cg_get_error());
+				path_field.c_str(), cg_get_error());
 			break;
 		}
 
@@ -200,7 +200,7 @@ double t_DomainEuler::loadField(std::string fileName) {
 		if (cg_base_read(f, iBase, szName, &dimCell, &dimPhys) != CG_OK)
 		{
 			hsLogError("Can't read CGNS base node from '%s' ( %s )",
-				fileName.c_str(), cg_get_error());
+				path_field.c_str(), cg_get_error());
 			break;
 		}
 
@@ -219,8 +219,8 @@ double t_DomainEuler::loadField(std::string fileName) {
 		// Get time
 		time = 0.0;
 		do {
-			int nTmSteps = 0;  cg_biter_read(f, iBase, szName, &nTmSteps);
-			if (nTmSteps < 1) break;
+			//int nTmSteps = 0;  cg_biter_read(f, iBase, szName, &nTmSteps);
+			//if (nTmSteps < 1) break;
 
 			if (cg_goto(f, iBase, "BaseIterativeData_t", 1, NULL) != CG_OK)
 				break;
@@ -239,6 +239,8 @@ double t_DomainEuler::loadField(std::string fileName) {
 			}
 		} while (false);
 
+		G_State.time = time;
+
 		ok = 1;
 	} while (false); // if( G_State.mpiRank == 0 )
 
@@ -253,19 +255,17 @@ double t_DomainEuler::loadField(std::string fileName) {
 	{
 		t_Zone& zne = Zones[zi];
 		const int NCellsReal = zne.getnCellsReal();
-		const int NVerts = zne.getnVerts();
 
 		// Data of the zone excluding ghosts!!!
-		TpakArraysDyn<double> newField, newGrid;
+		TpakArraysDyn<double> newField;
 
 		if ( G_State.mpiRank == 0)
 		{
 			newField.reset(NConsVars, NCellsReal);
-			newGrid.reset(this->nDim, NVerts);
 		}
 		if (G_State.mpiRank == 0)
 		{
-			if (!read_zone_cgns(f, iBase, zi, newGrid, newField))  ok = 0;
+			if (!read_zone_cgns(f, iBase, zi, newField))  ok = 0;
 
 			// Send data from root to the zone's owner
 			//const int& rankDst = G_State.map_zone2rank[zi];
@@ -278,6 +278,20 @@ double t_DomainEuler::loadField(std::string fileName) {
 		}
 
 		// TODO: Copy field to internal structs
+
+		for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
+
+			t_PrimVarsIO pvio;
+			
+			pvio.u = newField[0][iCell];
+			pvio.v = newField[1][iCell];
+			pvio.w = newField[2][iCell];
+			pvio.p = newField[3][iCell];
+			pvio.t = newField[4][iCell];
+
+			getCellCSV(zi, iCell) = pvio.calcConsVars();
+
+		}
 
 	}
 
