@@ -226,6 +226,10 @@ bool load_settings() {
 		g_genOpts.timeStart = iniAD.read_float("timeStart", -1);
 		g_genOpts.CFL = iniAD.read_float("CFL", 0.5);
 
+		// time steps & flow saving
+		g_genOpts.numTimeSteps = iniAD.read_int("NumTimeSteps", 100000);
+		g_genOpts.timeSteps2Write = iniAD.read_int("TimeSteps2Write", 500);
+
 	}
 
 

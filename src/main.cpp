@@ -153,14 +153,25 @@ int main(int argc, char* argv[])
 
 	G_Domain.initializeFlow();
 
+	G_Domain.checkFlow();
+
 	//G_Domain.dump_flow();
+	int count = 0;
+	for (int iTStep = 0; iTStep < g_genOpts.numTimeSteps; iTStep++) {
 
-	G_Domain.makeTimeStep();
+		hsLogMessage("Iter #%d:", iTStep);
+		
+		G_Domain.makeTimeStep();
 
-	// TODO: G_Domain.saveFiled()
-	char fld_name[64];
-	sprintf(fld_name ,"%.5f", G_State.time);
-	saveField(fld_name, "");
+		if (count++ > g_genOpts.timeSteps2Write) {
+			// TODO: G_Domain.saveFiled()
+			char fld_name[64];
+			sprintf(fld_name, "%.5f", G_State.time);
+			saveField(fld_name, "");
+			count = 0;
+		}
+
+	}
 
 	err = EXIT_SUCCESS;
 
