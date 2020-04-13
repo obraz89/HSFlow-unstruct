@@ -28,14 +28,12 @@ public:
  // so use iniFile capabilities directly instead of plugin params
  */
 class t_BCList : public TPlugin{
-protected:
-	std::vector<t_BCDataFace*>  _pBCs;
 
 public:
 	virtual void addBCsetByName(std::string name, std::string bc_kind_str, std::string& ini_data) = 0;
-	virtual std::string getSupportedBCsStr() = 0;
-	virtual bool has(std::string sectionname) = 0;
-	virtual t_FaceBCID getBCID(std::string sectionname) = 0;
+	virtual std::string getSupportedBCsStr() const = 0;
+	virtual bool has(std::string sectionname) const = 0;
+	virtual t_FaceBCID getBCID(std::string sectionname) const = 0;
 
 	virtual void init(std::string& ini_data, const std::string& spec) {
 
@@ -70,11 +68,7 @@ public:
 		}
 	};
 
-	virtual ~t_BCList() {
-
-		for (auto elem : _pBCs) delete elem;
-
-	}
+	virtual ~t_BCList() {}
 
 };
 

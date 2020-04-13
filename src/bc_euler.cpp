@@ -11,83 +11,92 @@
 // Disable Visual Studio warnings
 #pragma warning(disable:4996)  // strtok may be unsafe ... ignoring)
 
-const std::string t_BCDataInflow::bc_kind = "bc_inflow";
-const std::string t_BCDataOutFlow::bc_kind = "bc_outflow";
-const std::string t_BCDataEulerWall::bc_kind = "bc_euler_wall";
-const std::string t_BCDataSym::bc_kind = "bc_sym";
+const std::string t_BCDataInflow::bc_kind_str = "bc_inflow";
+const t_BCKindEuler t_BCDataInflow::bc_kind = t_BCKindEuler::Inflow;
+
+const std::string t_BCDataOutFlow::bc_kind_str = "bc_outflow";
+const t_BCKindEuler t_BCDataOutFlow::bc_kind = t_BCKindEuler::Outflow;
+
+const std::string t_BCDataEulerWall::bc_kind_str = "bc_euler_wall";
+const t_BCKindEuler t_BCDataEulerWall::bc_kind = t_BCKindEuler::Wall;
+
+const std::string t_BCDataSym::bc_kind_str = "bc_sym";
+const t_BCKindEuler t_BCDataSym::bc_kind = t_BCKindEuler::Sym;
 
 t_BCListEuler G_BCListEuler;
 
-// my_pvs - variables on the face of a real cell
-// opp_pvs - variables on the face of a virtual cell 
+// csv_my - variables on the face of a real cell
+// csv_virt - variables on the face of a virtual cell 
 
 // supersonic inflow bc (Dirichlet)
-// IMPORTANT: prim vars here in global reference frame
-void t_BCDataInflow::yield(const t_PrimVars& my_pvs, t_PrimVars& opp_pvs) {
+// IMPORTANT: vars here in global reference frame
+void t_BCDataInflow::yield(const t_ConsVars& csv_my, t_ConsVars& csv_virt) const{
+
+	t_PrimVars pv_virt;
 
 	// rho
-	opp_pvs[0] = 1.0;
+	pv_virt.setR(1.0);
 	// u,v,w
-	opp_pvs.setUVW(G_FreeStreamParams.getUInf());
+	pv_virt.setUVW(G_FreeStreamParams.getUInf());
 	// p
-	double M2 = std::pow(G_FreeStreamParams.getMach(), 2);
-	double gMaMa = G_FlowModelParams.Gamma * M2;
-	opp_pvs[4] = 1.0/gMaMa;
+	pv_virt.setP(calcPressureByRT(1.0,1.0)) ;
+
+	csv_virt = pv_virt.calcConsVars();
 
 }
 
 // supersonic outflow
 // simple extrapolation, prim vars are in local or global rf
-void t_BCDataOutFlow::yield(const t_PrimVars& my_pvs, t_PrimVars& opp_pvs) {
+void t_BCDataOutFlow::yield(const t_ConsVars& csv_my, t_ConsVars& csv_virt) const{
 
-	opp_pvs = my_pvs;
+	csv_virt = csv_my;
 
 }
 
 // IMPORTANT: prim vars here in local reference frame (ksi, eta, dzeta)
 // ksi is normal to the face
-void t_BCDataEulerWall::yield(const t_PrimVars& my_pvs, t_PrimVars& opp_pvs) {
+void t_BCDataEulerWall::yield(const t_ConsVars& csv_my, t_ConsVars& csv_virt) const{
 
-	opp_pvs = my_pvs;
+	csv_virt = csv_my;
 
-	opp_pvs[1] *= -1.0;
+	// TODO: this should tend to zero as field converges, check it
+	csv_virt[1] *= -1.0;
 
 }
 // IMPORTANT: prim vars here in local reference frame (ksi, eta, dzeta)
 // ksi is normal to the face
 // Symmetry BC is identical to euler wall
-void t_BCDataSym::yield(const t_PrimVars& my_pvs, t_PrimVars& opp_pvs) {
+void t_BCDataSym::yield(const t_ConsVars& csv_my, t_ConsVars& csv_virt) const{
 
-	opp_pvs = my_pvs;
+	csv_virt = csv_my;
 
-	opp_pvs[1] *= -1.0;
+	csv_virt[1] *= -1.0;
 
 }
 
 // BC List
 
-std::string t_BCListEuler::getSupportedBCsStr() {
+std::string t_BCListEuler::getSupportedBCsStr() const{
 
 	std::ostringstream ostr;
 
-	ostr << t_BCDataInflow::bc_kind <<", ";
-	ostr << t_BCDataOutFlow::bc_kind <<", ";
-	ostr << t_BCDataEulerWall::bc_kind<<", ";
-	ostr << t_BCDataSym::bc_kind;
+	ostr << t_BCDataInflow::bc_kind_str <<", ";
+	ostr << t_BCDataOutFlow::bc_kind_str <<", ";
+	ostr << t_BCDataEulerWall::bc_kind_str <<", ";
+	ostr << t_BCDataSym::bc_kind_str;
 
 	return ostr.str();
 
 }
 
-t_FaceBCID t_BCListEuler::getBCID(std::string sectionname) {
+t_FaceBCID t_BCListEuler::getBCID(std::string sectionname) const{
 
 	t_FaceBCID face_id;
-	t_BCKindEuler bc_kind;
 
 	bool ok = false;
 
 	for (int i = 0; i < _pBCs.size(); i++) {
-		if (getBCKindBySectName(_pBCs[i]->getSectName(), bc_kind)) {
+		if (sectionname.compare(_pBCs[i]->getSectName()) == 0) {
 			face_id.set(i);
 			ok = true;
 			break;
@@ -103,20 +112,31 @@ t_FaceBCID t_BCListEuler::getBCID(std::string sectionname) {
 
 };
 
+const t_BCEulerBase* t_BCListEuler::getBC(int BCID) const{
+
+#ifdef _DEBUG
+	if (BCID<0 || BCID>_pBCs.size() - 1)
+		hsLogError("t_BCListEuler::getBC: BCID=%d out of range", BCID);
+#endif
+
+	return _pBCs[BCID];
+
+};
+
 void t_BCListEuler::addBCsetByName(std::string bc_set_name, std::string bc_kind_name, std::string& ini_data) {
 
-	t_BCDataFace* pBC = nullptr;
+	t_BCEulerBase* pBC = nullptr;
 
-	if (bc_kind_name.compare(t_BCDataInflow::bc_kind) == 0)
+	if (bc_kind_name.compare(t_BCDataInflow::bc_kind_str) == 0)
 		pBC = new t_BCDataInflow(bc_set_name);
 
-	if (bc_kind_name.compare(t_BCDataOutFlow::bc_kind) == 0)
+	if (bc_kind_name.compare(t_BCDataOutFlow::bc_kind_str) == 0)
 		pBC = new t_BCDataOutFlow(bc_set_name);
 
-	if (bc_kind_name.compare(t_BCDataEulerWall::bc_kind) == 0)
+	if (bc_kind_name.compare(t_BCDataEulerWall::bc_kind_str) == 0)
 		pBC = new t_BCDataEulerWall(bc_set_name);
 
-	if (bc_kind_name.compare(t_BCDataSym::bc_kind) == 0)
+	if (bc_kind_name.compare(t_BCDataSym::bc_kind_str) == 0)
 		pBC = new t_BCDataSym(bc_set_name);
 
 	if (pBC == nullptr)
@@ -129,7 +149,7 @@ void t_BCListEuler::addBCsetByName(std::string bc_set_name, std::string bc_kind_
 
 }
 
-bool t_BCListEuler::getBCKindBySectName(const std::string& sect_name, t_BCKindEuler& bc_kind) {
+bool t_BCListEuler::getBCKindBySectName(const std::string& sect_name, t_BCKindEuler& bc_kind) const{
 
 	std::string bc_kind_str="";
 	bool ok = false;
@@ -147,16 +167,16 @@ bool t_BCListEuler::getBCKindBySectName(const std::string& sect_name, t_BCKindEu
 	}
 	else {
 		ok = true;
-		if (bc_kind_str.compare(t_BCDataInflow::bc_kind) == 0) {
+		if (bc_kind_str.compare(t_BCDataInflow::bc_kind_str) == 0) {
 			bc_kind = t_BCKindEuler::Inflow;
 		}
-		if (bc_kind_str.compare(t_BCDataOutFlow::bc_kind) == 0) {
+		if (bc_kind_str.compare(t_BCDataOutFlow::bc_kind_str) == 0) {
 			bc_kind = t_BCKindEuler::Outflow;
 		}
-		if (bc_kind_str.compare(t_BCDataEulerWall::bc_kind) == 0) {
+		if (bc_kind_str.compare(t_BCDataEulerWall::bc_kind_str) == 0) {
 			bc_kind = t_BCKindEuler::Wall;
 		}
-		if (bc_kind_str.compare(t_BCDataSym::bc_kind) == 0) {
+		if (bc_kind_str.compare(t_BCDataSym::bc_kind_str) == 0) {
 			bc_kind = t_BCKindEuler::Sym;
 		}
 
@@ -165,7 +185,7 @@ bool t_BCListEuler::getBCKindBySectName(const std::string& sect_name, t_BCKindEu
 
 };
 
-bool t_BCListEuler::has(std::string sectionname) {
+bool t_BCListEuler::has(std::string sectionname) const{
 
 	// unused
 	t_BCKindEuler bc_kind;
