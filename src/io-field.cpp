@@ -591,7 +591,7 @@ static bool writeMetaInfoToCGNS(const int f, const int iBase, const short time_l
 		cg_biter_write(f, iBase, "TimeIterValues", 1/*time steps count*/);
 		cg_goto(f, iBase, "BaseIterativeData_t", 1, NULL);
 
-		const double t = G_State.timeCurrent;
+		const double t = G_State.time;
 
 		const cgsize_t len = 1;
 		cg_array_write("TimeValues", CG_RealDouble, 1, &len, &t);

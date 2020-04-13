@@ -67,9 +67,8 @@ void t_DomainEuler::initializeFlow() {
 	}
 
 	// Set initial time in time-stepping
-	G_State.timeStart =
+	G_State.time =
 		(g_genOpts.timeStart >= 0) ? g_genOpts.timeStart : time;
-
 	
 	// set ghost values
 	G_GhostMngEu.exchangeCSV();
@@ -330,6 +329,8 @@ void t_DomainEuler::makeTimeStep() {
 		}
 
 	}
+
+	G_State.time += dt;
 
 }
 

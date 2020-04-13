@@ -161,8 +161,7 @@ struct TState
 
 	// TODO: these are scheme parameters, separate them later
 
-	double timeStart;
-	double timeCurrent;
+	double time;
 };
 
 /**

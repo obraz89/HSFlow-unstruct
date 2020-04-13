@@ -158,7 +158,9 @@ int main(int argc, char* argv[])
 	G_Domain.makeTimeStep();
 
 	// TODO: G_Domain.saveFiled()
-	saveField("field", "");
+	char fld_name[64];
+	sprintf(fld_name ,"%.5f", G_State.time);
+	saveField(fld_name, "");
 
 	err = EXIT_SUCCESS;
 
