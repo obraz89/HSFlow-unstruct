@@ -342,56 +342,75 @@ void t_DomainEuler::calcFaceFlux(int iZone, lint iFace) {
 	mat_rot_coefs.calc_rot_angles_by_N(face.Normal);
 
 	t_SqMat3 R;
-	R.set(mat_rot_coefs);
 
-	hsLogMessage("Face #%d:", iFace);
-	hsLogMessage(&R.to_str()[0]);
+	// local vars for csvs, do not modify cell csv here
+	t_ConsVars csv_my = getCellCSV(iZone, face.pMyCell->Id);
+	t_ConsVars csv_op; 
+
+	// TODO: assuming that if not fluid face, then it is a bc face
 
 	if (face.BCId.get() == t_FaceBCID::Fluid) {
 
-		//t_PrimVars pvl = face.pMyCell->ConsVars.calcPrimVars();
-		t_PrimVars pvl = getCellCSV(iZone, face.pMyCell->Id).calcPrimVars();
-		//t_PrimVars pvr = face.pOppCell->ConsVars.calcPrimVars();
-		t_PrimVars pvr = getCellCSV(iZone, face.pOppCell->Id).calcPrimVars();
-
-		// rotate everything to local rf
-		pvl.rotate(R);
-		pvr.rotate(R);
-
-		t_Flux flux_loc;
-
-		calcRusanovFlux(pvl, pvr, flux_loc);
-
-		// rotate flux back
-		R.set_inv(mat_rot_coefs);
-		flux_loc.rotate(R);
-		//face.Flux = flux_loc.rotate(R);
-		getFlux(iZone, iFace) = flux_loc;
-
-		return;
+		csv_op = getCellCSV(iZone, face.pOppCell->Id);
 	}
+	else do {
 
-	if (face.BCId == (int)t_BCKindEuler::Inflow) {
-		hsLogMessage("Inflow BC Flux: not implemented");
-		return;
-	}
+		t_BCKindEuler bc_kind = G_BCListEuler.getKind(face.BCId.get());
 
-	if (face.BCId == (int)t_BCKindEuler::Outflow) {
-		hsLogMessage("OutFlow BC Flux: not implemented");
-		return;
-	}
 
-	if (face.BCId == (int)t_BCKindEuler::Sym) {
-		hsLogMessage("Sym BC Flux: not implemented");
-		return;
-	}
+		if ((bc_kind == t_BCKindEuler::Inflow) ||
+			(bc_kind == t_BCKindEuler::Outflow)) {
+			// not rotating, setting bc in glob rf
+			G_BCListEuler.getBC(face.BCId.get())->yield(csv_my, csv_op);
+			break;
+		}
 
-	if (face.BCId == (int)t_BCKindEuler::Wall) {
-		hsLogMessage("Wall BC Flux: not implemented");
-		return;
-	}
+		if ((bc_kind == t_BCKindEuler::Sym) ||
+			(bc_kind == t_BCKindEuler::Wall)) {
+			// rotate
+			R.set(mat_rot_coefs);
+			csv_my.rotate(R);
+			csv_op.rotate(R);
+			// set BC in local reference frame
+			G_BCListEuler.getBC(face.BCId.get())->yield(csv_my, csv_op);
+			// rotate back
+			R.set_inv(mat_rot_coefs);
+			csv_my.rotate(R);
+			csv_op.rotate(R);
 
-	hsLogMessage("calcFaceFlux: unknown face type");
+			break;
+
+		}
+
+		hsLogError(
+			"t_DomainEuler::calcFaceFlux: unknow bc kind : Zone #%ld, face #%ld",
+			iZone, iFace);
+	} while (false);
+
+	// My CSV & Opp CSV are set, calculate flux for fluid face
+	t_PrimVars pvl = csv_my.calcPrimVars();
+	t_PrimVars pvr = csv_op.calcPrimVars();
+
+	// rotate everything to local rf
+	R.set(mat_rot_coefs);
+
+	hsLogMessage("Face #%d:", iFace);
+	hsLogMessage(R.to_str().c_str());
+
+	pvl.rotate(R);
+	pvr.rotate(R);
+
+	t_Flux flux_loc;
+
+	calcRusanovFlux(pvl, pvr, flux_loc);
+
+	// rotate flux back
+	R.set_inv(mat_rot_coefs);
+	flux_loc.rotate(R);
+	
+	// set flux for the face
+	getFlux(iZone, iFace) = flux_loc;
+
 	return;
 
 
