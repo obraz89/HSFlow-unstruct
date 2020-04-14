@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
 		
 		G_Domain.makeTimeStep();
 
-		if (count++ > g_genOpts.timeSteps2Write) {
+		if (++count >= g_genOpts.timeSteps2Write) {
 			// TODO: G_Domain.saveFiled()
 			char fld_name[64];
 			sprintf(fld_name, "%.5f", G_State.time);
