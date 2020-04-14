@@ -29,6 +29,8 @@ public:
 	double sq() const { double ret=0.0; for (int i = 0; i < N; i++) ret += data[i] * data[i]; return ret; }
 	double norm() const { return sqrt(sq()); }
 
+	void reset() { for (int i = 0; i < N; i++) data[i] = 0.0; }
+
 	/**
 	*  Make vector to be of unit length
 	*  @return previous vector length
