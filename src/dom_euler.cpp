@@ -8,6 +8,8 @@
 
 #include "settings.h"
 
+#include "common_data.h"
+
 #include <fstream>
 
 
@@ -310,9 +312,13 @@ void t_DomainEuler::makeTimeStep() {
 
 	double dt = calcDt();
 
+	double dU_max = 0.0;
+
 	hsLogMessage("Computed dt=%lf", dt);
 
 	G_State.ResidTot = 0.0;
+
+	G_State.ResidNormVeloWall = 0.0;
 
 	for (int iZone = 0; iZone < nZones; iZone++) {
 
@@ -326,13 +332,15 @@ void t_DomainEuler::makeTimeStep() {
 
 		for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
 
+			dU.reset();
+
 			t_Cell& cell = zne.getCell(iCell);
 
 			for (int j = 0; j < cell.NFaces; j++) {
 
 				const t_Face& face = cell.getFace(j);
 
-				// U[n+1] = U[n] - summ(flux_j)
+				// U[n+1] = U[n] - summ(flux_j), so we summ fluxes multiplied by minus 1
 				double coef = cell.isMyFace(j) ? -1.0 : 1.0;
 
 				coef *= dt * face.Area / cell.Volume;
@@ -345,14 +353,21 @@ void t_DomainEuler::makeTimeStep() {
 
 			getCellCSV(iZone, iCell) += dU;
 
+			double dU_norm = dU.norm();
+
+			// max local resid for a cell
+			if (dU_norm > dU_max) dU_max = dU_norm;
 			// du/dt=rhs, sum all rhs to get resid
-			G_State.ResidTot += dU.norm() / dt;
+			G_State.ResidTot += dU_norm / dt;
 
 		}
 
 	}
 
-	hsLogMessage("Time=%.6lf, Resid=%.6e", G_State.time, G_State.ResidTot);
+	G_GhostMngEu.exchangeCSV();
+	hsLogMessage("============");
+	hsLogMessage("Time=%.6lf, Resid=%.6e, Local Max dU=%.6e", G_State.time, G_State.ResidTot, dU_max);
+	hsLogMessage("Max normal velo resid at wall(sym):%.6e", G_State.ResidNormVeloWall);
 
 	G_State.time += dt;
 
@@ -370,74 +385,127 @@ void t_DomainEuler::calcFaceFlux(int iZone, lint iFace) {
 
 	// local vars for csvs, do not modify cell csv here
 	t_ConsVars csv_my = getCellCSV(iZone, face.pMyCell->Id);
-	t_ConsVars csv_op; 
 
-	// TODO: assuming that if not fluid face, then it is a bc face
+	t_Flux flux;
 
 	if (face.BCId.get() == t_FaceBCID::Fluid) {
 
-		csv_op = getCellCSV(iZone, face.pOppCell->Id);
+		t_ConsVars csv_op = getCellCSV(iZone, face.pOppCell->Id);
+
+		t_PrimVars pvl = csv_my.calcPrimVars();
+		t_PrimVars pvr = csv_op.calcPrimVars();
+
+		// rotate everything to local rf
+		R.set(mat_rot_coefs);
+
+		// debug
+		//hsLogMessage("Face #%d:", iFace);
+		//hsLogMessage(R.to_str().c_str());
+
+		pvl.rotate(R);
+		pvr.rotate(R);
+
+		calcRusanovFlux(pvl, pvr, flux);
+
+		// rotate flux back
+		R.set_inv(mat_rot_coefs);
+		flux.rotate(R);
+
+		// set flux for the face
+		getFlux(iZone, iFace) = flux;
+
+		return;
+
+
 	}
-	else do {
 
-		t_BCKindEuler bc_kind = G_BCListEuler.getKind(face.BCId.get());
+	// TODO: now if not fluid, it's a BC
+
+	t_BCKindEuler bc_kind = G_BCListEuler.getKind(face.BCId.get());
+
+	if (bc_kind == t_BCKindEuler::Inflow) {
+
+		t_ConsVars csv_face;
+		csv_face.setValAtInf();
+
+		R.set(mat_rot_coefs);
+		csv_face.rotate(R);
+		
+		flux.calc(csv_face);
+
+		R.set_inv(mat_rot_coefs);
+
+		flux.rotate(R);
+
+		getFlux(iZone, iFace) = flux;
+		return;
+
+	}
+
+	if (bc_kind == t_BCKindEuler::Outflow) {
+
+		t_ConsVars csv_face;
+
+		csv_face = csv_my;
+
+		R.set(mat_rot_coefs);
+
+		csv_face.rotate(R);
+
+		flux.calc(csv_face);
+
+		R.set_inv(mat_rot_coefs);
+
+		flux.rotate(R);
+
+		getFlux(iZone, iFace) = flux;
+		return;
+
+	}
+
+	if ((bc_kind == t_BCKindEuler::Wall) || (bc_kind == t_BCKindEuler::Sym)) {
+
+		t_ConsVars csv_virt;
+
+		R.set(mat_rot_coefs);
+
+		csv_my.rotate(R);
+
+		csv_virt = csv_my;
+		// TODOL is this correct ? 
+		csv_virt[1]*= -1.0;
+
+		t_PrimVars pv_loc_my = csv_my.calcPrimVars();
+
+		t_PrimVars pv_loc_virt = csv_virt.calcPrimVars();
+
+		calcRusanovFlux(pv_loc_my, pv_loc_virt, flux);
+
+		// DEBUG, get normal velocity (normal to the wall)
+		// if local rf this is u_ksi
+		// IMPORTANT: instead of u_ksi, we now check (rho*u_ksi)
+		// it is easy, TODO: compute u_ksi via flux vars
+		double v_norm = flux[0];
+		if (v_norm > G_State.ResidNormVeloWall) G_State.ResidNormVeloWall = v_norm;
+
+		// TODO: is this correct
+		//flux[1] = 0.0;
+
+		R.set_inv(mat_rot_coefs);
+
+		flux.rotate(R);
+
+		getFlux(iZone, iFace) = flux;
+
+		return;
+
+	}
 
 
-		if ((bc_kind == t_BCKindEuler::Inflow) ||
-			(bc_kind == t_BCKindEuler::Outflow)) {
-			// not rotating, setting bc in glob rf
-			G_BCListEuler.getBC(face.BCId.get())->yield(csv_my, csv_op);
-			break;
-		}
+	hsLogError(
+		"t_DomainEuler::calcFaceFlux: unknow bc kind : Zone #%ld, face #%ld",
+		iZone, iFace);
 
-		if ((bc_kind == t_BCKindEuler::Sym) ||
-			(bc_kind == t_BCKindEuler::Wall)) {
-			// rotate
-			R.set(mat_rot_coefs);
-			csv_my.rotate(R);
-			csv_op.rotate(R);
-			// set BC in local reference frame
-			G_BCListEuler.getBC(face.BCId.get())->yield(csv_my, csv_op);
-			// rotate back
-			R.set_inv(mat_rot_coefs);
-			csv_my.rotate(R);
-			csv_op.rotate(R);
-
-			break;
-
-		}
-
-		hsLogError(
-			"t_DomainEuler::calcFaceFlux: unknow bc kind : Zone #%ld, face #%ld",
-			iZone, iFace);
-	} while (false);
-
-	// My CSV & Opp CSV are set, calculate flux for fluid face
-	t_PrimVars pvl = csv_my.calcPrimVars();
-	t_PrimVars pvr = csv_op.calcPrimVars();
-
-	// rotate everything to local rf
-	R.set(mat_rot_coefs);
-
-	// debug
-	//hsLogMessage("Face #%d:", iFace);
-	//hsLogMessage(R.to_str().c_str());
-
-	pvl.rotate(R);
-	pvr.rotate(R);
-
-	t_Flux flux_loc;
-
-	calcRusanovFlux(pvl, pvr, flux_loc);
-
-	// rotate flux back
-	R.set_inv(mat_rot_coefs);
-	flux_loc.rotate(R);
-	
-	// set flux for the face
-	getFlux(iZone, iFace) = flux_loc;
-
-	return;
 
 
 }

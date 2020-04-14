@@ -164,6 +164,9 @@ struct TState
 	double time;
 
 	double ResidTot;
+
+	// debug vars
+	double ResidNormVeloWall;
 };
 
 /**
