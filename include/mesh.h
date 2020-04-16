@@ -185,6 +185,7 @@ struct t_CellEdgeList {
 	int NEdges() const { return pCell->NEdges; };
 
 	t_CellEdgeList() :pCell(nullptr) {};
+	t_CellEdgeList(const t_Cell& cell) { init(cell); }
 	void init(const t_Cell& cell);
 
 

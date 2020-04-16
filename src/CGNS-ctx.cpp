@@ -108,6 +108,7 @@ bool t_CGNSContext::readMesh(std::string gridFN) {
 
 				if (itype == CG_HEXA_8) n_verts_in_elem = 8;
 				if (itype == CG_TETRA_4) n_verts_in_elem = 4;
+				if (itype == CG_PENTA_6) n_verts_in_elem = 6;
 
 				n_elems = iend - istart + 1;
 
@@ -149,7 +150,9 @@ bool t_CGNSContext::readMesh(std::string gridFN) {
 					continue;
 				}
 				// reading elements
-				if (itype == CG_HEXA_8 || itype == CG_TETRA_4) {
+				if (itype == CG_HEXA_8 || 
+					itype == CG_TETRA_4 || 
+					itype == CG_PENTA_6) {
 
 					t_CGSection* pNewCellSet = new t_CGSection(sectionname, istart, iend);
 

@@ -27,6 +27,7 @@ public:
 enum struct t_CellKind {
 	Tetra = 0,
 	Brick,
+	Prism,
 	Pyra,
 	None
 };

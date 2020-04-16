@@ -12,15 +12,18 @@ t_Mesh* G_pMesh;
 
 t_CellKind getElementKind(CG_ElementType_t cg_type) {
 
-	t_CellKind cell_kind = t_CellKind::None;
-
-	if (cg_type == CG_TETRA_4) {
-		cell_kind = t_CellKind::Tetra;
+	switch (cg_type)
+	{
+	case CG_TETRA_4:
+		return t_CellKind::Tetra;
+	case CG_HEXA_8:
+		return t_CellKind::Brick;
+	case CG_PENTA_6:
+		return t_CellKind::Prism;
+	default:
+		hsLogError("Unsupported cgns element cg_type=%d", cg_type);
+		return t_CellKind::None;
 	}
-	if (cg_type == CG_HEXA_8) {
-		cell_kind = t_CellKind::Brick;
-	}
-	return cell_kind;
 
 };
 
@@ -51,7 +54,18 @@ void t_Cell::setKind(t_CellKind a_Kind) {
 		return;
 	}
 
-	hsLogMessage("t_Cell::setSizes: can't handle this element yet");
+	if (Kind == t_CellKind::Prism) {
+
+		NVerts = 6;
+
+		NEdges = 9;
+
+		NFaces = 5;
+
+		return;
+	}
+
+	hsLogMessage("t_Cell::setKind: can't handle this element yet, CellKind=%d", (int)a_Kind);
 
 };
 
@@ -143,6 +157,70 @@ t_CellTetraList::t_CellTetraList(const t_Cell& cell):Size(0), VertsTmp() {
 
 		return;
 	}
+
+	if (cell.Kind == t_CellKind::Prism) {
+
+		Size = 8;
+
+		t_CellFaceList flist(cell);
+
+		// 1 temporary vertex required : cell center
+		t_Vert cell_center;
+		cell_center.xyz = cell.Center;
+
+		VertsTmp.push_back(cell_center);
+
+		int iTetra = 0;
+
+		// first three quads decomposed into 2 tetras
+		for (int iFace=0; iFace < 3; iFace++) {
+
+			t_Cell tetra1, tetra2;
+			tetra1.setKind(t_CellKind::Tetra);
+			tetra2.setKind(t_CellKind::Tetra);
+
+			t_SetOfpVerts& verts = flist.getVertices(iFace);
+
+			// face (v1,v2,v3,v4) + cell center C
+			// make 2 tetras : (v1,v2,v3,C) and (v3,v4,v1,C)
+
+			tetra1.pVerts[0] = verts[0];
+			tetra1.pVerts[1] = verts[1];
+			tetra1.pVerts[2] = verts[2];
+			tetra1.pVerts[3] = &VertsTmp.back();
+
+			Tetras[iTetra++] = tetra1;
+
+			tetra2.pVerts[0] = verts[2];
+			tetra2.pVerts[1] = verts[3];
+			tetra2.pVerts[2] = verts[0];
+			tetra2.pVerts[3] = &VertsTmp.back();
+
+			Tetras[iTetra++] = tetra2;
+
+
+		}
+
+		// fourth and fifth faces are trias
+		for (int iFace = 3; iFace < 5; iFace++) {
+			t_Cell tetra1;
+			tetra1.setKind(t_CellKind::Tetra);
+
+			t_SetOfpVerts& verts = flist.getVertices(iFace);
+
+			tetra1.pVerts[0] = verts[0];
+			tetra1.pVerts[1] = verts[1];
+			tetra1.pVerts[2] = verts[2];
+			tetra1.pVerts[3] = &VertsTmp.back();
+
+			Tetras[iTetra++] = tetra1;
+
+		}
+
+		return;
+
+	}
+
 	hsLogMessage("t_CellTetraList: tetra decomposition for this element not implemented yet");
 }
 
@@ -238,6 +316,52 @@ void t_CellEdgeList::init(const t_Cell& a_Cell) {
 
 		return;
 	}
+
+	if (pCell->Kind == t_CellKind::Prism) {
+
+		// list of edges for a prism cell
+		// decomposition according cgns documentation: sids/conv.html#unst_3d
+		// vertexes (1,2,3,4,5,6) => edges: 
+		// (1,2),(2,3),(3,1),(1,4),(2,5),
+		// (3,6),(4,5),(5,6),(6,4)
+
+		const lint& V1 = pCell->getVert(0).Id;
+		const lint& V2 = pCell->getVert(1).Id;
+		const lint& V3 = pCell->getVert(2).Id;
+		const lint& V4 = pCell->getVert(3).Id;
+		const lint& V5 = pCell->getVert(4).Id;
+		const lint& V6 = pCell->getVert(5).Id;
+
+		E2V.get_val(0, 0) = V1;
+		E2V.get_val(0, 1) = V2;
+
+		E2V.get_val(1, 0) = V2;
+		E2V.get_val(1, 1) = V3;
+
+		E2V.get_val(2, 0) = V3;
+		E2V.get_val(2, 1) = V1;
+
+		E2V.get_val(3, 0) = V1;
+		E2V.get_val(3, 1) = V4;
+
+		E2V.get_val(4, 0) = V2;
+		E2V.get_val(4, 1) = V5;
+
+		E2V.get_val(5, 0) = V3;
+		E2V.get_val(5, 1) = V6;
+
+		E2V.get_val(6, 0) = V4;
+		E2V.get_val(6, 1) = V5;
+
+		E2V.get_val(7, 0) = V5;
+		E2V.get_val(7, 1) = V6;
+
+		E2V.get_val(8, 0) = V6;
+		E2V.get_val(8, 1) = V4;
+
+		return;
+	}
+
 	hsLogMessage("t_CellEdgeList: unsupported element type");
 };
 
@@ -326,6 +450,53 @@ t_CellFaceList::t_CellFaceList(const t_Cell& a_Cell) {
 
 		return;
 	}
+
+	if (pCell->Kind == t_CellKind::Prism) {
+
+		// first three faces are quads
+		for (int i = 0; i < 3; i++) F2V[i].setSize(4);
+		// fourth and fifth faces are trias
+		for (int i = 3; i < 5; i++) F2V[i].setSize(3);
+
+		// list of faces for a prism cell
+		// decomposition according cgns documentation: sids/conv.html#unst_3d
+		// vertexes (1,2,3,4,5,6) => faces 
+		//(1,2,5,4), (2,3,6,5), (3,1,4,6), (1,3,2), (4,5,6)
+
+		const t_Vert* V1 = pCell->getpVert(0);
+		const t_Vert* V2 = pCell->getpVert(1);
+		const t_Vert* V3 = pCell->getpVert(2);
+		const t_Vert* V4 = pCell->getpVert(3);
+		const t_Vert* V5 = pCell->getpVert(4);
+		const t_Vert* V6 = pCell->getpVert(5);
+
+		F2V[0][0] = V1;
+		F2V[0][1] = V2;
+		F2V[0][2] = V5;
+		F2V[0][3] = V4;
+
+		F2V[1][0] = V2;
+		F2V[1][1] = V3;
+		F2V[1][2] = V6;
+		F2V[1][3] = V5;
+
+		F2V[2][0] = V3;
+		F2V[2][1] = V1;
+		F2V[2][2] = V4;
+		F2V[2][3] = V6;
+
+		F2V[3][0] = V1;
+		F2V[3][1] = V3;
+		F2V[3][2] = V2;
+
+		F2V[4][0] = V4;
+		F2V[4][1] = V5;
+		F2V[4][2] = V6;
+
+		return;
+
+	}
+
 	hsLogMessage("t_CellFaceList: unsupported element type");
 };
 
@@ -446,8 +617,10 @@ void t_Zone::initialize(lint a_nVerts, lint a_nCellsReal, lint a_nCellsTot) {
 	for (lint i = 0; i < nCellsTot; i++) Cells[i].Id = i;
 };
 
-// make connectivity of real vertices to real vertices
-// the lists of Neig Cells will be updated later with ghost cells
+// make connectivity of real vertices to real cells
+// TODO: atm ghost cells do not have vertices (only 1 face)
+// so vertex is NOT connected to any ghosts;
+// ghosts are connected only via cell-2-cell connectivity
 void t_Zone::makeVertexConnectivity() {
 
 	t_Cell* pCell;
@@ -507,7 +680,7 @@ void t_Zone::makeVertexConnectivity() {
 // get cells that owns at least one of vertices of the particular cell face
 // (excluding cell itself)
 // TODO: vector push_back performance ?
-// TODO: ghosts
+// NB: ghosts are NOT included
 std::vector<t_Cell*> t_Zone::getNeigCellsOfCellFace(const t_Cell& cell, int face_ind) const {
 
 	std::vector<t_Cell*> vec_pcells(0);
@@ -559,7 +732,7 @@ int t_Zone::getFacePos(lint cell_id, const std::vector<lint> vert_ids) const {
 // for a given set of vertices (usually forming a face)
 // find a cell that owns them all
 // IMPORTANT: to be used only with abutted faces
-// for inner face it will find the first cell or the second
+// for inner face it will find the first cell or the second (unpredicted behavior)
 void t_Zone::getNeigAbutCellId(const std::vector<lint>& vert_ids, lint& cell_id, int& face_pos) const {
 
 	int npoints = vert_ids.size();
@@ -594,12 +767,13 @@ void t_Zone::getNeigAbutCellId(const std::vector<lint>& vert_ids, lint& cell_id,
 
 };
 
+// Initialize cell-2-cell connectivity
+// 1) construct pairs of cells that have common face:
+//		a)  iterate over cells that are neighbors of face vertexes => list of "adjacent" cells
+//		b) for each of "adjacent" cells get all faces
+//		c) if face vertexes of adjacent cell coincide with vertexes of the cell, they are really adjacent
+// 2) add connection to ghost cells
 void t_Zone::makeCellConnectivity() {
-
-	// 1) construct pairs of cells that have common face:
-	//		a)  iterate over cells that are neighbors of face vertexes => list of "adjacent" cells
-	//		b) for each of "adjacent" cells get all faces
-	//		c) if face vertexes of adjacent cell coincide with vertexes of the cell, they are really adjacent
 
 	t_Cell* pcell_base, * pcell_neig;
 
