@@ -14,7 +14,7 @@ enum struct t_BCKindEuler{
 class t_BCEulerBase : public t_BCDataFace {
 public:
 	t_BCEulerBase() = delete;
-	t_BCEulerBase(const std::string& sect) :t_BCDataFace(sect) {}
+	t_BCEulerBase(const std::string& fam_name) :t_BCDataFace(fam_name) {}
 	virtual void yield(const t_ConsVars& csv_my, t_ConsVars& csv_virt) const= 0;
 	virtual t_BCKindEuler getKind() const = 0;
 };
@@ -23,39 +23,33 @@ public:
 class t_BCDataInflow :public t_BCEulerBase {
 public:
 
-	static const std::string bc_kind_str;
-	static const t_BCKindEuler bc_kind;
-
 	t_BCDataInflow(const std::string& sect) : t_BCEulerBase(sect) {}
-	const std::string& getBCKindName() const { return bc_kind_str; }
 	// implement TPugin
-	std::string get_name() const { return bc_kind_str + "/" + nameOfFldSection; }
 	std::string get_description() const { return std::string("bc inflow"); };
-	void default_settings() {};
 	void init(std::string& ini_data, const std::string& spec) { TPlugin::init(ini_data, spec); };
 	// implement t_BCEulerBase
 	void yield(const t_ConsVars& csv_my, t_ConsVars& csv_virt) const;
-	t_BCKindEuler getKind() const { return bc_kind; }
+	static t_BCKindEuler getKindStat() { return t_BCKindEuler::Inflow; }
+	t_BCKindEuler getKind() const { return getKindStat(); }
+	// implement t_BCDataFace
+	static std::string getBCKindNameStat() { return "bc_inflow"; }
+	std::string getBCKindName() const { return getBCKindNameStat(); }
 };
 
 // supersonic outflow, i.e. extrapolation
 class t_BCDataOutFlow :public t_BCEulerBase {
 
 public:
-
-	static const std::string bc_kind_str;
-	static const t_BCKindEuler bc_kind;
-
 	t_BCDataOutFlow(const std::string& sect) :t_BCEulerBase(sect) {}
-	const std::string& getBCKindName() const { return bc_kind_str; }
 	// implement TPugin
-	std::string get_name() const { return bc_kind_str + "/" + nameOfFldSection; }
 	std::string get_description() const { return std::string("bc outflow"); };
-	void default_settings() {};
-	void init(std::string& ini_data, const std::string& spec) { TPlugin::init(ini_data, spec); };
 	// implement t_BCEulerBase
 	void yield(const t_ConsVars& csv_my, t_ConsVars& csv_virt) const;
-	t_BCKindEuler getKind() const { return bc_kind; }
+	static t_BCKindEuler getKindStat() { return t_BCKindEuler::Outflow; }
+	t_BCKindEuler getKind() const { return getKindStat(); }
+	// implement t_BCDataFace
+	static std::string getBCKindNameStat() { return "bc_outflow"; }
+	std::string getBCKindName() const { return getBCKindNameStat(); }
 };
 
 // Euler wall
@@ -64,15 +58,8 @@ class t_BCDataEulerWall :public t_BCEulerBase {
 	double TWallDim;
 
 public:
-
-	static const std::string bc_kind_str;
-	static const t_BCKindEuler bc_kind;
-
-	t_BCDataEulerWall() = delete;
 	t_BCDataEulerWall(const std::string& sect) :t_BCEulerBase(sect) { default_settings(); }
-	const std::string& getBCKindName() const { return bc_kind_str; }
 	// implement TPugin
-	std::string get_name() const { return bc_kind_str + "/" + nameOfFldSection; }
 	std::string get_description() const { return std::string("bc euler wall"); };
 	void default_settings() {
 		TPluginParamsGroup g("", "gas-dynamic functions values on the wall");
@@ -90,26 +77,27 @@ public:
 	};
 	// implement t_BCEulerBase
 	void yield(const t_ConsVars& csv_my, t_ConsVars& csv_virt) const;
-	t_BCKindEuler getKind() const { return bc_kind; }
+	static t_BCKindEuler getKindStat() { return t_BCKindEuler::Wall; }
+	t_BCKindEuler getKind() const { return getKindStat(); }
+	// implement t_BCDataFace
+	static std::string getBCKindNameStat() { return "bc_euler_wall"; }
+	std::string getBCKindName() const { return getBCKindNameStat(); }
 };
 
 // Symmetry bc
 class t_BCDataSym :public t_BCEulerBase {
 public:
-
-	static const std::string bc_kind_str;
-	static const t_BCKindEuler bc_kind;
-
 	t_BCDataSym() = delete;
 	t_BCDataSym(const std::string& sect) :t_BCEulerBase(sect) { }
-	const std::string& getBCKindName() const { return bc_kind_str; }
 	// implement TPugin
-	std::string get_name() const { return bc_kind_str + "/" + nameOfFldSection; }
 	std::string get_description() const { return std::string("bc sym"); };
-	void init(std::string& ini_data, const std::string& spec) { TPlugin::init(ini_data, spec); };
 	// implement t_BCEulerBase
 	void yield(const t_ConsVars& csv_my, t_ConsVars& csv_virt) const;
-	t_BCKindEuler getKind() const { return bc_kind; }
+	static t_BCKindEuler getKindStat() { return t_BCKindEuler::Sym; }
+	t_BCKindEuler getKind() const { return getKindStat(); }
+	// implement t_BCDataFace
+	static std::string getBCKindNameStat() { return "bc_sym"; }
+	std::string getBCKindName() const { return getBCKindNameStat(); }
 };
 
 /**
@@ -130,11 +118,11 @@ public:
 	// implement BCList
 	std::string getSupportedBCsStr() const;
 
-	t_FaceBCID getBCID(std::string sectionname) const;
+	t_FaceBCID getBCID(std::string fam_name) const;
 	const t_BCEulerBase* getBC(int BCID) const;
 	t_BCKindEuler getKind(int BCID) const { return getBC(BCID)->getKind(); }
 
-	bool getBCKindBySectName(const std::string& name, t_BCKindEuler& kind) const;
+	bool getBCKindByFamName(const std::string& name, t_BCKindEuler& kind) const;
 	void addBCsetByName(std::string bc_set_name, std::string bc_kind_name, std::string& ini_data);
 	bool has(std::string sectionname) const;
 	void init(std::string& ini_data, const std::string& spec) {

@@ -11,13 +11,16 @@
 // base class for information of face-type boundary conditions
 class t_BCDataFace : public TPlugin{
 protected:
-	std::string nameOfFldSection;
+	std::string FamilyName;
 public:
 	t_BCDataFace() = delete;
-	t_BCDataFace(const std::string& sect):nameOfFldSection(sect) {}
-	const std::string& getSectName() const { return nameOfFldSection; }
-	virtual const std::string& getBCKindName() const = 0;
-	void init(std::string& ini_data, const std::string& spec) = 0;
+	t_BCDataFace(const std::string& a_name):FamilyName(a_name) {}
+	const std::string& getFamName() const { return FamilyName; }
+	virtual std::string getBCKindName() const = 0;
+	// implement TPlugin
+	std::string get_name() const { return getBCKindName() + "/" + FamilyName; }
+	virtual void init(std::string& ini_data, const std::string& spec) { TPlugin::init(ini_data, spec); };
+	virtual void default_settings() {}
 	virtual ~t_BCDataFace() {}
 
 };
@@ -33,7 +36,7 @@ public:
 	virtual void addBCsetByName(std::string name, std::string bc_kind_str, std::string& ini_data) = 0;
 	virtual std::string getSupportedBCsStr() const = 0;
 	virtual bool has(std::string sectionname) const = 0;
-	virtual t_FaceBCID getBCID(std::string sectionname) const = 0;
+	virtual t_FaceBCID getBCID(std::string fam_name) const = 0;
 
 	virtual void init(std::string& ini_data, const std::string& spec) {
 

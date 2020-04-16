@@ -84,6 +84,40 @@ public:
 	}
 
 };
+// BC set from cgns file - range of elems with the same family name
+struct t_CGBC {
+
+	std::string FamilyName;
+	cgsize_t id_start, id_end;
+	t_CGBC() = delete;
+	t_CGBC(std::string a_FamName, cgsize_t a_is, cgsize_t a_ie):
+		FamilyName(a_FamName), id_start(a_is), id_end(a_ie) {}
+
+};
+
+struct t_CGZoneBCList {
+
+	std::vector<t_CGBC> BCs;
+
+	void detectSectionFamilyName(cgsize_t id_s, cgsize_t id_e, bool& is_bc_section, std::string& fam_name) {
+
+		is_bc_section = false;
+
+		for (auto bc : BCs) {
+			// check if section range is inside bc range
+			if (bc.id_start <= id_s && id_e <= bc.id_end) {
+				is_bc_section = true;
+				fam_name = bc.FamilyName;
+				return;
+			}
+		}
+
+		fam_name = "";
+	}
+
+	void clear() { BCs.clear(); }
+	void push_back(const t_CGBC& bc) { BCs.push_back(bc); }
+};
 
 class t_CGNSZone
 {
@@ -92,6 +126,8 @@ class t_CGNSZone
 
 	// bc patches
 	std::vector<t_CGSection*> pSectsBC;
+	// stores bc family names & ranges
+	t_CGZoneBCList BCList;
 	// abutting patches
 	std::vector<t_CGSection*> pSectsAbut;
 
@@ -115,6 +151,8 @@ public:
 
 	t_CGSection& getSectionBC(int i) { return *pSectsBC[i]; }
 	const t_CGSection& getSectionBC(int i) const { return *pSectsBC[i]; }
+
+	t_CGZoneBCList& getBCList() { return BCList; }
 
 	t_CGSection& getSectionAbut(int i) { return *pSectsAbut[i]; }
 	const t_CGSection& getSectionAbut(int i) const { return *pSectsAbut[i]; }
@@ -222,9 +260,9 @@ struct t_CGNSContext
 
 	cgsize_t getNumOfGhostsForZone(int cgZoneID) const;
 
-	bool _parseConnectivity();
+	bool parseBCs(int cgZneID);
 
-	bool checkBCs();
+	bool _parseConnectivity();
 
 	bool loadGridCoords();
 

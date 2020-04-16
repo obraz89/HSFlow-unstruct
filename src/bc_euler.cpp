@@ -11,18 +11,6 @@
 // Disable Visual Studio warnings
 #pragma warning(disable:4996)  // strtok may be unsafe ... ignoring)
 
-const std::string t_BCDataInflow::bc_kind_str = "bc_inflow";
-const t_BCKindEuler t_BCDataInflow::bc_kind = t_BCKindEuler::Inflow;
-
-const std::string t_BCDataOutFlow::bc_kind_str = "bc_outflow";
-const t_BCKindEuler t_BCDataOutFlow::bc_kind = t_BCKindEuler::Outflow;
-
-const std::string t_BCDataEulerWall::bc_kind_str = "bc_euler_wall";
-const t_BCKindEuler t_BCDataEulerWall::bc_kind = t_BCKindEuler::Wall;
-
-const std::string t_BCDataSym::bc_kind_str = "bc_sym";
-const t_BCKindEuler t_BCDataSym::bc_kind = t_BCKindEuler::Sym;
-
 t_BCListEuler G_BCListEuler;
 
 // csv_my - variables on the face of a real cell
@@ -80,30 +68,30 @@ std::string t_BCListEuler::getSupportedBCsStr() const{
 
 	std::ostringstream ostr;
 
-	ostr << t_BCDataInflow::bc_kind_str <<", ";
-	ostr << t_BCDataOutFlow::bc_kind_str <<", ";
-	ostr << t_BCDataEulerWall::bc_kind_str <<", ";
-	ostr << t_BCDataSym::bc_kind_str;
+	ostr << t_BCDataInflow::getBCKindNameStat() <<", ";
+	ostr << t_BCDataOutFlow::getBCKindNameStat() <<", ";
+	ostr << t_BCDataEulerWall::getBCKindNameStat() <<", ";
+	ostr << t_BCDataSym::getBCKindNameStat();
 
 	return ostr.str();
 
 }
 
-t_FaceBCID t_BCListEuler::getBCID(std::string sectionname) const{
+t_FaceBCID t_BCListEuler::getBCID(std::string fam_name) const{
 
 	t_FaceBCID face_id;
 
 	bool ok = false;
 
 	for (int i = 0; i < _pBCs.size(); i++) {
-		if (sectionname.compare(_pBCs[i]->getSectName()) == 0) {
+		if (fam_name.compare(_pBCs[i]->getFamName()) == 0) {
 			face_id.set(i);
 			ok = true;
 			break;
 		}
 	}
 	if (!ok)
-		hsLogError("t_BCListEuler:getBCID: failed to find bc with name=%s", sectionname.c_str());
+		hsLogError("t_BCListEuler:getBCID: failed to find bc with name=%s", fam_name.c_str());
 
 	if (face_id.get() == t_FaceBCID::Fluid)
 		hsLogError("BCListEuler: identificator of bc coincide with id of fluid face! Fix it!");
@@ -127,16 +115,16 @@ void t_BCListEuler::addBCsetByName(std::string bc_set_name, std::string bc_kind_
 
 	t_BCEulerBase* pBC = nullptr;
 
-	if (bc_kind_name.compare(t_BCDataInflow::bc_kind_str) == 0)
+	if (bc_kind_name.compare(t_BCDataInflow::getBCKindNameStat()) == 0)
 		pBC = new t_BCDataInflow(bc_set_name);
 
-	if (bc_kind_name.compare(t_BCDataOutFlow::bc_kind_str) == 0)
+	if (bc_kind_name.compare(t_BCDataOutFlow::getBCKindNameStat()) == 0)
 		pBC = new t_BCDataOutFlow(bc_set_name);
 
-	if (bc_kind_name.compare(t_BCDataEulerWall::bc_kind_str) == 0)
+	if (bc_kind_name.compare(t_BCDataEulerWall::getBCKindNameStat()) == 0)
 		pBC = new t_BCDataEulerWall(bc_set_name);
 
-	if (bc_kind_name.compare(t_BCDataSym::bc_kind_str) == 0)
+	if (bc_kind_name.compare(t_BCDataSym::getBCKindNameStat()) == 0)
 		pBC = new t_BCDataSym(bc_set_name);
 
 	if (pBC == nullptr)
@@ -149,13 +137,13 @@ void t_BCListEuler::addBCsetByName(std::string bc_set_name, std::string bc_kind_
 
 }
 
-bool t_BCListEuler::getBCKindBySectName(const std::string& sect_name, t_BCKindEuler& bc_kind) const{
+bool t_BCListEuler::getBCKindByFamName(const std::string& fam_name, t_BCKindEuler& bc_kind) const{
 
 	std::string bc_kind_str="";
 	bool ok = false;
 
 	for (auto elem : _pBCs) {
-		if (sect_name.compare(elem->getSectName())==0) {
+		if (fam_name.compare(elem->getFamName())==0) {
 			bc_kind_str = elem->getBCKindName();
 		}
 	};
@@ -167,16 +155,16 @@ bool t_BCListEuler::getBCKindBySectName(const std::string& sect_name, t_BCKindEu
 	}
 	else {
 		ok = true;
-		if (bc_kind_str.compare(t_BCDataInflow::bc_kind_str) == 0) {
+		if (bc_kind_str.compare(t_BCDataInflow::getBCKindNameStat()) == 0) {
 			bc_kind = t_BCKindEuler::Inflow;
 		}
-		if (bc_kind_str.compare(t_BCDataOutFlow::bc_kind_str) == 0) {
+		if (bc_kind_str.compare(t_BCDataOutFlow::getBCKindNameStat()) == 0) {
 			bc_kind = t_BCKindEuler::Outflow;
 		}
-		if (bc_kind_str.compare(t_BCDataEulerWall::bc_kind_str) == 0) {
+		if (bc_kind_str.compare(t_BCDataEulerWall::getBCKindNameStat()) == 0) {
 			bc_kind = t_BCKindEuler::Wall;
 		}
-		if (bc_kind_str.compare(t_BCDataSym::bc_kind_str) == 0) {
+		if (bc_kind_str.compare(t_BCDataSym::getBCKindNameStat()) == 0) {
 			bc_kind = t_BCKindEuler::Sym;
 		}
 
@@ -190,7 +178,7 @@ bool t_BCListEuler::has(std::string sectionname) const{
 	// unused
 	t_BCKindEuler bc_kind;
 	
-	return getBCKindBySectName(sectionname, bc_kind);
+	return getBCKindByFamName(sectionname, bc_kind);
 
 }
 
