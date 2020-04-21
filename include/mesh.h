@@ -103,7 +103,7 @@ struct t_Cell {
 
 	double Diameter;
 
-	int NCellsNeig() {
+	int NCellsNeig() const{
 		int ret = 0;
 		for (int i = 0; i < MaxNumFacesInCell; i++)
 			if (pCellsNeig[i] != nullptr) ret++;
