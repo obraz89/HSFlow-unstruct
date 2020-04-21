@@ -108,6 +108,12 @@ struct t_MatRotN {
 
 // Square matrix
 // packaged by rows, A[1][2] - second row, third column
+
+int Crout_LU_Decomposition_with_Pivoting(double* A, int pivot[], int n);
+
+int Crout_LU_with_Pivoting_Solve(double* LU, double B[], int pivot[],
+	double x[], int n);
+
 template<int N> class t_SqMat {
 protected:
 	std::array<std::array<double,N>, N> data;
@@ -130,6 +136,12 @@ public:
 		return ret;
 	}
 
+	void add(const t_SqMat<N>& dM) {
+		for (int i = 0; i < N; i++)
+			for (int j = 0; j < N; j++) 
+				data[i][j] += dM[i][j];
+	}
+
 	// debugging
 	std::string to_str() {
 		std::ostringstream ostr;
@@ -143,6 +155,88 @@ public:
 		return ostr.str();
 	}
 
+	int getFlatInd(int i, int j) const{ return i * N + j; };
+
+	void flatten(double(&p)[N*N]) const{ 
+		for (int i = 0; i < N; i++)
+			for (int j = 0; j < N; j++) 
+				p[getFlatInd(i,j)] = data[i][j];
+	}
+
+	void reset() {
+		for (int i = 0; i < N; i++)
+			for (int j = 0; j < N; j++)
+				data[i][j] = 0.0;
+	}
+
+	void setToUnity() {
+		reset();
+		for (int i = 0; i < N; i++) data[i][i] = 1.0;
+	}
+
+	void LU(t_SqMat& L, t_SqMat& U) {
+
+		double A[N * N];
+
+		flatten(A);
+
+		int pivot[N];
+
+		Crout_LU_Decomposition_with_Pivoting(A, pivot, N);
+
+		L.reset();
+
+		for (int i = 0; i < N; i++)
+			for (int j = 0; j <= i; j++)
+				L[i][j] = A[getFlatInd(i,j)];
+
+		U.setToUnity();
+
+		for (int i = 0; i < N; i++)
+			for (int j = i + 1; j < N; j++)
+				U[i][j] = A[getFlatInd(i, j)];
+
+	}
+
+	t_SqMat CalcInv() const{
+
+		double A[N * N];
+
+		int pivot[N];
+
+		flatten(A);
+
+		Crout_LU_Decomposition_with_Pivoting(A, pivot, N);
+
+		t_SqMat inv;
+
+		double B[N];
+
+		double x[N];
+
+		for (int j = 0; j < N; j++) {
+
+			for (int i = 0; i < N; i++) B[i] = 0.0;
+			B[j] = 1.0;
+
+			Crout_LU_with_Pivoting_Solve(A, B, pivot, x, N);
+
+			for (int i = 0; i < N; i++) inv[i][j] = x[i];
+
+		}
+
+		return inv;
+
+	}
+
+	void _mul_by_mat(const t_SqMat& rmat, t_SqMat& ret)const {
+		ret.reset();
+		for (int i = 0; i < N; i++)
+			for (int j = 0; j < N; j++)
+				for (int k = 0; k < N; k++)
+					ret[i][j] += data[i][k] * rmat[k][j];
+	}
+
 };
 
 class t_SqMat3 :public t_SqMat<3> {
@@ -150,9 +244,19 @@ public:
 	t_SqMat3() :t_SqMat<3>() {}
 	void set(const t_MatRotN& rot_mat);
 	void set_inv(const t_MatRotN& rot_mat);
+	void operator=(const t_SqMat<3>& a_mat) { (t_SqMat<3>&)* this = a_mat; }
 	t_Vec3 operator*(const t_Vec3& v) const{
 		t_Vec3 ret;
 		_mul_by_vec(v, ret);
 		return ret;
 	}
+
+	t_SqMat3 operator*(const t_SqMat3& rmat) const {
+		t_SqMat3 ret;
+		_mul_by_mat(rmat, ret);
+		return ret;
+
+	}
 };
+
+void test_LU();
