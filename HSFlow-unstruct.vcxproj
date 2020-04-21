@@ -169,6 +169,7 @@
     <ClInclude Include="include\CGNS-ctx.h" />
     <ClInclude Include="include\optParse.h" />
     <ClInclude Include="include\PluginBase.h" />
+    <ClInclude Include="include\reconstruct_lsq.h" />
     <ClInclude Include="include\rs_euler.h" />
     <ClInclude Include="include\settings.h" />
     <ClInclude Include="src\bc_euler.h" />
@@ -191,6 +192,7 @@
     <ClCompile Include="src\matrix_small.cpp" />
     <ClCompile Include="src\CGNS-ctx.cpp" />
     <ClCompile Include="src\PluginBase.cpp" />
+    <ClCompile Include="src\reconstruct_lsq.cpp" />
     <ClCompile Include="src\rs_procs.cpp" />
     <ClCompile Include="src\settings.cpp" />
   </ItemGroup>
