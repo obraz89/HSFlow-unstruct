@@ -69,9 +69,6 @@
     <ClInclude Include="include\mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\dom_euler.h">
-      <Filter>Header Files\phys_euler</Filter>
-    </ClInclude>
     <ClInclude Include="include\rs_euler.h">
       <Filter>Header Files\phys_euler</Filter>
     </ClInclude>
@@ -95,6 +92,18 @@
     </ClInclude>
     <ClInclude Include="include\flow_model_perfect_gas.h">
       <Filter>Header Files\phys_common</Filter>
+    </ClInclude>
+    <ClInclude Include="include\dom_euler_base.h">
+      <Filter>Header Files\phys_euler</Filter>
+    </ClInclude>
+    <ClInclude Include="include\dom_euler_1st.h">
+      <Filter>Header Files\phys_euler</Filter>
+    </ClInclude>
+    <ClInclude Include="include\dom_euler_lsq.h">
+      <Filter>Header Files\phys_euler</Filter>
+    </ClInclude>
+    <ClInclude Include="include\schemes_euler.h">
+      <Filter>Header Files\phys_euler</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -134,9 +143,6 @@
     <ClCompile Include="src\mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\dom_euler.cpp">
-      <Filter>Source Files\phys_euler</Filter>
-    </ClCompile>
     <ClCompile Include="src\bc_euler.cpp">
       <Filter>Source Files\phys_euler</Filter>
     </ClCompile>
@@ -157,6 +163,15 @@
     </ClCompile>
     <ClCompile Include="src\reconstruct_lsq.cpp">
       <Filter>Source Files\phys_common</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dom_euler_1st.cpp">
+      <Filter>Source Files\phys_euler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dom_euler_base.cpp">
+      <Filter>Source Files\phys_euler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dom_euler_lsq.cpp">
+      <Filter>Source Files\phys_euler</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

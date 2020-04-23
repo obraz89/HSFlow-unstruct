@@ -178,8 +178,6 @@ bool load_settings() {
 
 	const std::string sIni = std::string() + g_CASE_SETTINGS_DIR + MAIN_INI;
 
-	G_pMesh->nDim = 3;
-
 	G_State.mpiNProcs = 1;
 
 	G_State.mpiRank = 0;
@@ -224,12 +222,17 @@ bool load_settings() {
 
 		g_genOpts.strGridFN = iniAD.read_string("gridFN", "grid.cgns");
 		g_genOpts.timeStart = iniAD.read_float("timeStart", -1);
-		g_genOpts.CFL = iniAD.read_float("CFL", 0.5);
 
 		// time steps & flow saving
 		g_genOpts.numTimeSteps = iniAD.read_int("NumTimeSteps", 100000);
 		g_genOpts.timeSteps2Write = iniAD.read_int("TimeSteps2Write", 500);
 
+	}
+
+	iniAD.set_section("scheme");
+	{
+		g_genOpts.CFL = iniAD.read_float("CFL", 0.1);
+		g_genOpts.strScheme = iniAD.read_string("domain", "euler_1st");
 	}
 
 

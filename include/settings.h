@@ -22,7 +22,9 @@ struct TgenericSettings
 	int numTimeSteps; // number of time steps to do
 	double convergenceResidual; // stop solver at this residual
 
+	// TODO: scheme (domain) options
 	double CFL;	// Courant number
+	std::string strScheme;
 
 	// Automatic increasing of time step size:
 //	struct {
@@ -59,6 +61,8 @@ struct TgenericSettings
 };
 
 extern TgenericSettings g_genOpts;
+
+
 //-----------------------------------------------------------------------------
 
 bool load_settings();

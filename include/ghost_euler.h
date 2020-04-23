@@ -2,15 +2,15 @@
 
 #include "ghost_common.h"
 
-#include "dom_euler.h"
+#include "dom_euler_base.h"
 
 class t_GhostMngEuler : public t_GhostMngBase {
 
-	t_DomainEuler* _pDomEu;
+	t_DomEuBase* _pDomEu;
 
 public:
 
-	void setDom(t_DomainEuler& a_dom) {
+	void setDom(t_DomEuBase& a_dom) {
 
 		t_GhostMngBase::setDom(a_dom);
 

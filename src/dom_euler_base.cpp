@@ -1,10 +1,11 @@
-#include "dom_euler.h"
+#include "dom_euler_base.h"
 
 #include "ghost_euler.h"
 
-#include "rs_euler.h"
+#include "flux_euler.h"
 
-#include "bc_euler.h"
+// TODO: make interface for flow model
+#include "flow_model_perfect_gas.h"
 
 #include "settings.h"
 
@@ -13,9 +14,9 @@
 #include <fstream>
 
 
-t_DomainEuler G_Domain;
+t_DomEuBase* G_pDom;
 
-void t_DomainEuler::allocateFlowSolution() {
+void t_DomEuBase::allocateFlowSolution() {
 
 	ZonesSol = new t_ZoneFlowData[nZones];
 
@@ -35,7 +36,7 @@ void t_DomainEuler::allocateFlowSolution() {
 
 }
 
-void t_DomainEuler::initializeFlow() {
+void t_DomEuBase::initializeFlow() {
 
 	double time = -1;
 
@@ -77,7 +78,7 @@ void t_DomainEuler::initializeFlow() {
 
 }
 
-std::vector<std::string> t_DomainEuler::getFuncNamesIO() const{
+std::vector<std::string> t_DomEuBase::getFuncNamesIO() const{
 	std::vector<std::string> fnames;
 	fnames.push_back("VelocityX");
 	fnames.push_back("VelocityY");
@@ -88,7 +89,7 @@ std::vector<std::string> t_DomainEuler::getFuncNamesIO() const{
 	return fnames;
 }
 
-void t_DomainEuler::getDataAsArr(std::string name, int zoneID, t_ArrDbl& Vals) const {
+void t_DomEuBase::getDataAsArr(std::string name, int zoneID, t_ArrDbl& Vals) const {
 
 	const t_Zone& Zne = Zones[zoneID];
 
@@ -174,7 +175,7 @@ void t_DomainEuler::getDataAsArr(std::string name, int zoneID, t_ArrDbl& Vals) c
 
 }
 
-double t_DomainEuler::loadField(std::string path_field) {
+double t_DomEuBase::loadField(std::string path_field) {
 
 	double time = -1.0;
 
@@ -206,14 +207,14 @@ double t_DomainEuler::loadField(std::string path_field) {
 			break;
 		}
 
-		if (dimCell != G_Domain.nDim) {
+		if (dimCell != G_pDom->nDim) {
 			hsLogError("CGNS: Inconsistent space dimensions");
 			break;
 		}
 
 		// Number of zones (aka blocks)
 		int nZones = 0;  cg_nzones(f, iBase, &nZones);
-		if (nZones != G_Domain.nZones) {
+		if (nZones != G_pDom->nZones) {
 			hsLogError("CGNS: Inconsistent number of zones");
 			break;
 		}
@@ -274,7 +275,7 @@ double t_DomainEuler::loadField(std::string path_field) {
 			//if (rankDst != 0)  // don't send to myself
 			//	MPI_Ssend(newField.data(), (ok ? newField.size() : 0), MPI_DOUBLE, rankDst, mpiTag, PETSC_COMM_WORLD);
 		}
-		else if (G_Domain.bs <= zi && zi <= G_Domain.be)
+		else if (G_pDom->bs <= zi && zi <= G_pDom->be)
 		{
 			//MPI_Recv(newField.data(), newField.size(), MPI_DOUBLE, 0/*root*/, mpiTag, PETSC_COMM_WORLD, MPI_STATUS_IGNORE);
 		}
@@ -308,7 +309,7 @@ double t_DomainEuler::loadField(std::string path_field) {
 
 }
 
-void t_DomainEuler::makeTimeStep() {
+void t_DomEuBase::makeTimeStep() {
 
 	double dt = calcDt();
 
@@ -373,144 +374,7 @@ void t_DomainEuler::makeTimeStep() {
 
 }
 
-void t_DomainEuler::calcFaceFlux(int iZone, lint iFace) {
-
-	t_Zone& zne = Zones[iZone];
-	t_Face& face = zne.getFace(iFace);
-
-	t_MatRotN mat_rot_coefs;
-	mat_rot_coefs.calc_rot_angles_by_N(face.Normal);
-
-	t_SqMat3 R;
-
-	// local vars for csvs, do not modify cell csv here
-	t_ConsVars csv_my = getCellCSV(iZone, face.pMyCell->Id);
-
-	t_Flux flux;
-
-	if (face.BCId.get() == t_FaceBCID::Fluid) {
-
-		t_ConsVars csv_op = getCellCSV(iZone, face.pOppCell->Id);
-
-		t_PrimVars pvl = csv_my.calcPrimVars();
-		t_PrimVars pvr = csv_op.calcPrimVars();
-
-		// rotate everything to local rf
-		R.set(mat_rot_coefs);
-
-		// debug
-		//hsLogMessage("Face #%d:", iFace);
-		//hsLogMessage(R.to_str().c_str());
-
-		pvl.rotate(R);
-		pvr.rotate(R);
-
-		calcRusanovFlux(pvl, pvr, flux);
-
-		// rotate flux back
-		R.set_inv(mat_rot_coefs);
-		flux.rotate(R);
-
-		// set flux for the face
-		getFlux(iZone, iFace) = flux;
-
-		return;
-
-
-	}
-
-	// TODO: now if not fluid, it's a BC
-
-	t_BCKindEuler bc_kind = G_BCListEuler.getKind(face.BCId.get());
-
-	if (bc_kind == t_BCKindEuler::Inflow) {
-
-		t_ConsVars csv_face;
-		csv_face.setValAtInf();
-
-		R.set(mat_rot_coefs);
-		csv_face.rotate(R);
-		
-		flux.calc(csv_face);
-
-		R.set_inv(mat_rot_coefs);
-
-		flux.rotate(R);
-
-		getFlux(iZone, iFace) = flux;
-		return;
-
-	}
-
-	if (bc_kind == t_BCKindEuler::Outflow) {
-
-		t_ConsVars csv_face;
-
-		csv_face = csv_my;
-
-		R.set(mat_rot_coefs);
-
-		csv_face.rotate(R);
-
-		flux.calc(csv_face);
-
-		R.set_inv(mat_rot_coefs);
-
-		flux.rotate(R);
-
-		getFlux(iZone, iFace) = flux;
-		return;
-
-	}
-
-	if ((bc_kind == t_BCKindEuler::Wall) || (bc_kind == t_BCKindEuler::Sym)) {
-
-		t_ConsVars csv_virt;
-
-		R.set(mat_rot_coefs);
-
-		csv_my.rotate(R);
-
-		csv_virt = csv_my;
-		// TODOL is this correct ? 
-		csv_virt[1]*= -1.0;
-
-		t_PrimVars pv_loc_my = csv_my.calcPrimVars();
-
-		t_PrimVars pv_loc_virt = csv_virt.calcPrimVars();
-
-		calcRusanovFlux(pv_loc_my, pv_loc_virt, flux);
-
-		// DEBUG, get normal velocity (normal to the wall)
-		// if local rf this is u_ksi
-		// IMPORTANT: instead of u_ksi, we now check (rho*u_ksi)
-		// it is easy, TODO: compute u_ksi via flux vars
-		double v_norm = flux[0];
-		if (v_norm > G_State.ResidNormVeloWall) G_State.ResidNormVeloWall = v_norm;
-
-		// TODO: is this correct
-		//flux[1] = 0.0;
-
-		R.set_inv(mat_rot_coefs);
-
-		flux.rotate(R);
-
-		getFlux(iZone, iFace) = flux;
-
-		return;
-
-	}
-
-
-	hsLogError(
-		"t_DomainEuler::calcFaceFlux: unknow bc kind : Zone #%ld, face #%ld",
-		iZone, iFace);
-
-
-
-}
-
-double t_DomainEuler::calcDt() const{
+double t_DomEuBase::calcDt() const{
 
 	double dt = HUGE_VAL;
 
@@ -543,7 +407,7 @@ double t_DomainEuler::calcDt() const{
 
 }
 
-void t_DomainEuler::dump_flow() {
+void t_DomEuBase::dump_flow() {
 
 	std::string fn("dump_flow.txt");
 
@@ -569,7 +433,7 @@ void t_DomainEuler::dump_flow() {
 
 }
 
-void t_DomainEuler::checkFlow() {
+void t_DomEuBase::checkFlow() {
 
 	double VolMin = HUGE_VAL;
 	double VolMax = 0.0;
@@ -609,21 +473,18 @@ void t_DomainEuler::checkFlow() {
 
 }
 
-void t_DomainEuler::dump_geom() {
+void t_DomEuBase::dump_geom() {
 
 
 
 }
 
-t_DomainEuler::~t_DomainEuler() {
+t_DomEuBase::~t_DomEuBase() {
 
 	for (int i = 0; i < nZones; i++) {
 
 		t_Zone& zne = Zones[i];
 		t_ZoneFlowData& fdata = ZonesSol[i];
-
-		lint nFaces = zne.getNFaces();
-		lint nCellsTot = zne.getnCellsTot();
 
 		delete[] fdata.Fluxes;
 		delete[] fdata.ConsVars;

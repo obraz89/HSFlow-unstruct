@@ -300,7 +300,7 @@ public:
 struct t_Mesh
 {
 
-	int nDim; // number of independent variables (problem dimensions)
+	const int nDim = 3; // number of independent variables (problem dimensions)
 
 			  // Physical equations of the problem
 			  //
@@ -352,7 +352,7 @@ struct t_Mesh
 	virtual void dump_flow() = 0;
 	virtual void dump_geom() = 0;
 
-	virtual ~t_Mesh() {};
+	virtual ~t_Mesh() { delete[] Zones; };
 };
 
 extern t_Mesh* G_pMesh;

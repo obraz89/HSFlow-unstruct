@@ -18,8 +18,11 @@
 
 // model-specific part
 #include "bc_euler.h"
+
 #include "flow_model_perfect_gas.h"
-#include "dom_euler.h"
+
+#include "schemes_euler.h"
+
 #include "ghost_euler.h"
 
 #if defined(_WINDOWS)
@@ -125,7 +128,6 @@ int main(int argc, char* argv[])
 	// TODO: this can be a part of "before-main" initializers
 	// but currently trying to avoid this...
 	{
-		G_pMesh = &G_Domain;
 		G_pBCList = &G_BCListEuler;
 		G_pGhostMngBase = &G_GhostMngEu;
 	}
@@ -133,29 +135,32 @@ int main(int argc, char* argv[])
 	if (!load_settings())
 		goto fin;
 
+	// initializes G_pDom, G_pMesh
+	loadSchemeEuler(g_genOpts.strScheme);
+
 	G_CGNSCtx.readMesh(g_genOpts.strGridFN);
 
 	// load cells & vertices
 	// make vertex connectivity so ghost manager is able to do some funcs
-	G_Domain.initializeFromCtxStage1();
+	G_pDom->initializeFromCtxStage1();
 
 	// initialize ghost manager, it uses some basic funcs of mesh
 	// requires first stage of mesh init
-	G_GhostMngEu.setDom(G_Domain);
+	G_GhostMngEu.setDom(*G_pDom);
 	G_GhostMngEu.initialize(G_CGNSCtx);
 
 	// cell connectivity, face list
-	G_Domain.initializeFromCtxStage2();
+	G_pDom->initializeFromCtxStage2();
 
 	G_GhostMngEu.exchangeGeomData();
 
-	G_Domain.allocateFlowSolution();
+	G_pDom->allocateFlowSolution();
 
 	initialize_flow_model();
 
-	G_Domain.initializeFlow();
+	G_pDom->initializeFlow();
 
-	G_Domain.checkFlow();
+	G_pDom->checkFlow();
 
 	//G_Domain.dump_flow();
 	int count = 0;
@@ -164,7 +169,7 @@ int main(int argc, char* argv[])
 
 		hsLogMessage("Iter #%d:", iTStep);
 		
-		G_Domain.makeTimeStep();
+		G_pDom->makeTimeStep();
 
 		if (++count >= g_genOpts.timeSteps2Write) {
 			// TODO: G_Domain.saveFiled()
@@ -183,6 +188,5 @@ fin:
 	//std::vector<t_CellKindRange> offsets = G_Domain.Zones[0].getCellsOffsets();
 
 	//hsflow::TLog::destroy();  // flushes remaining messages
-	delete[] G_Domain.Zones;
 	return err;
 }

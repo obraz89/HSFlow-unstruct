@@ -2,10 +2,11 @@
 
 #include "mesh.h"
 
-#include "flux_euler.h"
-
 #include "io-field.h"
 
+#include "flux_euler.h"
+
+// TODO: interface for flow model
 #include "flow_model_perfect_gas.h"
 
 // Flow solution for a zone:
@@ -17,12 +18,11 @@ struct t_ZoneFlowData {
 	t_ConsVars* ConsVars;
 };
 
-// Domain for Euler equations
-// TODO: inherit from common t_Domain
+// Domain for Euler equations 
+// Domain is something like Scheme, but in a little more general sense
 // (experience needed from several flow cases to produce common interface)
 
 // io primitive variables
-
 struct t_PrimVarsIO {
 
 	double u;
@@ -56,7 +56,9 @@ struct t_PrimVarsIO {
 
 };
 
-class t_DomainEuler : public t_Mesh {
+class t_DomEuBase : public t_Mesh {
+
+protected:
 
 	t_ZoneFlowData* ZonesSol;
 
@@ -74,24 +76,23 @@ public:
 		return ZonesSol[zone_id].Fluxes[face_id];
 	}
 
-	// implement domain virtuals
-	void allocateFlowSolution();
-	void initializeFlow();
+	virtual void allocateFlowSolution();
+	virtual void initializeFlow();
 	double loadField(std::string fieldName);
 	int getNu() const { return NConsVars; }
 	std::vector<std::string> getFuncNamesIO() const;
 	virtual void getDataAsArr(std::string name, int zoneID, t_ArrDbl& Vals) const;
 
 
-	void makeTimeStep();
-	double calcDt() const;
-	void calcFaceFlux(int iZone, lint iFace);
+	virtual void makeTimeStep();
+	virtual double calcDt() const;
+	virtual void calcFaceFlux(int iZone, lint iFace) = 0;
 
 	// debug
 	void dump_flow();
 	void dump_geom();
 	void checkFlow();
-	~t_DomainEuler();
+	virtual ~t_DomEuBase();
 };
 
-extern t_DomainEuler G_Domain;
+extern t_DomEuBase* G_pDom;
