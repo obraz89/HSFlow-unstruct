@@ -28,7 +28,7 @@ public:
 	const t_ReconstDataLSQ& getReconstData(int iZone, lint iCell) const{
 		return ZonesRecData[iZone].ReconstData[iCell];
 	};
-	//void calcCellGrad(int iZone, lint iCell, t_Vec<NConsVars>& CellGrad)
+	void calcCellGradPrimVars(int iZone, lint iCell, t_Mat<NConsVars, 3>& CellGrad);
 	void calcReconstDataLSQ(int iZone, lint iCell);
 	~t_DomEuLSQ();
 };

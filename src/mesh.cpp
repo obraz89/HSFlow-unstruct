@@ -73,6 +73,7 @@ void t_Cell::setKind(t_CellKind a_Kind) {
 // the computed normal is directed outward of the cell
 // TODO: if grids with non-standard vertex numbering are read
 // additional work should be done to ensure the normal is directed outward of the cell
+// TODO: this must be a face method!
 void t_Cell::calcFaceNormalAreaOutward(int iface, t_Vec3& norm, double& area) const {
 
 	t_CellFaceList flist(*this);
@@ -602,6 +603,17 @@ void t_Zone::init_face2cell_conn(lint a_id, t_Cell& cell, int face_ind) {
 
 }
 
+void t_Face::ComputeFaceCenter() {
+
+	this->Center.reset();
+
+	for (int i = 0; i < NVerts; i++)
+		Center += pVerts[i]->xyz;
+
+	Center *= 1.0/double(NVerts);
+
+};
+
 //************************************* Zone methods
 
 void t_Zone::initialize(lint a_nVerts, lint a_nCellsReal, lint a_nCellsTot) {
@@ -929,6 +941,7 @@ void t_Zone::makeFaces() {
 
 				init_face2cell_conn(iFace, cell_base, j);
 				cell_base.calcFaceNormalAreaOutward(j, face.Normal, face.Area);
+				face.ComputeFaceCenter();
 				iFace++;
 
 				//debug

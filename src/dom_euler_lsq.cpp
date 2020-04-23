@@ -62,31 +62,42 @@ void t_DomEuLSQ::calcReconstDataLSQ(int iZone, lint iCell) {
 
 	const t_Vec3& xc = Cell.Center;
 
-	// first find max distance btw cells, this is a scale factor r
+	// first find avg distance btw cells, this is a scale factor r
+	// TODO: best scaling? avg, min, max?
 
 	const int NNeig = Cell.NCellsNeig();
 
 	double r = 0.0;
 
-	for (int j = 0; j < NNeig; j++) {
-		dr = Cell.pCellsNeig[j]->Center - xc;
-		double r_cur = dr.norm();
-		if (r_cur > r) r = r_cur;
+	for (int j = 0; j < Cell.NFaces; j++) {
+
+		if (Cell.pCellsNeig[j] != nullptr) {
+
+			dr = Cell.pCellsNeig[j]->Center - xc;
+			r += dr.norm();
+
+		}
 	}
+
+	r /= double(NNeig);
 
 	ReconstData.r = r;
 
 	double r_inv = 1.0 / r;
 
-	for (int j = 0; j < Cell.NCellsNeig(); j++) {
+	for (int j = 0; j < Cell.NFaces; j++) {
 
-		dr = Cell.pCellsNeig[j]->Center - xc;
+		if (Cell.pCellsNeig[j] != nullptr) {
 
-		dr *= r_inv;
+			dr = Cell.pCellsNeig[j]->Center - xc;
 
-		setDmMat(dr, dM);
+			dr *= r_inv;
 
-		M.add(dM);
+			setDmMat(dr, dM);
+
+			M.add(dM);
+
+		}
 
 	}
 
@@ -109,6 +120,56 @@ void t_DomEuLSQ::calcReconstData() {
 	}
 
 }
+// we have precomputed scaled inverse Mc matrix
+// grad(U_i) = McInv*Summ((rd-rc)/r*(Uc_i - Ud_i)/r)
+// i is component of prim or consv vars to reconstruct i=0...NConsVars-1
+// r is scale introduced to make all multipliers in formula O(1)
+void t_DomEuLSQ::calcCellGradPrimVars(int iZone, lint iCell, t_Mat<NConsVars, 3>& CellGradPV) {
+
+	const t_ConsVars& csv_c = getCellCSV(iZone, iCell);
+
+	const t_Cell& Cell = Zones[iZone].getCell(iCell);
+
+	const t_ReconstDataLSQ& RecData = getReconstData(iZone, iCell);
+
+	t_PrimVars pvs_c = csv_c.calcPrimVars();
+
+	CellGradPV.reset();
+	
+	t_Vec3 grad_cur, dr;
+
+	double du;
+
+	double r_inv = 1.0 / RecData.r;
+
+	t_PrimVars pvs_n;
+
+	for (int j = 0; j < Cell.NFaces; j++) {
+
+		if (Cell.pCellsNeig[j] != nullptr) {
+
+			const t_Cell& CellNeig = *Cell.pCellsNeig[j];
+
+			pvs_n = getCellCSV(iZone, CellNeig.Id).calcPrimVars();
+
+			dr = r_inv * (CellNeig.Center - Cell.Center);
+
+			for (int i = 0; i < NConsVars; i++) {
+
+				du = r_inv * (pvs_c[i] - pvs_n[i]);
+
+				grad_cur = RecData.MInvRR * dr;
+				grad_cur *= du;
+
+				for (int k = 0; k < 3; k++)
+					CellGradPV[i][k] += grad_cur[k];
+			}
+
+		}
+
+	}
+
+};
 
 void t_DomEuLSQ::calcFaceFlux(int iZone, lint iFace) {
 
@@ -129,8 +190,28 @@ void t_DomEuLSQ::calcFaceFlux(int iZone, lint iFace) {
 
 		t_ConsVars csv_op = getCellCSV(iZone, face.pOppCell->Id);
 
-		t_PrimVars pvl = csv_my.calcPrimVars();
-		t_PrimVars pvr = csv_op.calcPrimVars();
+		const t_Cell& CellMy = Zones[iZone].getCell(face.pMyCell->Id);
+		const t_Cell& CellOp = Zones[iZone].getCell(face.pOppCell->Id);
+
+		// prim vars at cell centers
+		t_PrimVars pvl_c = csv_my.calcPrimVars();
+		t_PrimVars pvr_c = csv_op.calcPrimVars();
+
+		t_Mat<NConsVars, 3> CellGradPVMy;
+		calcCellGradPrimVars(iZone, face.pMyCell->Id, CellGradPVMy);
+
+		t_Mat<NConsVars, 3> CellGradPVOp;
+		calcCellGradPrimVars(iZone, face.pOppCell->Id, CellGradPVOp);
+
+		// distances from cell centers to face center
+		t_Vec3 drMy = face.Center - CellMy.Center;
+		t_Vec3 drOp = face.Center - CellOp.Center;
+
+		t_PrimVars dUMy = CellGradPVMy * drMy;
+		t_PrimVars dUOp = CellGradPVOp * drOp;
+
+		t_PrimVars pvl = pvl_c + dUMy;
+		t_PrimVars pvr = pvr_c + dUOp;
 
 		// rotate everything to local rf
 		R.set(mat_rot_coefs);
@@ -224,9 +305,6 @@ void t_DomEuLSQ::calcFaceFlux(int iZone, lint iFace) {
 		// it is easy, TODO: compute u_ksi via flux vars
 		double v_norm = flux[0];
 		if (v_norm > G_State.ResidNormVeloWall) G_State.ResidNormVeloWall = v_norm;
-
-		// TODO: is this correct
-		//flux[1] = 0.0;
 
 		R.set_inv(mat_rot_coefs);
 

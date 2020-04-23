@@ -68,8 +68,6 @@ struct t_Face {
 
 	void ComputeFaceCenter();
 
-	void ComputeFaceNormal();
-
 	t_SetOfpVerts getVerts() const;
 
 };

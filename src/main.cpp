@@ -152,6 +152,7 @@ int main(int argc, char* argv[])
 	// cell connectivity, face list
 	G_pDom->initializeFromCtxStage2();
 
+	// update cell center etc for ghosts
 	G_GhostMngEu.exchangeGeomData();
 
 	G_pDom->allocateFlowSolution();
@@ -164,6 +165,10 @@ int main(int argc, char* argv[])
 
 	//G_Domain.dump_flow();
 	int count = 0;
+
+	hsLogMessage("Computing reconstruction data...");
+
+	G_pDom->calcReconstData();
 
 	for (int iTStep = 0; iTStep < g_genOpts.numTimeSteps; iTStep++) {
 
