@@ -106,68 +106,80 @@ struct t_MatRotN {
 
 };
 
-// Square matrix
-// packaged by rows, A[1][2] - second row, third column
+
 
 int Crout_LU_Decomposition_with_Pivoting(double* A, int pivot[], int n);
 
 int Crout_LU_with_Pivoting_Solve(double* LU, double B[], int pivot[],
 	double x[], int n);
 
-template<int N> class t_SqMat {
+// matrix
+// packaged by rows, A[1][2] - second row, third column
+template<int NRows, int NCols> class t_Mat {
 protected:
-	std::array<std::array<double,N>, N> data;
+	std::array<std::array<double, NCols>, NRows> data;
 
-	void _mul_by_vec(const t_Vec<N>& vec, t_Vec<N>& dest) const{
-		for (int i = 0; i < N; i++) {
+	void _mul_by_vec(const t_Vec<NCols>& vec, t_Vec<NRows>& dest) const {
+		for (int i = 0; i < NRows; i++) {
 			dest[i] = 0.0;
-			for (int j = 0; j < N; j++) dest[i] += data[i][j] * vec[j];
+			for (int j = 0; j < NCols; j++) dest[i] += data[i][j] * vec[j];
 		}
 	};
 public:
-	t_SqMat(){ for (int i = 0; i < N; i++) for (int j = 0; j < N; j++) data[i][j] = 0.0; };
-	std::array<double, N>& operator[](int row) { return data[row]; }
-	const std::array<double, N>& operator[](int row) const{ return data[row]; }
+	t_Mat() { 
+		for (int i = 0; i < NRows; i++) 
+			for (int j = 0; j < NCols; j++) 
+				data[i][j] = 0.0; 
+	};
+	void add(const t_Mat& dM) {
+		for (int i = 0; i < NRows; i++)
+			for (int j = 0; j < NCols; j++)
+				data[i][j] += dM[i][j];
+	}
+	std::array<double, NCols>& operator[](int iRow) {
+		return data[iRow];
+	};
 
+	const std::array<double, NCols>& operator[](int iRow) const {
+		return data[iRow];
+	};
 
-	t_Vec<N>  operator*(const t_Vec<N>& vec) const{
-		t_Vec<N> ret;
+	t_Vec<NRows>  operator*(const t_Vec<NCols>& vec) const {
+		t_Vec<NRows> ret;
 		_mul_by_vec(vec, ret);
 		return ret;
 	}
 
-	void add(const t_SqMat<N>& dM) {
-		for (int i = 0; i < N; i++)
-			for (int j = 0; j < N; j++) 
-				data[i][j] += dM[i][j];
+	int getFlatInd(int i, int j) const{ return i * NCols + j; }
+
+	void flatten(double(&p)[NRows * NCols]) const {
+		for (int i = 0; i < NRows; i++)
+			for (int j = 0; j < NCols; j++)
+				p[getFlatInd(i, j)] = data[i][j];
 	}
 
-	// debugging
 	std::string to_str() {
 		std::ostringstream ostr;
-		ostr << "R:";
-		for (int i = 0; i < N; i++) {
+		ostr << "Mat:";
+		for (int i = 0; i < NRows; i++) {
 			ostr << "[";
-			for (int j = 0; j < N; j++)
+			for (int j = 0; j < NCols; j++)
 				ostr << data[i][j] << ";";
 			ostr << "]\n";
 		}
 		return ostr.str();
 	}
 
-	int getFlatInd(int i, int j) const{ return i * N + j; };
-
-	void flatten(double(&p)[N*N]) const{ 
-		for (int i = 0; i < N; i++)
-			for (int j = 0; j < N; j++) 
-				p[getFlatInd(i,j)] = data[i][j];
-	}
-
 	void reset() {
-		for (int i = 0; i < N; i++)
-			for (int j = 0; j < N; j++)
+		for (int i = 0; i < NRows; i++)
+			for (int j = 0; j < NCols; j++)
 				data[i][j] = 0.0;
 	}
+};
+
+template<int N> class t_SqMat : public t_Mat<N,N> {
+public:
+	t_SqMat():t_Mat(){};
 
 	void setToUnity() {
 		reset();
