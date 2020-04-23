@@ -87,9 +87,6 @@
     <ClInclude Include="include\io-field.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\reconstruct_lsq.h">
-      <Filter>Header Files\phys_common</Filter>
-    </ClInclude>
     <ClInclude Include="include\flow_model_perfect_gas.h">
       <Filter>Header Files\phys_common</Filter>
     </ClInclude>
@@ -159,9 +156,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\flow_model_perfect_gas.cpp">
-      <Filter>Source Files\phys_common</Filter>
-    </ClCompile>
-    <ClCompile Include="src\reconstruct_lsq.cpp">
       <Filter>Source Files\phys_common</Filter>
     </ClCompile>
     <ClCompile Include="src\dom_euler_1st.cpp">

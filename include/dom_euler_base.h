@@ -86,6 +86,7 @@ public:
 
 	virtual void makeTimeStep();
 	virtual double calcDt() const;
+	virtual void calcReconstData() = 0;
 	virtual void calcFaceFlux(int iZone, lint iFace) = 0;
 
 	// debug
