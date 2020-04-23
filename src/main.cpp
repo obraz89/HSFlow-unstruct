@@ -147,6 +147,8 @@ int main(int argc, char* argv[])
 	// cell connectivity, face list
 	G_Domain.initializeFromCtxStage2();
 
+	G_GhostMngEu.exchangeGeomData();
+
 	G_Domain.allocateFlowSolution();
 
 	initialize_flow_model();

@@ -48,8 +48,6 @@ t_ReconstDataLSQ calcReconstDataLSQ(const t_Cell& Cell) {
 
 	ReconstrData.MInvRR = M.CalcInv();
 
-	//ReconstrData.MInvRR;
-
 	return ReconstrData;
 
 };

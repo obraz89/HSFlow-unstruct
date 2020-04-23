@@ -143,3 +143,26 @@ lint t_GhostMngBase::calcIndOffset(int zone_id_my, int zone_id_dnr) const{
 	return offset;
 
 };
+
+void t_GhostMngBase::exchangeGeomData() {
+
+	for (int i = 0; i < _pDom->nZones; i++) {
+
+		for (int j = 0; j < _pDom->nZones; j++) {
+
+			t_Zone& ZoneMy = _pDom->Zones[i];
+			t_Zone& ZoneDnr = _pDom->Zones[j];
+
+			t_GhostLayer* glayer = _pGLayers[getPlainInd(i, j)];
+
+			for (int k = 0; k < glayer->size(); k++) {
+
+				lint offset = calcIndOffset(i, j);
+				ZoneMy.getCell(offset + k).Center = ZoneDnr.getCell(glayer->data[k].id_dnr).Center;
+
+			}
+
+		}
+	}
+
+}

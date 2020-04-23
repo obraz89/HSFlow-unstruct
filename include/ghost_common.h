@@ -98,6 +98,9 @@ public:
 
 	t_GhostMngBase(): _pGLayers(), _pDom(nullptr) {}
 
+	// 
+	virtual void exchangeGeomData();
+
 	// physical methods implemented by children
 	virtual void exchangeCSV() = 0;
 
