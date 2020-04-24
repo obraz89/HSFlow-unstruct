@@ -55,6 +55,33 @@ t_ConsVars t_PrimVars::calcConsVars() const {
 	return csv;
 }
 
+double t_PrimVars::calcVeloSq() const {
+
+	return getU() * getU() + getV() * getV() + getW() * getW();
+
+}
+
+double t_PrimVars::calcH() const {
+
+	double c = calcSoundSpeedByRP(getR(), getP());
+	double q2 = calcVeloSq();
+
+	double H = 0.5 * q2 + c * c / (G_FlowModelParams.Gamma - 1.0);
+	return H;
+};
+
+void t_PrimVars::setByRhoUH(double rho, const t_Vec3& UVW, double H) {
+
+	setR(rho);
+
+	setUVW(UVW);
+	double c1 = (G_FlowModelParams.Gamma - 1.0) / G_FlowModelParams.Gamma;
+	double p = rho * c1 * (H - 0.5 * calcVeloSq());
+
+	setP(p);
+
+};
+
 void t_PrimVars::setValAtInf() {
 
 	const t_FlowParamsFreeStream& fp = G_FreeStreamParams;

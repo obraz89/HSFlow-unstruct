@@ -233,6 +233,7 @@ bool load_settings() {
 	{
 		g_genOpts.CFL = iniAD.read_float("CFL", 0.1);
 		g_genOpts.strScheme = iniAD.read_string("domain", "euler_1st");
+		g_genOpts.strRiemannSolver = iniAD.read_string("RiemannSolver", "Roe");
 	}
 
 

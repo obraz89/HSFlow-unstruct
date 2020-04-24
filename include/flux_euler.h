@@ -42,11 +42,16 @@ public:
 		for (int i = 0; i < 3; i++) data[i + 1] = v[i];
 	}
 
+	double calcH() const;
+	double calcVeloSq() const;
+
 	t_Vec3 getUVW() const { return t_Vec3(getU(), getV(), getW()); }
 
 	double getP() const { return data[4]; }
 	void setP(double val) { data[4] = val; }
 	//double calcRhoE() const;
+
+	void setByRhoUH(double rho, const t_Vec3& UVW, double H);
 
 	void setValAtInf();
 

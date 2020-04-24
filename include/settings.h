@@ -25,6 +25,7 @@ struct TgenericSettings
 	// TODO: scheme (domain) options
 	double CFL;	// Courant number
 	std::string strScheme;
+	std::string strRiemannSolver;
 
 	// Automatic increasing of time step size:
 //	struct {

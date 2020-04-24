@@ -38,7 +38,7 @@ void t_DomEu1st::calcFaceFlux(int iZone, lint iFace) {
 		pvl.rotate(R);
 		pvr.rotate(R);
 
-		calcRusanovFlux(pvl, pvr, flux);
+		calcRSFlux(pvl, pvr, flux);
 
 		// rotate flux back
 		R.set_inv(mat_rot_coefs);
@@ -112,7 +112,7 @@ void t_DomEu1st::calcFaceFlux(int iZone, lint iFace) {
 
 		t_PrimVars pv_loc_virt = csv_virt.calcPrimVars();
 
-		calcRusanovFlux(pv_loc_my, pv_loc_virt, flux);
+		calcRSFlux(pv_loc_my, pv_loc_virt, flux);
 
 		// DEBUG, get normal velocity (normal to the wall)
 		// if local rf this is u_ksi
