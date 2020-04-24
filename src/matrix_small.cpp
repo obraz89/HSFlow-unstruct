@@ -245,5 +245,16 @@ void test_LU() {
 	res = mat*mat_inv;
 	hsLogMessage("Mat*MAt_inv=%s", res.to_str().c_str());
 
+	t_SqMat<5> A;
+	A.setToUnity();
+
+	t_SqMat<5> B;
+	B.setToUnity();
+
+	t_SqMat<5> C;
+	C = A * B;
+	hsLogMessage("C=%s", C.to_str().c_str());
+
+
 };
 

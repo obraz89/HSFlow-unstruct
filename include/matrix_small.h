@@ -125,6 +125,16 @@ protected:
 			for (int j = 0; j < NCols; j++) dest[i] += data[i][j] * vec[j];
 		}
 	};
+
+	template<int NColsRgt>
+	void _mul_by_mat(const t_Mat<NCols, NColsRgt>& rMat, t_Mat<NRows, NColsRgt>& dest) const{
+		dest.reset();
+		for (int i = 0; i < NRows; i++)
+			for (int j = 0; j < NColsRgt; j++)
+				for (int k = 0; k < NCols; k++)
+					dest[i][j] += data[i][k] * rMat[k][j];
+	}
+
 public:
 	t_Mat() { 
 		for (int i = 0; i < NRows; i++) 
@@ -241,12 +251,16 @@ public:
 
 	}
 
-	void _mul_by_mat(const t_SqMat& rmat, t_SqMat& ret)const {
-		ret.reset();
-		for (int i = 0; i < N; i++)
-			for (int j = 0; j < N; j++)
-				for (int k = 0; k < N; k++)
-					ret[i][j] += data[i][k] * rmat[k][j];
+	t_SqMat<N> operator*(const t_SqMat<N>& rMat) const {
+		t_SqMat<N> ret;
+		_mul_by_mat<N>((const t_Mat<N, N>&)rMat, (t_Mat<N, N>&)ret);
+		return ret;
+	}
+
+	t_Vec<N> operator*(const t_Vec<N>& rVec) const {
+		t_Vec<N> ret;
+		_mul_by_vec((const t_Vec<N>&)rVec, (t_Vec<N>&)ret);
+		return ret;
 	}
 
 };
@@ -265,7 +279,7 @@ public:
 
 	t_SqMat3 operator*(const t_SqMat3& rmat) const {
 		t_SqMat3 ret;
-		_mul_by_mat(rmat, ret);
+		_mul_by_mat<3>((const t_Mat<3,3>&)rmat, (t_Mat<3,3>&)ret);
 		return ret;
 
 	}
