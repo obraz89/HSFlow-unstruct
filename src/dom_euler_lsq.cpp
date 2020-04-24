@@ -199,7 +199,7 @@ void t_DomEuLSQ::calcFaceFlux(int iZone, lint iFace) {
 
 		t_Mat<NConsVars, 3> CellGradPVMy;
 		calcCellGradPrimVars(iZone, face.pMyCell->Id, CellGradPVMy);
-
+		// TODO:: compute only for real cells, ghost cells must receive!
 		t_Mat<NConsVars, 3> CellGradPVOp;
 		calcCellGradPrimVars(iZone, face.pOppCell->Id, CellGradPVOp);
 
