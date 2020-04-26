@@ -121,7 +121,7 @@ void t_DomEuLSQ::calcReconstData() {
 
 }
 // we have precomputed scaled inverse Mc matrix
-// grad(U_i) = McInv*Summ((rd-rc)/r*(Uc_i - Ud_i)/r)
+// grad(U_i) = McInv*Summ((rd-rc)/r*(Ud_i - Uc_i)/r)
 // i is component of prim or consv vars to reconstruct i=0...NConsVars-1
 // r is scale introduced to make all multipliers in formula O(1)
 void t_DomEuLSQ::calcCellGradPrimVars(int iZone, lint iCell, t_Mat<NConsVars, 3>& CellGradPV) {
@@ -156,7 +156,7 @@ void t_DomEuLSQ::calcCellGradPrimVars(int iZone, lint iCell, t_Mat<NConsVars, 3>
 
 			for (int i = 0; i < NConsVars; i++) {
 
-				du = r_inv * (pvs_c[i] - pvs_n[i]);
+				du = r_inv * (pvs_n[i] - pvs_c[i]);
 
 				grad_cur = RecData.MInvRR * dr;
 				grad_cur *= du;
