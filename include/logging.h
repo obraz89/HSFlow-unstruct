@@ -22,38 +22,38 @@ __attribute__((format(printf, 1, 2)))  // ask GCC to type-check against a format
 namespace hsflow
 {
 
-enum ELogLevel
-{
-	hsLOG_ERROR,
-	hsLOG_WARNING,
-	hsLOG_MESSAGE,
-	hsLOG_DEBUG,
-};
+	enum ELogLevel
+	{
+		hsLOG_ERROR,
+		hsLOG_WARNING,
+		hsLOG_MESSAGE,
+		hsLOG_DEBUG,
+	};
 
-/**
- *  TLog singleton class with pImpl idiom
- *  for logging to both stdout and file-stream
- */
-class TLog
-{
-private:
-	class Impl;
-	static Impl* _instance;
+	/**
+	 *  TLog singleton class with pImpl idiom
+	 *  for logging to both stdout and file-stream
+	 */
+	class TLog
+	{
+	private:
+		class Impl;
+		static Impl* _instance;
 
-	TLog() = delete;
-	TLog(TLog&) = delete;
+		TLog() = delete;
+		TLog(TLog&) = delete;
 
-	static Impl* instance();
+		static Impl* instance();
 
-public:
-	static bool set_file(const std::string& fn);
+	public:
+		static bool set_file(const std::string& fn);
 
-	static void log(ELogLevel level, const std::string& msg);
-	static void log_raw_from_root(const std::string& msg, bool to_file_only);
+		static void log(ELogLevel level, const std::string& msg);
+		static void log_raw_from_root(const std::string& msg, bool to_file_only);
 
-	static void flush();
-	static void destroy();
-};
+		static void flush();
+		static void destroy();
+	};
 
 } // namespace
 //-----------------------------------------------------------------------------
@@ -83,29 +83,29 @@ void hs_log_error_src(const std::string& msg, const char* src, int line);
 	hsflow::TLog::log( hsflow::hsLOG_MESSAGE, hs_string_format(__VA_ARGS__) )
 
 #if ! defined(NDEBUG)
-	#define hsLogDebug(...)  \
+#define hsLogDebug(...)  \
 		hsflow::TLog::log( hsflow::hsLOG_DEBUG, hs_string_format(__VA_ARGS__) )
 #else
-	#define hsLogDebug(...)  (void(0))
+#define hsLogDebug(...)  (void(0))
 #endif
-//-----------------------------------------------------------------------------
+ //-----------------------------------------------------------------------------
 
 
 
-/**
- * Guard for showing messages on exiting a scope (e.g. function)
- *
- * NB: Make sure it's used on each MPI rank simultaneously
- * (e.g. don't use in loops with different limits)
- */
+ /**
+  * Guard for showing messages on exiting a scope (e.g. function)
+  *
+  * NB: Make sure it's used on each MPI rank simultaneously
+  * (e.g. don't use in loops with different limits)
+  */
 class TLogSyncGuard
 {
 public:
-	void Flush(){
+	void Flush() {
 		hsflow::TLog::flush();
 	}
 
-	~TLogSyncGuard(){
+	~TLogSyncGuard() {
 		Flush();
 	}
 };

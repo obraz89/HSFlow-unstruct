@@ -132,7 +132,7 @@ int main(int argc, char* argv[])
 			tm, host
 		);
 	}
-	//hsLogWTime(true);
+	hsLogWTime(true);
 
 	// important section:
 	// initialize references for bases

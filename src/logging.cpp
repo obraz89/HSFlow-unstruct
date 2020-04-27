@@ -16,17 +16,12 @@
 
 #include <stdarg.h>
 
-using hsflow::TLog;
-using hsflow::ELogLevel;
-
-#if defined(NDEBUG)
-	static const int MSG_MAX_LEN = 512;
-#else
-	static const int MSG_MAX_LEN = 1024;
-#endif
-
-TLog::Impl* TLog::_instance = nullptr;
-
+/**
+ * Make std::string with printf-style formatting
+ *
+ * @param fmt format string like "%s"
+ * @return
+ */
 std::string hs_string_format(const char* fmt, ...)
 {
 	va_list args;
@@ -53,7 +48,17 @@ std::string hs_string_format(const char* fmt, ...)
 
 	return buf;
 }
-//-----------------------------------------------------------------------------
+
+using hsflow::TLog;
+using hsflow::ELogLevel;
+
+#if defined(NDEBUG)
+static const int MSG_MAX_LEN = 512;
+#else
+static const int MSG_MAX_LEN = 1024;
+#endif
+
+TLog::Impl* TLog::_instance = nullptr;
 //-----------------------------------------------------------------------------
 
 /**
@@ -91,7 +96,7 @@ public:
 
 TLog::Impl* TLog::instance()
 {
-	if( ! _instance )
+	if (!_instance)
 		_instance = new TLog::Impl();
 	return _instance;
 }
@@ -127,7 +132,7 @@ void TLog::destroy()
 TLog::Impl::~Impl()
 {
 	sync();
-	if( _file )
+	if (_file)
 		fclose(_file);
 }
 //-----------------------------------------------------------------------------
@@ -141,12 +146,12 @@ TLog::Impl::~Impl()
  */
 bool TLog::Impl::set_file(const std::string& fn)
 {
-	if( _file ){
+	if (_file) {
 		sync();
 		fclose(_file);
 	}
 
-	_file = fopen( fn.c_str(), "at" );
+	_file = fopen(fn.c_str(), "at");
 	return _file;
 }
 //-----------------------------------------------------------------------------
@@ -164,24 +169,20 @@ void TLog::Impl::log(ELogLevel level, const std::string& msg)
 	// Decorate the message based on the log level
 	s.clear();
 	bool from_all_ranks = true;
-	switch( level )
+	switch (level)
 	{
-	case hsLOG_ERROR:   s = "Error: "  + msg;  break;
-	case hsLOG_MESSAGE: s =              msg;  from_all_ranks = false;  break;
-	case hsLOG_WARNING: s = "Warning: "+ msg;  break;
+	case hsLOG_ERROR:   s = "Error: " + msg;  break;
+	case hsLOG_MESSAGE: s = msg;  from_all_ranks = false;  break;
+	case hsLOG_WARNING: s = "Warning: " + msg;  break;
 	case hsLOG_DEBUG:
-		#if defined(NDEBUG)
-			return;
-		#endif
-						s = "Debug: "  + msg;  break;
-	default:            s =              msg;
+#if defined(NDEBUG)
+		return;
+#endif
+		s = "Debug: " + msg;  break;
+	default:            s = msg;
 	}
 
-	// TODO: restore mpi logging for mpi cases
-	// now using only master output
-	//log_string(s.c_str(), from_all_ranks);
-	log_string(s.c_str(), false);
-	
+	log_string(s.c_str(), from_all_ranks);
 }
 //-----------------------------------------------------------------------------
 
@@ -194,14 +195,14 @@ void TLog::Impl::log(ELogLevel level, const std::string& msg)
 */
 void TLog::Impl::log_string(const char* szString, bool fromAllRanks)
 {
-	if( ! fromAllRanks )
+	if (!fromAllRanks)
 	{
 		// Log immediately from root rank and ignore others
-		if( G_State.mpiRank == 0 )
+		if (G_State.mpiRank == 0)
 		{
 			FILE* streams[] = { stdout, _file, nullptr };
 
-			for( FILE** f = streams; *f; ++f ){
+			for (FILE** f = streams; *f; ++f) {
 				fprintf(*f, "%s\n", szString);
 				fflush(*f);
 			}
@@ -215,12 +216,12 @@ void TLog::Impl::log_string(const char* szString, bool fromAllRanks)
 
 void TLog::Impl::log_raw_from_root(const std::string& msg, bool to_file_only)
 {
-	if( G_State.mpiRank == 0 )
+	if (G_State.mpiRank == 0)
 	{
-		if( ! to_file_only )
+		if (!to_file_only)
 			printf("%s\n", msg.c_str());
 
-		if( _file )
+		if (_file)
 			fprintf(_file, "%s\n", msg.c_str());
 	}
 }
@@ -234,7 +235,7 @@ void TLog::Impl::flush()
 {
 	FILE* streams[] = { stdout, _file, nullptr };
 
-	for( FILE** f = streams; *f; ++f ){
+	for (FILE** f = streams; *f; ++f) {
 		fflush(*f);
 	}
 }
@@ -269,15 +270,15 @@ public:
 		s.clear();
 
 		int rs = -1, re = -1;
-		for( int i = 0; i < _ranks.size(); ++i )
+		for (int i = 0; i < _ranks.size(); ++i)
 		{
-			if( _ranks[i] ) {
-				if( rs < 0 ) rs = i;
+			if (_ranks[i]) {
+				if (rs < 0) rs = i;
 				re = i;
 			}
 			else {
-				if( re >= 0 ) {
-					if( ! s.empty() )  s += ",";
+				if (re >= 0) {
+					if (!s.empty())  s += ",";
 					char num[16];  sprintf(num, (rs == re ? "%d" : "%d-%d"), rs, re);
 					s += num;
 				}
@@ -294,13 +295,13 @@ void TLog::Impl::sync()
 	FILE* streams[] = { stdout, _file, nullptr };
 
 	int noMPI = 0;  MPI_Finalized(&noMPI);
-	if( noMPI )
+	if (noMPI)
 	{
 		// MPI is not active -> print messages by itself
-		while( ! _q_msgs.empty() )
+		while (!_q_msgs.empty())
 		{
 			const char* msg = _q_msgs.front().c_str();
-			for( FILE** f = streams; *f; ++f ){
+			for (FILE** f = streams; *f; ++f) {
 				fprintf(*f, "[%d] %s\n", G_State.mpiRank, msg);
 			}
 			_q_msgs.pop();
@@ -314,7 +315,7 @@ void TLog::Impl::sync()
 	const int tag = 'L' + 'O' + 'G';
 	const MPI_Comm& comm = MPI_COMM_WORLD;
 
-	if( G_State.mpiRank == 0 )
+	if (G_State.mpiRank == 0)
 	{
 		// Messages with the originating ranks
 		using TmapMsgRanks = std::map<std::string, Tranks>;
@@ -327,28 +328,28 @@ void TLog::Impl::sync()
 		msgs_order.clear();
 
 		// Process own messages
-		while( ! _q_msgs.empty() )
+		while (!_q_msgs.empty())
 		{
 			std::pair<TmapMsgRanks::iterator, bool> res =
-				map_msg_ranks.emplace( _q_msgs.front(), Tranks(0) );
+				map_msg_ranks.emplace(_q_msgs.front(), Tranks(0));
 
 			msgs_order.push_back(res.first);
 			_q_msgs.pop();
 		}
 
 		// Receive messages from other processors
-		for( int p = 1; p < G_State.mpiNProcs; ++p )
+		for (int p = 1; p < G_State.mpiNProcs; ++p)
 		{
 			int nMsg = 0;  MPI_Recv(&nMsg, 1, MPI_INT, p, tag, comm, MPI_STATUS_IGNORE);
-			for( int m = 0; m < nMsg; ++m )
+			for (int m = 0; m < nMsg; ++m)
 			{
 				MPI_Recv(szMsg, MSG_MAX_LEN, MPI_CHAR, p, tag, comm, MPI_STATUS_IGNORE);
-				copy_n("...", 4, szMsg+MSG_MAX_LEN-4);  // guard for truncated message not fitting the buffer
+				copy_n("...", 4, szMsg + MSG_MAX_LEN - 4);  // guard for truncated message not fitting the buffer
 
 				std::pair<TmapMsgRanks::iterator, bool> res =
-					map_msg_ranks.emplace( szMsg, Tranks(p) );
+					map_msg_ranks.emplace(szMsg, Tranks(p));
 
-				if( res.second ) // new message was inserted
+				if (res.second) // new message was inserted
 					msgs_order.push_back(res.first);
 				else // the same message exists, add new originating rank to it
 					res.first->second << p;
@@ -356,10 +357,10 @@ void TLog::Impl::sync()
 		}
 
 		// Print collected messages prefixing each with originating ranks
-		for( const auto& mranks : msgs_order )
+		for (const auto& mranks : msgs_order)
 		{
-			for( FILE** f = streams; *f; ++f ) {
-				fprintf(*f, "[%s] %s\n", mranks->second.range(), mranks->first.c_str() );
+			for (FILE** f = streams; *f; ++f) {
+				fprintf(*f, "[%s] %s\n", mranks->second.range(), mranks->first.c_str());
 			}
 		}
 		flush();
@@ -369,10 +370,10 @@ void TLog::Impl::sync()
 		// Send local message queue to root rank
 		int nMsg = static_cast<int>(_q_msgs.size());
 		MPI_Ssend(&nMsg, 1, MPI_INT, 0, tag, comm);  // synchronous send prevents root flooding
-		while( ! _q_msgs.empty() )
+		while (!_q_msgs.empty())
 		{
 			const std::string& s = _q_msgs.front();
-			MPI_Send((void *)s.c_str(), int(s.size() + 1), MPI_CHAR, 0, tag, comm);
+			MPI_Send((void*)s.c_str(), int(s.size() + 1), MPI_CHAR, 0, tag, comm);
 			_q_msgs.pop();
 		}
 	}
@@ -389,14 +390,14 @@ void hsLogWTime(bool isInit)
 {
 	static double t0 = 0;
 
-	if( isInit )
+	if (isInit)
 	{
 		t0 = MPI_Wtime();
 		return;
 	}
 
 	double t = MPI_Wtime() - t0;
-	hsLogMessage( " WTime= %.1f", t );
+	hsLogMessage(" WTime= %.1f", t);
 }
 //-----------------------------------------------------------------------------
 
@@ -409,7 +410,7 @@ void hsLogWTime(bool isInit)
  */
 void hs_log_error_src(const std::string& msg, const char* src, int line)
 {
-	const std::string& s = hs_string_format("%s\n\t@ %s(%d)", msg.c_str(), src, line );
+	const std::string& s = hs_string_format("%s\n\t@ %s(%d)", msg.c_str(), src, line);
 	hsflow::TLog::log(hsflow::hsLOG_ERROR, s);
 }
 //-----------------------------------------------------------------------------
