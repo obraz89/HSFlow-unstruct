@@ -76,10 +76,12 @@ bool processCmdLine(int argc, char* argv[])
 
 	// Logging to file
 	const std::string& log_fn = options["log"];
-	if (!log_fn.empty())
+	std::string log_fn_rank = "log_" + std::to_string(G_State.mpiRank)+".txt";
+	//if (!log_fn.empty())
+	if (true)
 	{
-		if (!hsflow::TLog::set_file(log_fn))
-			hsLogWarning("Can't open log file '%s'", log_fn.c_str());
+		if (!hsflow::TLog::set_file(log_fn_rank))
+			hsLogWarning("Can't open log file '%s'", log_fn_rank.c_str());
 		hsflow::TLog::log_raw_from_root(szTITLE, true);
 	}
 
