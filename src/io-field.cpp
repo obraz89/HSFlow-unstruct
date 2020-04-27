@@ -5,6 +5,8 @@
 // Modified by: A. Obraz
 **********************************/
 
+#include "mpi.h"
+
 
 
 #include "cgnslib.h"
@@ -81,14 +83,13 @@ bool read_zone_cgns(const int fileID, const int iBase, const int idxZne,
 	}
 
 	// Block size without ghosts
-	if (isize[1]!=Zne.getnCellsReal())
+	if (isize[1] != Zne.getnCellsReal())
 	{
 		hsLogError("Inconsistent zone '%s'#%d dimensions: %d <-> %d",
 			szZone, cgZneID,
 			isize[1], Zne.getnCellsReal());
 		return false;
 	}
-
 	// Indexes faces
 	cgsize_t irmin = 1;
 	cgsize_t irmax = Zne.getnVerts();
@@ -236,12 +237,13 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 		ok = 1;
 	} while (false); //if( G_State.mpiRank == 0 )
 
-	//MPI_Bcast(&ok, 1, MPI_SHORT, 0/*root*/, PETSC_COMM_WORLD);
+	MPI_Bcast(&ok, 1, MPI_SHORT, 0/*root*/, MPI_COMM_WORLD);
+
 	if (!ok)
 		return false;
 
 	// Inform all ranks if we need grid coordinates or not
-	//MPI_Bcast(&fGrid, 1, MPI_INT, 0/*root*/, PETSC_COMM_WORLD);
+	MPI_Bcast(&fGrid, 1, MPI_INT, 0/*root*/, MPI_COMM_WORLD);
 
 	//
 	// Sorted 1-based CGNS zone IDs and corresponding internal 0-based zone indices
@@ -254,7 +256,7 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 	}
 
 	//
-	// Write field & grid data
+	// Write grid & field data
 	//
 	for (int cgZneID = 1; cgZneID <= G_pMesh->nZones; ++cgZneID)
 	{
@@ -301,7 +303,8 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 
 
 		t_ArrDbl Vals;
-		Vals.alloc(zne.getnVerts());
+		if ((G_pMesh->iZneMPIs <= zi && zi <= G_pMesh->iZneMPIe) || G_State.mpiRank == 0)
+			Vals.alloc(zne.getnVerts());
 
 		//
 		// Grid coords
@@ -309,104 +312,108 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 		if (fGrid >= 0)
 		{
 			for (int iCoord = 0; iCoord < 3; iCoord++) {
-				const char* name = g_cgCoordNames[iCoord];
-				int iCoordCG;
-				G_pMesh->getDataAsArr(name, zi, Vals);
-				if (cg_coord_write(fGrid, iBaseGrid, iZoneGrid, 
-					CG_RealDouble, name, Vals.data(), &iCoordCG) != CG_OK) {
-						hsLogError("Can't write grid coords in zone %s#%d ( %s )",
-							zne.getName(), iZone, cg_get_error());
-				};
-			}
+
+				const int mpiTag = 'g' + 'r' + 'd' + iCoord;
+
+				// worker, pack coords
+				if (G_pMesh->iZneMPIs <= zi && zi <= G_pMesh->iZneMPIe ) {
+
+					const int nVerts = zne.getnVerts();
+
+					Vals.alloc(nVerts);
+
+					const char* name = g_cgCoordNames[iCoord];
+					int iCoordCG;
+
+					int shift = iCoord * zne.getnVerts();
+
+					G_pMesh->getDataAsArr(name, zi, Vals);
+					
+					if (G_State.mpiRank !=0)
+						MPI_Ssend(Vals.data(), nVerts, MPI_DOUBLE, 0/*root*/, mpiTag, MPI_COMM_WORLD);
+
+
+				}	// if worker
+				if (G_State.mpiRank == 0)
+				{
+					//
+					// Root mpi-rank -> receive and write
+					//
+					const int& rankSrc = G_State.map_zone2rank[zi];
+					if (rankSrc != 0) // don't receive from myself
+					{
+						const int nn = ok ? zne.getnVerts() : 0;  // if not OK, do a dummy recieve to unblock sender
+						MPI_Recv(Vals.data(), nn, MPI_DOUBLE,
+							rankSrc, mpiTag, MPI_COMM_WORLD,
+							MPI_STATUS_IGNORE  // don't use NULL as status, MPI_Ssend may get stuck (i.e. in Intel MPI 5.0.1)
+						);
+					}
+					const char* name = g_cgCoordNames[iCoord];
+					int iCoordCG = -1;
+					if (ok)
+						if (cg_coord_write(fGrid, iBaseGrid, iZoneGrid,
+							CG_RealDouble, name, Vals.data(), &iCoordCG) != CG_OK) {
+							hsLogError("Can't write grid coords in zone %s#%d ( %s )",
+								zne.getName(), iZone, cg_get_error());
+						};
+				}	// master output
+			}	// iCoord loop
 		} // if( fGrid >=0 )
 
 		//
 		// TODO: write bcs here for post-processing
 		//
 
-		// 2) write cells here
-		const t_CGNSZone& cgZne = G_CGNSCtx.cgZones[zi];
-		const std::vector<t_CGSection*> SectsCell = cgZne.getSectsCell();
-		for (int iSect = 0; iSect < SectsCell.size(); iSect++) {
+		// 2) write cells sections
+		if (G_State.mpiRank == 0) {
+			const t_CGNSZone& cgZne = G_CGNSCtx.cgZones[zi];
+			const std::vector<t_CGSection*> SectsCell = cgZne.getSectsCell();
+			for (int iSect = 0; iSect < SectsCell.size(); iSect++) {
 
-			const t_CGSection& Sect = *SectsCell[iSect];
-			int sect_ind_cg_output = -1;
-			const cgsize_t* data = Sect.get_buf_data();
+				const t_CGSection& Sect = *SectsCell[iSect];
+				int sect_ind_cg_output = -1;
+				const cgsize_t* data = Sect.get_buf_data();
 
-			if (cg_section_write(f, iBase, iZone,
-				Sect.name.c_str(), Sect.itype, Sect.id_start, Sect.id_end,
-				0, data, &sect_ind_cg_output) != CG_OK) {
-				hsLogError("Can't write cell section %s in zone %s#%d ( %s )",
-					Sect.name.c_str(), zne.getName(), iZone, cg_get_error());
-			};
+				if (cg_section_write(f, iBase, iZone,
+					Sect.name.c_str(), Sect.itype, Sect.id_start, Sect.id_end,
+					0, data, &sect_ind_cg_output) != CG_OK) {
+					hsLogError("Can't write cell section %s in zone %s#%d ( %s )",
+						Sect.name.c_str(), zne.getName(), iZone, cg_get_error());
+				};
 
+			}
 		}
 
 		// 3) write flow solution
 
 		std::vector<std::string> flow_vars = G_pMesh->getFuncNamesIO();
 
-		int iSol;
+		int iSol = -1;
+		if (G_State.mpiRank == 0)
+			cg_sol_write(f, iBase, iZone, "FlowSolution", CG_CellCenter, &iSol);
 
-		cg_sol_write(f, iBase, iZone, "FlowSolution", CG_CellCenter, &iSol);
 
-
-		t_ArrDbl flow_sol_data;
-		flow_sol_data.alloc(zne.getnCellsReal());
+		t_ArrDbl flow_sol;
+		if ((G_pMesh->iZneMPIs <= zi && zi <= G_pMesh->iZneMPIe) || G_State.mpiRank == 0)
+			flow_sol.alloc(zne.getnCellsReal());
 
 		for (int iFlow = 0; iFlow < flow_vars.size(); iFlow++) {
 
+			const int mpiTag = 's' + 'o' + 'l' + iFlow;
+
 			const char* flow_sol_name = flow_vars[iFlow].c_str();
-			G_pMesh->getDataAsArr(flow_sol_name, zi, flow_sol_data);
 
-			int iFlowCG;
+			// worker, pack coords
+			if (G_pMesh->iZneMPIs <= zi && zi <= G_pMesh->iZneMPIe) {
 
-			if (cg_field_write(f, iBase, iZone, iSol,
-				CG_RealDouble, flow_sol_name,
-				flow_sol_data.data(), &iFlowCG) != CG_OK) {
-
-				hsLogError("Can't write %s in zone %s#%d ( %s )",
-					flow_sol_name, zne.getName(), iZone, cg_get_error());
-			};
-
-		}
-
-
-		//
-		// Field data
-		//
-		// example code from structured=======================================================
-		/*
-		int iSol = -1;
-		if (G_State.mpiRank == 0)
-			cg_sol_write(f, iBase, iZone, "FlowSolution", CG_Vertex, &iSol);
-
-		const double* srcU = (!zne.isFrozen) ? zne.UU[time_layer] : zne.U;
-		for (int fun = 0; fun < G_Domain.nu; ++fun)
-		{
-			const int mpiTag = 's' + 'o' + 'l' + fun;
-
-			if (G_Domain.bs <= zi && zi <= G_Domain.be)
-			{
-				//
-				// Worker mpi-rank -> fill-in and send
-				//
-				size_t c = 0;
-				for (int k = ks1; k <= ke1; ++k) {
-					for (int j = js1; j <= je1; ++j) {
-						for (int i = is1; i <= ie1; ++i)
-						{
-							int pos = G_Domain.nu * (zne.flatIdx(i, j, k) - 1) + fun;
-							Vals.set(c++, srcU[pos]);
-						}
-					}
-				}
+				G_pMesh->getDataAsArr(flow_sol_name, zi, flow_sol);
 
 				if (G_State.mpiRank != 0)
 				{
 					// NB: Don't use MPI_Send - it may flood the root MPI rank such that MPI_Recv fails
-					MPI_Ssend(Vals.data(), nxyz0, Vals.type().mpi, 0, mpiTag, PETSC_COMM_WORLD);
+					MPI_Ssend(flow_sol.data(), zne.getnCellsReal(), MPI_DOUBLE, 0/*root*/, mpiTag, MPI_COMM_WORLD);
 				}
+
 			}
 
 			if (G_State.mpiRank == 0)
@@ -418,25 +425,25 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 				if (rankSrc != 0) // don't receive from myself
 				{
 					// if writing was failed previously, then do a dummy recieve to unblock sender
-					MPI_Recv(Vals.data(), (ok ? nxyz0 : 0), Vals.type().mpi,
-						rankSrc, mpiTag, PETSC_COMM_WORLD,
+					MPI_Recv(Vals.data(), (ok ? zne.getnCellsReal() : 0), MPI_DOUBLE,
+						rankSrc, mpiTag, MPI_COMM_WORLD,
 						MPI_STATUS_IGNORE  // don't use NULL as status, MPI_Ssend may get stuck (i.e. in Intel MPI 5.0.1)
 					);
 				}
 
-				int iField = -1;
-				const char* name = G_Domain.phys->vecFuncNames[fun].c_str();
-				if (ok)
-					if (cg_field_write(f, iBase, iZone, iSol, Vals.type().cgns, name, Vals.data(), &iField) != CG_OK)
-					{
-						hsLogError("Can't write %s in zone %s#%d ( %s )",
-							name, zne.szName, iZone, cg_get_error());
-						ok = 0;  // don't return and continue recieving data from other ranks
-					}
+				int iFlowCG;
+
+				if (cg_field_write(f, iBase, iZone, iSol,
+					CG_RealDouble, flow_sol_name,
+					flow_sol.data(), &iFlowCG) != CG_OK) {
+
+					hsLogError("Can't write %s in zone %s#%d ( %s )",
+						flow_sol_name, zne.getName(), iZone, cg_get_error());
+				};
 			}
-		} // for( fun )
-		*/
-		// example code from structured=======================================================
+
+		}
+
 
 	}  // Loop through zones
 
@@ -448,15 +455,15 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 			cg_close(fGrid);
 	}
 
-	//MPI_Barrier(MPI_COMM_WORLD);
-	//hsLogWTime();
+	MPI_Barrier(MPI_COMM_WORLD);
+	hsLogWTime();
 
 	return ok;
 }
 
 
 /**
- *  Saves meta information about the field to the openned CGNS file
+ *  Saves meta information about the field to the opened CGNS file
  *
  * @param[in] f     - ID of the opened CGNS file
  * @param[in] iBase - base in the CGNS file (mostly = 1)

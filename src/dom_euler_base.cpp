@@ -1,3 +1,5 @@
+#include "mpi.h"
+
 #include "dom_euler_base.h"
 
 #include "ghost_euler.h"
@@ -247,11 +249,11 @@ double t_DomEuBase::loadField(std::string path_field) {
 		ok = 1;
 	} while (false); // if( G_State.mpiRank == 0 )
 
-	//MPI_Bcast(&ok, 1, MPI_CHAR, 0/*root*/, PETSC_COMM_WORLD);
+	MPI_Bcast(&ok, 1, MPI_CHAR, 0/*root*/, MPI_COMM_WORLD);
 	if (!ok)
 		return -1;
 
-	//MPI_Bcast(&time, 1, MPI_DOUBLE, 0/*root*/, PETSC_COMM_WORLD);
+	MPI_Bcast(&time, 1, MPI_DOUBLE, 0/*root*/, MPI_COMM_WORLD);
 
 	// Loop through zones
 	for (int zi = 0; zi < nZones; ++zi)
@@ -259,46 +261,55 @@ double t_DomEuBase::loadField(std::string path_field) {
 		t_Zone& zne = Zones[zi];
 		const int NCellsReal = zne.getnCellsReal();
 
-		// Data of the zone excluding ghosts!!!
+		// Data of the zone excluding ghosts
 		TpakArraysDyn<double> newField;
 
-		if ( G_State.mpiRank == 0)
+		if ((this->iZneMPIs <= zi && zi <= this->iZneMPIe) || G_State.mpiRank == 0)
 		{
 			newField.reset(NConsVars, NCellsReal);
 		}
+
+		const int mpiTag = 'f' + 'l' + 'd' + zi;
+
 		if (G_State.mpiRank == 0)
 		{
 			if (!read_zone_cgns(f, iBase, zi, newField))  ok = 0;
 
 			// Send data from root to the zone's owner
-			//const int& rankDst = G_State.map_zone2rank[zi];
-			//if (rankDst != 0)  // don't send to myself
-			//	MPI_Ssend(newField.data(), (ok ? newField.size() : 0), MPI_DOUBLE, rankDst, mpiTag, PETSC_COMM_WORLD);
+			const int& rankDst = G_State.map_zone2rank[zi];
+			if (rankDst != 0)  // don't send to myself
+				MPI_Ssend(newField.data(), (ok ? newField.size() : 0), MPI_DOUBLE, rankDst, mpiTag, MPI_COMM_WORLD);
 		}
-		else if (G_pDom->bs <= zi && zi <= G_pDom->be)
+		else if (G_pDom->iZneMPIs <= zi && zi <= G_pDom->iZneMPIe)
 		{
-			//MPI_Recv(newField.data(), newField.size(), MPI_DOUBLE, 0/*root*/, mpiTag, PETSC_COMM_WORLD, MPI_STATUS_IGNORE);
+			MPI_Recv(newField.data(), newField.size(), MPI_DOUBLE, 0/*root*/, mpiTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 		}
 
 		// TODO: Copy field to internal structs
 
-		for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
+		if (this->iZneMPIs <= zi && zi <= this->iZneMPIe) {
 
-			t_PrimVarsIO pvio;
-			
-			pvio.u = newField[0][iCell];
-			pvio.v = newField[1][iCell];
-			pvio.w = newField[2][iCell];
-			pvio.p = newField[3][iCell];
-			pvio.t = newField[4][iCell];
+			for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
 
-			getCellCSV(zi, iCell) = pvio.calcConsVars();
+				t_PrimVarsIO pvio;
+
+				pvio.u = newField[0][iCell];
+				pvio.v = newField[1][iCell];
+				pvio.w = newField[2][iCell];
+				pvio.p = newField[3][iCell];
+				pvio.t = newField[4][iCell];
+
+				getCellCSV(zi, iCell) = pvio.calcConsVars();
+
+			}
 
 		}
 
+
+
 	}
 
-	//MPI_Bcast(&ok, 1, MPI_CHAR, 0/*root*/, PETSC_COMM_WORLD);
+	MPI_Bcast(&ok, 1, MPI_CHAR, 0/*root*/, MPI_COMM_WORLD);
 	if (!ok)
 		return -1;
 

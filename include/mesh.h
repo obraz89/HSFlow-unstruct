@@ -240,6 +240,11 @@ class t_Zone {
 public:
 
 	void initialize(lint a_nVerts, lint a_nCellsReal, lint a_nCellsTot);
+	// for zones we do not own, keep sizes
+	void setNVertsNCells(lint a_nVerts, lint a_nCellsReal) {
+		nVerts = a_nVerts;
+		nCellsReal = a_nCellsReal;
+	}
 
 	void setIdGlob(int a_id) { idGlob = a_id; }
 	int getIdGlob() const { return idGlob; }
@@ -307,7 +312,7 @@ struct t_Mesh
 	// Domain zones with grid and solution data
 	//
 	int nZones;  // total number of zones
-	int bs, be;  // start & end (inclusive) 0-based zone (aka block) indices in the current MPI rank
+	int iZneMPIs, iZneMPIe;  // start & end (inclusive) 0-based zone (aka block) indices in the current MPI rank
 	int* map_iZne2cgID;  // map_iZne2cgID[b] == cgZne, where b -- internal 0-based zone index, cgZne -- CGNS 1-based zone ID
 
 	t_Zone* Zones;
@@ -335,6 +340,7 @@ struct t_Mesh
 	//std::map<std::string, double> mapCasePrms_real;
 
 	void initializeFromCtxStage1();
+	bool assignZonesToProcs();
 
 	void initializeFromCtxStage2();
 

@@ -1040,23 +1040,68 @@ std::vector<t_CellKindRange> t_Zone::getCellsOffsets() const{
 
 //************************************* Mesh methods
 
+/**
+ *   Distribute grid zones through MPI ranks (procs)
+ *   assigns G_Domain.bs & G_Domain.be
+**/
+bool t_Mesh::assignZonesToProcs()
+{
+	if (this->nZones < G_State.mpiNProcs)
+	{
+		hsLogError(
+			"Domain zones count (%d) is less than MPI procs (%d)",
+			this->nZones, G_State.mpiNProcs
+		);
+		return false;
+	}
+
+	G_State.map_zone2rank = new int[this->nZones];
+	for (int b = 0; b < this->nZones; ++b)  G_State.map_zone2rank[b] = -1;
+
+	this->map_iZne2cgID = new int[this->nZones];
+
+	hsLogMessage(" ");
+	hsLogMessage("* Grid zones distribution through procs");
+
+	//
+// Default layout: one-to-one mapping of zones indices to CGNS zone IDs
+//
+	for (int b = 0; b < this->nZones; ++b)
+		this->map_iZne2cgID[b] = b + 1;
+
+	// Distribute zones evenly trough procs
+	const int nAvg = this->nZones / G_State.mpiNProcs;
+	const int nResdl = this->nZones % G_State.mpiNProcs;
+	for (int r = 0; r < G_State.mpiNProcs; ++r)
+	{
+		const int bs = r * nAvg + ((r < nResdl) ? r : nResdl);
+		const int be = bs + nAvg + ((r < nResdl) ? 1 : 0) - 1;
+
+		for (int b = bs; b <= be; ++b)
+			G_State.map_zone2rank[b] = r;
+
+		if (r == G_State.mpiRank) {
+
+			this->iZneMPIs = bs;
+			this->iZneMPIe = be;
+
+		}
+	
+	}
+
+	return true;
+}
+//-----------------------------------------------------------------------------
+
 void t_Mesh::initializeFromCtxStage1() {
 
-	nZones = G_CGNSCtx.nZones;
+	this->nZones = G_CGNSCtx.nZones;
 
-	// assignZonesToProcs() will be here when multiblock is up
-// now we need only G_Domain.map_iZne2cgID
+	assignZonesToProcs();
 
-	map_iZne2cgID = new int[this->nZones];
+	Zones = new t_Zone[this->nZones];
 
-	//
-	// Default layout: one-to-one mapping of zones indices to CGNS zone IDs
-	//
-	for (int b = 0; b < nZones; ++b)
-		map_iZne2cgID[b] = b + 1;
-
-	Zones = new t_Zone[nZones];
-
+	// Store names & ids of all zones
 	for (int i = 0; i < nZones; i++) {
 
 		t_Zone& zne = Zones[i];
@@ -1067,7 +1112,8 @@ void t_Mesh::initializeFromCtxStage1() {
 
 		zne.setName(cgZne.getName());
 
-
+		// sizes are handy when doing io stuff, keep them
+		zne.setNVertsNCells(cgZne.getNVerts(), cgZne.getNCells());
 
 	}
 
@@ -1101,7 +1147,7 @@ void t_Mesh::loadCells() {
 
 	const t_CGNSContext& ctx = G_CGNSCtx;
 
-	for (int iZne = 0; iZne < nZones; ++iZne)
+	for (int iZne = iZneMPIs; iZne <= iZneMPIe; iZne++)
 	{
 		const int& cgZneID = map_iZne2cgID[iZne];
 		t_Zone& Zne = Zones[iZne];
@@ -1114,8 +1160,8 @@ void t_Mesh::loadCells() {
 			hsLogError("loadCells: number of cells in cgZne is different from what was read from cgns file!");
 
 		cgsize_t NGhosts = ctx.getNumOfGhostsForZone(cgZneID);
-		// Zone stores real cells + some ghost cells
 
+		// Zone stores real cells + ghost cells
 		cgsize_t NCellsTot = NCellsCG + NGhosts;
 
 		Zne.initialize(cgZne.getNVerts(), NCellsCG, NCellsTot);
@@ -1181,7 +1227,7 @@ void t_Mesh::loadBCs() {
 
 	const t_CGNSContext& ctx = G_CGNSCtx;
 
-	for (int iZne = 0; iZne < this->nZones; ++iZne)
+	for (int iZne = iZneMPIs; iZne <= iZneMPIe; ++iZne)
 	{
 		const int cgZneID = iZne + 1;
 		t_Zone& Zne = Zones[iZne];
@@ -1225,20 +1271,20 @@ void t_Mesh::loadBCs() {
 
 void t_Mesh::makeVertexConnectivity() {
 
-	for (int i = 0; i < nZones; i++) Zones[i].makeVertexConnectivity();
+	for (int i = iZneMPIs; i <= iZneMPIe; i++) Zones[i].makeVertexConnectivity();
 
 }
 
 
 void t_Mesh::makeCellConnectivity() {
 
-	for (int i = 0; i < nZones; i++) Zones[i].makeCellConnectivity();
+	for (int i = iZneMPIs; i <= iZneMPIe; i++) Zones[i].makeCellConnectivity();
 
 }
 
 void t_Mesh::makeFaces() {
 
-	for (int i = 0; i < nZones; i++) Zones[i].makeFaces();
+	for (int i = iZneMPIs; i <= iZneMPIe; i++) Zones[i].makeFaces();
 
 }
 
@@ -1246,7 +1292,7 @@ bool t_Mesh::checkNormalOrientations() {
 
 	bool ok = true;
 
-	for (int iZone = 0; iZone < this->nZones; iZone++) {
+	for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
 
 		const t_Zone& zne = this->Zones[iZone];
 
@@ -1290,7 +1336,7 @@ double t_Mesh::calcUnitOstrogradResid() {
 	double resid;
 	double area;
 	t_Vec3 norm, sum;
-	for (int iZone = 0; iZone < this->nZones; iZone++) {
+	for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
 
 		const t_Zone& zne = this->Zones[iZone];
 
