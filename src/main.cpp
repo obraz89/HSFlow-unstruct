@@ -16,6 +16,8 @@
 
 #include "io-field.h"
 
+#include "mpi.h"
+
 // model-specific part
 #include "bc_euler.h"
 
@@ -82,7 +84,7 @@ bool processCmdLine(int argc, char* argv[])
 	}
 
 #if ! defined(NDEBUG)
-	if (G_State.mpiNProcs > 1 && options.is_set("w"))
+	if (options.is_set("w"))
 	{
 		hsLogMessage("Sleeping for %d s. A debugger can be attached now...", (int)options.get("w"));
 		sleep((int)options.get("w"));
@@ -103,6 +105,15 @@ int main(int argc, char* argv[])
 {
 
 	int err = EXIT_FAILURE;
+
+	if (MPI_Init(&argc, &argv) != 0)
+	{
+		printf("Can't initialize MPI" "\n");  // don't use `hsLog*()`
+		return err;
+	}
+
+	MPI_Comm_rank(MPI_COMM_WORLD, &G_State.mpiRank);
+	MPI_Comm_size(MPI_COMM_WORLD, &G_State.mpiNProcs);
 
 	if (!processCmdLine(argc, argv))
 		goto fin;
@@ -193,5 +204,8 @@ fin:
 	//std::vector<t_CellKindRange> offsets = G_Domain.Zones[0].getCellsOffsets();
 
 	//hsflow::TLog::destroy();  // flushes remaining messages
+
+	MPI_Finalize();
+
 	return err;
 }
