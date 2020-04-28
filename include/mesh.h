@@ -317,6 +317,8 @@ struct t_Mesh
 
 	t_Zone* Zones;
 
+	int nZonesMy() const { return iZneMPIe - iZneMPIs + 1; }
+
 	// Global grid info
 	//double gridCellScaleMin, gridCellScaleMax;
 	//bool grid_update_distance_to_walls();

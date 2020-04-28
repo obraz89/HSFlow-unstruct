@@ -65,7 +65,7 @@ void t_Cell::setKind(t_CellKind a_Kind) {
 		return;
 	}
 
-	hsLogMessage("t_Cell::setKind: can't handle this element yet, CellKind=%d", (int)a_Kind);
+	hsLogError("t_Cell::setKind: can't handle this element yet, CellKind=%d", (int)a_Kind);
 
 };
 
@@ -222,7 +222,7 @@ t_CellTetraList::t_CellTetraList(const t_Cell& cell):Size(0), VertsTmp() {
 
 	}
 
-	hsLogMessage("t_CellTetraList: tetra decomposition for this element not implemented yet");
+	hsLogError("t_CellTetraList: tetra decomposition for this element not implemented yet");
 }
 
 void t_CellEdgeList::init(const t_Cell& a_Cell) {
@@ -363,7 +363,7 @@ void t_CellEdgeList::init(const t_Cell& a_Cell) {
 		return;
 	}
 
-	hsLogMessage("t_CellEdgeList: unsupported element type");
+	hsLogError("t_CellEdgeList: unsupported element type");
 };
 
 t_CellFaceList::t_CellFaceList(const t_Cell& a_Cell) {
@@ -498,7 +498,7 @@ t_CellFaceList::t_CellFaceList(const t_Cell& a_Cell) {
 
 	}
 
-	hsLogMessage("t_CellFaceList: unsupported element type");
+	hsLogError("t_CellFaceList: unsupported element type");
 };
 
 const t_SetOfpVerts& t_CellFaceList::getVertices(int indFace) const {
@@ -774,8 +774,8 @@ void t_Zone::getNeigAbutCellId(const std::vector<lint>& vert_ids, lint& cell_id,
 
 	}
 
-	hsLogMessage("t_Zone::getNeigCellId: failed to find cell that has vertices:");
-	for (int i = 0; i < npoints; i++) hsLogMessage("Vert %d:%ld", i, vert_ids[i]);
+	hsLogError("t_Zone::getNeigCellId: failed to find cell that has vertices:");
+	for (int i = 0; i < npoints; i++) hsLogError("Vert %d:%ld", i, vert_ids[i]);
 
 };
 
@@ -923,7 +923,7 @@ void t_Zone::makeFaces() {
 	}
 
 	// debug messages
-	hsLogMessage("Zone #%d has %d faces, initializing Face list", idGlob, nFaces);
+	hsLogMsgAllRanks("Zone #%d has %d faces, initializing Face list", idGlob, nFaces);
 
 	Faces = new t_Face[nFaces];
 
@@ -995,7 +995,7 @@ void t_Zone::updateFacesWithBCPatch(const t_Face* face_patch, const int NFacesIn
 		}
 		// debug
 		if (!face_found)
-			hsLogMessage("Error:t_Zone::updateFacesWithBCPatch:can't find corresponding face");
+			hsLogError("Error:t_Zone::updateFacesWithBCPatch:can't find corresponding face");
 
 	}
 
@@ -1060,9 +1060,6 @@ bool t_Mesh::assignZonesToProcs()
 
 	this->map_iZne2cgID = new int[this->nZones];
 
-	hsLogMessage(" ");
-	hsLogMessage("* Grid zones distribution through procs");
-
 	//
 // Default layout: one-to-one mapping of zones indices to CGNS zone IDs
 //
@@ -1089,10 +1086,15 @@ bool t_Mesh::assignZonesToProcs()
 	
 	}
 
+	hsLogMsgAllRanks("Worker #%d own range of zones: [%d, %d]", G_State.mpiRank, iZneMPIs, iZneMPIe);
+
 	return true;
 }
 //-----------------------------------------------------------------------------
-
+// TODO: FIXME: we need to store entire mesh on each worker 
+// (vertexes & cells & vertex-2-cell connections)
+// maybe its ok... 
+// main reason is that ghost manager requires all zone-2-zone connections to produce ghost layers...
 void t_Mesh::initializeFromCtxStage1() {
 
 	this->nZones = G_CGNSCtx.nZones;
@@ -1135,9 +1137,9 @@ void t_Mesh::initializeFromCtxStage2() {
 	loadBCs();
 
 	if (checkNormalOrientations())
-		hsLogMessage("check Face Normal Orientations : Ok");
+		hsLogMsgAllRanks("check Face Normal Orientations : Ok");
 	else
-		hsLogMessage("Error:checkNormalOrientations failed!");
+		hsLogError("checkNormalOrientations failed!");
 
 	calcUnitOstrogradResid();
 
@@ -1146,8 +1148,8 @@ void t_Mesh::initializeFromCtxStage2() {
 void t_Mesh::loadCells() {
 
 	const t_CGNSContext& ctx = G_CGNSCtx;
-
-	for (int iZne = iZneMPIs; iZne <= iZneMPIe; iZne++)
+	// NB: storing entire mesh on each worker
+	for (int iZne = 0; iZne < nZones; iZne++)
 	{
 		const int& cgZneID = map_iZne2cgID[iZne];
 		t_Zone& Zne = Zones[iZne];
@@ -1270,8 +1272,8 @@ void t_Mesh::loadBCs() {
 };     // boundary conditions
 
 void t_Mesh::makeVertexConnectivity() {
-
-	for (int i = iZneMPIs; i <= iZneMPIe; i++) Zones[i].makeVertexConnectivity();
+	// NB: storing vartex-2-cell connectivity for all zones on each worker
+	for (int i = 0; i < nZones; i++) Zones[i].makeVertexConnectivity();
 
 }
 
@@ -1319,7 +1321,7 @@ bool t_Mesh::checkNormalOrientations() {
 					ok = ok && (scal_prod > -1.001) && (scal_prod < -0.999);
 					//hsLogMessage("Face norm & cell face norm must be opposite (scal prod=-1), computed:%lf", scal_prod);
 				}
-				else { hsLogMessage("Error:checkNormalOrientations():Broken Face2Cell connectivity"); }
+				else { hsLogError("t_Mesh::checkNormalOrientations():Broken Face2Cell connectivity"); }
 			}
 		}
 
@@ -1358,7 +1360,7 @@ double t_Mesh::calcUnitOstrogradResid() {
 		}
 
 	}
-	hsLogMessage("Check volumes (Ostrogradsky): Max resid = %lf", max_resid);
+	hsLogMsgAllRanks("Check volumes (Ostrogradsky): Max resid = %lf", max_resid);
 	return max_resid;
 }
 
