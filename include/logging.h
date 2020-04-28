@@ -27,6 +27,7 @@ namespace hsflow
 		hsLOG_ERROR,
 		hsLOG_WARNING,
 		hsLOG_MESSAGE,
+		hsLOG_MESSAGE_ALL_RANKS,
 		hsLOG_DEBUG,
 	};
 
@@ -81,6 +82,9 @@ void hs_log_error_src(const std::string& msg, const char* src, int line);
 
 #define hsLogMessage(...)  \
 	hsflow::TLog::log( hsflow::hsLOG_MESSAGE, hs_string_format(__VA_ARGS__) )
+
+#define hsLogMsgAllRanks(...)  \
+	hsflow::TLog::log( hsflow::hsLOG_MESSAGE_ALL_RANKS, hs_string_format(__VA_ARGS__) )
 
 #if ! defined(NDEBUG)
 #define hsLogDebug(...)  \

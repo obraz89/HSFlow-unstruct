@@ -173,6 +173,7 @@ void TLog::Impl::log(ELogLevel level, const std::string& msg)
 	{
 	case hsLOG_ERROR:   s = "Error: " + msg;  break;
 	case hsLOG_MESSAGE: s = msg;  from_all_ranks = false;  break;
+	case hsLOG_MESSAGE_ALL_RANKS: s = "Msg:" + msg;  break;
 	case hsLOG_WARNING: s = "Warning: " + msg;  break;
 	case hsLOG_DEBUG:
 #if defined(NDEBUG)
