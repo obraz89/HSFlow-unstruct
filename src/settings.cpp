@@ -178,10 +178,6 @@ bool load_settings() {
 
 	const std::string sIni = std::string() + g_CASE_SETTINGS_DIR + MAIN_INI;
 
-	G_State.mpiNProcs = 1;
-
-	G_State.mpiRank = 0;
-
 	short ok = 1;
 
 	// Create config & solution directories
