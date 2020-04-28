@@ -325,8 +325,6 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 					const char* name = g_cgCoordNames[iCoord];
 					int iCoordCG;
 
-					int shift = iCoord * zne.getnVerts();
-
 					G_pMesh->getDataAsArr(name, zi, Vals);
 					
 					if (G_State.mpiRank !=0)
