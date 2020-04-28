@@ -46,12 +46,6 @@ struct t_GhostLayer {
 
 // Zones are connected via layers of ghost cells;
 // t_GhostManager stores connection of ghosts to real nodes
-
-// this is a single-proc variant
-// TODO: this can be upgraded to MPI version
-
-// In MPI version, data should be serialized
-// in single-proc version, we can pass complex data types
 class t_GhostMngBase {
 
 protected:
@@ -62,6 +56,7 @@ protected:
 	// in MPI case, should be initialized via receive from master
 	// stores everyone-2-everyone 
 	// not a very big overhead as most of connections are empty
+	// plain index is used to store ghosts for zone i from zone j (i*nZones+j)
 	std::vector<t_GhostLayer*> _pGLayers;
 
 
