@@ -27,7 +27,7 @@ bool t_CGNSContext::readMesh(std::string gridFN) {
 		if (cg_open(gridFN.c_str(), CG_MODE_READ, &this->iFile) != CG_OK)
 		{
 			hsLogMessage("Can't open grid file '%s' for reading (%s)",
-				gridFN, cg_get_error());
+				gridFN.c_str(), cg_get_error());
 		}
 
 		// assume only one base
@@ -101,10 +101,10 @@ bool t_CGNSContext::readMesh(std::string gridFN) {
 
 				cg_section_read(this->iFile, this->iBase, cgZneID, index_sect, sectionname,
 					&itype, &istart, &iend, &nbndry, &iparent_flag);
-				printf("\nReading section info...\n");
-				printf("   section name=%s\n", sectionname);
-				printf("   section type=%s\n", ElementTypeName[itype]);
-				printf("   istart,iend=%i, %i\n", (int)istart, (int)iend);
+				hsLogMessage("\nReading section info...");
+				hsLogMessage("   section name=%s", sectionname);
+				hsLogMessage("   section type=%s", ElementTypeName[itype]);
+				hsLogMessage("   istart,iend=%i, %i", (int)istart, (int)iend);
 
 				// TODO: universal way to detect sections containing cells
 				// for now detect by type of elements
@@ -216,13 +216,11 @@ bool t_CGNSContext::_parseConnectivity() {
 
 		int n1to1 = 0;
 
-		if (G_State.mpiRank == 0)
-			cg_n1to1(this->iFile, this->iBase, cgZneID, &n1to1);
+		cg_n1to1(this->iFile, this->iBase, cgZneID, &n1to1);
 
 		int NPatchesAbut = 0;
 
-		if (G_State.mpiRank == 0)
-			cg_nconns(this->iFile, this->iBase, cgZneID, &NPatchesAbut);
+		cg_nconns(this->iFile, this->iBase, cgZneID, &NPatchesAbut);
 
 		//ier = cg_nconns(int fn, int B, int Z, int* nconns)
 		//cg_conn_info();
