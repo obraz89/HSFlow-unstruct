@@ -7,36 +7,86 @@
     </Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\ext">
-      <UniqueIdentifier>{2adec86e-87b8-4304-9349-528e78065e6c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\phys_common">
-      <UniqueIdentifier>{daf38228-613e-444a-9e43-7c2c374e0f5b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\phys_euler">
-      <UniqueIdentifier>{15bb65ab-21cb-4441-b6c8-248c7617243b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\phys_euler">
-      <UniqueIdentifier>{543c580c-a8dc-496e-be9f-093219b5f87a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\phys_common">
-      <UniqueIdentifier>{454fd73b-ac78-4df0-9b85-bbfdccfaa083}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
+    <ClCompile Include="src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\logging.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\matrix_small.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\common_procs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\HSFlow-shared.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\bc_common.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CGNS-ctx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PluginBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\bc_euler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\settings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\flux-euler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\flow_params.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\flow_model_perfect_gas.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dom_euler_1st.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dom_euler_base.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dom_euler_lsq.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rs_procs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ghost_euler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ghost_common.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\io-field.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\common_data.h">
+    <ClInclude Include="include\logging.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\logging.h">
+    <ClInclude Include="include\optParse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\common_data.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\common_procs.h">
@@ -45,127 +95,59 @@
     <ClInclude Include="include\matrix_small.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\flow_params.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\settings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\IniFile.hpp">
-      <Filter>Header Files\ext</Filter>
-    </ClInclude>
-    <ClInclude Include="include\PluginBase.h">
+    <ClInclude Include="include\bc_common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\optParse.h">
-      <Filter>Header Files\ext</Filter>
+    <ClInclude Include="include\bc_euler.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\CGNS-ctx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\flux_euler.h">
-      <Filter>Header Files\phys_euler</Filter>
+    <ClInclude Include="include\flow_params.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\mesh.h">
+    <ClInclude Include="include\flow_model_perfect_gas.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\PluginBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\flux_euler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\schemes_euler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\rs_euler.h">
-      <Filter>Header Files\phys_euler</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\bc_euler.h">
-      <Filter>Header Files\phys_euler</Filter>
+    <ClInclude Include="include\dom_euler_1st.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\bc_common.h">
+    <ClInclude Include="include\dom_euler_base.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\dom_euler_lsq.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\ghost_common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\ghost_euler.h">
-      <Filter>Header Files\phys_euler</Filter>
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IniFile.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\io-field.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\flow_model_perfect_gas.h">
-      <Filter>Header Files\phys_common</Filter>
+    <ClInclude Include="include\mesh.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\dom_euler_base.h">
-      <Filter>Header Files\phys_euler</Filter>
-    </ClInclude>
-    <ClInclude Include="include\dom_euler_1st.h">
-      <Filter>Header Files\phys_euler</Filter>
-    </ClInclude>
-    <ClInclude Include="include\dom_euler_lsq.h">
-      <Filter>Header Files\phys_euler</Filter>
-    </ClInclude>
-    <ClInclude Include="include\schemes_euler.h">
-      <Filter>Header Files\phys_euler</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="src\logging.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\HSFlow-shared.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\common_procs.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\matrix_small.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\flow_params.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\settings.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\PluginBase.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\CGNS-ctx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\flux-euler.cpp">
-      <Filter>Source Files\phys_euler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\rs_procs.cpp">
-      <Filter>Source Files\phys_euler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\mesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\bc_euler.cpp">
-      <Filter>Source Files\phys_euler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\bc_common.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ghost_common.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ghost_euler.cpp">
-      <Filter>Source Files\phys_euler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\io-field.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\flow_model_perfect_gas.cpp">
-      <Filter>Source Files\phys_common</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dom_euler_1st.cpp">
-      <Filter>Source Files\phys_euler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dom_euler_base.cpp">
-      <Filter>Source Files\phys_euler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dom_euler_lsq.cpp">
-      <Filter>Source Files\phys_euler</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>

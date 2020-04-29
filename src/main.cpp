@@ -27,6 +27,8 @@
 
 #include "ghost_euler.h"
 
+#include <ctime>
+
 #if defined(_WINDOWS)
 	#include <direct.h>   // chdir
 	#define chdir  _chdir
@@ -144,7 +146,7 @@ int main(int argc, char* argv[])
 		G_pBCList = &G_BCListEuler;
 		G_pGhostMngBase = &G_GhostMngEu;
 	}
-
+	
 	if (!load_settings())
 		goto fin;
 
@@ -152,6 +154,7 @@ int main(int argc, char* argv[])
 	loadSchemeEuler(g_genOpts.strScheme);
 
 	G_CGNSCtx.readMesh(g_genOpts.strGridFN);
+
 
 	// load cells & vertices
 	// make vertex connectivity so ghost manager is able to do some funcs
@@ -169,6 +172,8 @@ int main(int argc, char* argv[])
 	MPI_Barrier(MPI_COMM_WORLD);
 	hsflow::TLog::flush();
 
+
+
 	// update cell center etc for ghosts
 	// cuurently not required as we store full mesh at each worker 
 	//G_GhostMngEu.exchangeGeomData();
@@ -185,25 +190,27 @@ int main(int argc, char* argv[])
 
 	G_pDom->calcReconstData();
 
-	int count = 0;
+	{
+		int count = 0; 
 
-	for (int iTStep = 0; iTStep < g_genOpts.numTimeSteps; iTStep++) {
+		for (int iTStep = 0; iTStep < g_genOpts.numTimeSteps; iTStep++) {
 
-		hsLogMessage("Iter #%d:", iTStep);
-		
-		G_pDom->makeTimeStep();
+			hsLogMessage("Iter #%d:", iTStep);
 
-		if (++count >= g_genOpts.timeSteps2Write) {
-			// TODO: G_Domain.saveFiled()
-			char fld_name[64];
-			sprintf(fld_name, "%.5f", G_State.time);
-			bool ok = saveField(fld_name, "");
-			if (!ok) hsLogError("There was an error in writing field to output file");
-			count = 0;
+			G_pDom->makeTimeStep();
+
+			if (++count >= g_genOpts.timeSteps2Write) {
+				// TODO: G_Domain.saveFiled()
+				char fld_name[64];
+				sprintf(fld_name, "%.5f", G_State.time);
+				bool ok = saveField(fld_name, "");
+				if (!ok) hsLogError("There was an error in writing field to output file");
+				count = 0;
+			}
+
+			hsflow::TLog::flush();
+
 		}
-
-		hsflow::TLog::flush();
-
 	}
 
 	err = EXIT_SUCCESS;
@@ -217,4 +224,6 @@ fin:
 	MPI_Finalize();
 
 	return err;
+
+
 }

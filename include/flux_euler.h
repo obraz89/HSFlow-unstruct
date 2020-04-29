@@ -63,6 +63,7 @@ class t_ConsVars : public t_VecConsVars {
 public:
 	t_ConsVars() :t_VecConsVars() {}
 	t_ConsVars(const t_VecConsVars& v) :t_VecConsVars(v) {}
+	t_ConsVars(const t_Vec<NConsVars>& v) : t_VecConsVars(v) {}
 	t_ConsVars& setByPV(const t_PrimVars& pv);
 	t_PrimVars calcPrimVars() const;
 

@@ -189,11 +189,11 @@ public:
 
 template<int N> class t_SqMat : public t_Mat<N,N> {
 public:
-	t_SqMat():t_Mat(){};
+	t_SqMat():t_Mat<N,N>(){};
 
 	void setToUnity() {
-		reset();
-		for (int i = 0; i < N; i++) data[i][i] = 1.0;
+		t_Mat<N, N>::reset();
+		for (int i = 0; i < N; i++) t_Mat<N, N>::data[i][i] = 1.0;
 	}
 
 	void LU(t_SqMat& L, t_SqMat& U) {
@@ -210,13 +210,13 @@ public:
 
 		for (int i = 0; i < N; i++)
 			for (int j = 0; j <= i; j++)
-				L[i][j] = A[getFlatInd(i,j)];
+				L[i][j] = A[t_Mat<N, N>::getFlatInd(i,j)];
 
 		U.setToUnity();
 
 		for (int i = 0; i < N; i++)
 			for (int j = i + 1; j < N; j++)
-				U[i][j] = A[getFlatInd(i, j)];
+				U[i][j] = A[t_Mat<N, N>::getFlatInd(i, j)];
 
 	}
 
@@ -226,7 +226,7 @@ public:
 
 		int pivot[N];
 
-		flatten(A);
+		t_Mat<N,N>::flatten(A);
 
 		Crout_LU_Decomposition_with_Pivoting(A, pivot, N);
 
@@ -253,13 +253,13 @@ public:
 
 	t_SqMat<N> operator*(const t_SqMat<N>& rMat) const {
 		t_SqMat<N> ret;
-		_mul_by_mat<N>((const t_Mat<N, N>&)rMat, (t_Mat<N, N>&)ret);
+		t_Mat<N, N>::_mul_by_mat<N>((const t_Mat<N, N>&)rMat, (t_Mat<N, N>&)ret);
 		return ret;
 	}
 
 	t_Vec<N> operator*(const t_Vec<N>& rVec) const {
 		t_Vec<N> ret;
-		_mul_by_vec((const t_Vec<N>&)rVec, (t_Vec<N>&)ret);
+		t_Mat<N,N>::_mul_by_vec((const t_Vec<N>&)rVec, (t_Vec<N>&)ret);
 		return ret;
 	}
 

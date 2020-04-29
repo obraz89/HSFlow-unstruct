@@ -6,7 +6,7 @@
 
 #include "dom_euler_lsq.h"
 
-static char* strSupportedSchemes[] = { "euler_1st", "euler_lsq" };
+static const char* strSupportedSchemes[] = { "euler_1st", "euler_lsq" };
 
 static void loadSchemeEuler(std::string strName) {
 

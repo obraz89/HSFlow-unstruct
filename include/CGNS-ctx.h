@@ -5,7 +5,6 @@
 #include "cgnslib.h"
 
 #include "common_data.h"
-#include "common_procs.h"
 
 using t_BufCGSize = t_BufInds<cgsize_t>;
 

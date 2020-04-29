@@ -8,6 +8,8 @@
 
 #include "bc_common.h"
 
+#include "common_procs.h"
+
 t_Mesh* G_pMesh;
 
 t_CellKind getElementKind(CG_ElementType_t cg_type) {

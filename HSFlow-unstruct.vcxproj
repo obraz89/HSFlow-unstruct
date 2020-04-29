@@ -1,5 +1,5 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -18,23 +18,73 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\bc_common.cpp" />
+    <ClCompile Include="src\bc_euler.cpp" />
+    <ClCompile Include="src\CGNS-ctx.cpp" />
+    <ClCompile Include="src\common_procs.cpp" />
+    <ClCompile Include="src\dom_euler_1st.cpp" />
+    <ClCompile Include="src\dom_euler_base.cpp" />
+    <ClCompile Include="src\dom_euler_lsq.cpp" />
+    <ClCompile Include="src\flow_model_perfect_gas.cpp" />
+    <ClCompile Include="src\flow_params.cpp" />
+    <ClCompile Include="src\flux-euler.cpp" />
+    <ClCompile Include="src\ghost_common.cpp" />
+    <ClCompile Include="src\ghost_euler.cpp" />
+    <ClCompile Include="src\HSFlow-shared.cpp" />
+    <ClCompile Include="src\io-field.cpp" />
+    <ClCompile Include="src\logging.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\matrix_small.cpp" />
+    <ClCompile Include="src\mesh.cpp" />
+    <ClCompile Include="src\PluginBase.cpp" />
+    <ClCompile Include="src\rs_procs.cpp" />
+    <ClCompile Include="src\settings.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\bc_common.h" />
+    <ClInclude Include="include\bc_euler.h" />
+    <ClInclude Include="include\CGNS-ctx.h" />
+    <ClInclude Include="include\common_data.h" />
+    <ClInclude Include="include\common_procs.h" />
+    <ClInclude Include="include\dom_euler_1st.h" />
+    <ClInclude Include="include\dom_euler_base.h" />
+    <ClInclude Include="include\dom_euler_lsq.h" />
+    <ClInclude Include="include\flow_model_perfect_gas.h" />
+    <ClInclude Include="include\flow_params.h" />
+    <ClInclude Include="include\flux_euler.h" />
+    <ClInclude Include="include\ghost_common.h" />
+    <ClInclude Include="include\ghost_euler.h" />
+    <ClInclude Include="include\IniFile.hpp" />
+    <ClInclude Include="include\io-field.h" />
+    <ClInclude Include="include\logging.h" />
+    <ClInclude Include="include\matrix_small.h" />
+    <ClInclude Include="include\mesh.h" />
+    <ClInclude Include="include\optParse.h" />
+    <ClInclude Include="include\PluginBase.h" />
+    <ClInclude Include="include\rs_euler.h" />
+    <ClInclude Include="include\schemes_euler.h" />
+    <ClInclude Include="include\settings.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{86438272-2B38-4072-8054-B401A3D23895}</ProjectGuid>
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <ProjectGuid>{F08AA542-E988-4E34-9FA3-0645B0D17338}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>HSFlowunstruct</RootNamespace>
+    <RootNamespace>HSFlowunstructtmp</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>HSFlow-unstruct</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -83,11 +133,12 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -96,30 +147,32 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level1</WarningLevel>
-      <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>SHARED_EXPORT;_DEBUG;_CONSOLE;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(MPI_DIR)\include;$(CGNS_DIR)\include;$(SolutionDir)\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)/include;$(MPI_DIR)/include;$(CGNS_DIR)/include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MPI_DIR)\lib\x64;$(CGNS_DIR)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libzlib.lib;libhdf5.lib;cgns.lib;msmpi.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
+      <AdditionalLibraryDirectories>$(MPI_DIR)/lib/x64;$(CGNS_DIR)/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>msmpi.lib;libzlib.lib;libhdf5.lib;cgns.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)/include;$(MPI_DIR)/include;$(CGNS_DIR)/include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -130,75 +183,25 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(MPI_DIR)\include;$(CGNS_DIR)\include;$(SolutionDir)\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(MPI_DIR)/include;$(CGNS_DIR)/include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MPI_DIR)\lib\x64;$(CGNS_DIR)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libzlib.lib;libhdf5.lib;cgns.lib;msmpi.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MPI_DIR)/lib/x64;$(CGNS_DIR)/lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>msmpi.lib;libzlib.lib;libhdf5.lib;cgns.lib;ws2_32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="include\bc_common.h" />
-    <ClInclude Include="include\common_data.h" />
-    <ClInclude Include="include\common_procs.h" />
-    <ClInclude Include="include\dom_euler_1st.h" />
-    <ClInclude Include="include\dom_euler_lsq.h" />
-    <ClInclude Include="include\ghost_euler.h" />
-    <ClInclude Include="include\io-field.h" />
-    <ClInclude Include="include\mesh.h" />
-    <ClInclude Include="include\dom_euler_base.h" />
-    <ClInclude Include="include\flow_model_perfect_gas.h" />
-    <ClInclude Include="include\flow_params.h" />
-    <ClInclude Include="include\ghost_common.h" />
-    <ClInclude Include="include\flux_euler.h" />
-    <ClInclude Include="include\IniFile.hpp" />
-    <ClInclude Include="include\logging.h" />
-    <ClInclude Include="include\matrix_small.h" />
-    <ClInclude Include="include\CGNS-ctx.h" />
-    <ClInclude Include="include\optParse.h" />
-    <ClInclude Include="include\PluginBase.h" />
-    <ClInclude Include="include\rs_euler.h" />
-    <ClInclude Include="include\schemes_euler.h" />
-    <ClInclude Include="include\settings.h" />
-    <ClInclude Include="src\bc_euler.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="src\bc_common.cpp" />
-    <ClCompile Include="src\bc_euler.cpp" />
-    <ClCompile Include="src\common_procs.cpp" />
-    <ClCompile Include="src\dom_euler_1st.cpp" />
-    <ClCompile Include="src\dom_euler_lsq.cpp" />
-    <ClCompile Include="src\ghost_euler.cpp" />
-    <ClCompile Include="src\io-field.cpp" />
-    <ClCompile Include="src\mesh.cpp" />
-    <ClCompile Include="src\dom_euler_base.cpp" />
-    <ClCompile Include="src\flow_model_perfect_gas.cpp" />
-    <ClCompile Include="src\flow_params.cpp" />
-    <ClCompile Include="src\flux-euler.cpp" />
-    <ClCompile Include="src\ghost_common.cpp" />
-    <ClCompile Include="src\HSFlow-shared.cpp" />
-    <ClCompile Include="src\logging.cpp" />
-    <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\matrix_small.cpp" />
-    <ClCompile Include="src\CGNS-ctx.cpp" />
-    <ClCompile Include="src\PluginBase.cpp" />
-    <ClCompile Include="src\rs_procs.cpp" />
-    <ClCompile Include="src\settings.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -89,7 +89,7 @@ public:
 	static bool cmp_strict(const t_TSet<T, Nmax>& lv, const t_TSet<T, Nmax>& rv){
 		if (lv.size() != rv.size()) return false;
 		bool cmp_ok = true;
-		for (int i = 0; i < NMax; i++) cmp_ok = cmp_ok && (l_sorted[i] == r_sorted[i]);
+		for (int i = 0; i < Nmax; i++) cmp_ok = cmp_ok && (lv.buf[i] == rv.buf[i]);
 		return cmp_ok;
 	}
 };

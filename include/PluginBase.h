@@ -17,6 +17,8 @@
 #include <memory>
 #include <vector>
 
+#include <map>
+
 #include "logging.h"
 //-----------------------------------------------------------------------------
 
@@ -129,35 +131,72 @@
 		using Value = typename std::pair<K, T>;
 		std::vector<Value> data_;    // data in insertion order
 
-		class Lookup;
+		class Lookup : public std::map<K, size_t> {
+			// nothing to add to the standard map
+		};
 		std::unique_ptr<Lookup> lookup_;  // lookup table
 
 	public:
-		OrderedMap();
-		OrderedMap(const OrderedMap&);
+		OrderedMap() : lookup_{ new Lookup() }
+		{
+			;
+		};
+		OrderedMap(const OrderedMap<K, T>& that)
+			: data_{ that.data_ }, lookup_{ new Lookup() }
+		{
+			*lookup_ = *that.lookup_;
+		}
 		OrderedMap& operator=(const OrderedMap&) = delete;
-		~OrderedMap();
+		~OrderedMap() = default;
 
 		using iterator = typename std::vector<Value>::iterator;
 		iterator begin() { return data_.begin(); }
 		iterator end() { return data_.end(); }
 
-		bool insert(const Value& key_val);
-		bool emplace(const K& key, const T& val);
+		bool insert(const Value& key_val) {
+			if (has(key_val.first))
+				return false;
+
+			data_.push_back(key_val);
+			(*lookup_)[key_val.first] = data_.size() - 1;
+			return true;
+		};
+		bool emplace(const K& key, const T& val) {
+			if (has(key))
+				return false;
+
+			data_.emplace_back(key, val);
+			(*lookup_)[key] = data_.size() - 1;
+			return true;
+		};
 
 		// throws an std::out_of_range if key not exists
-		T& at(const K& key);
-		const T& at(const K& key) const;
+		T& at(const K& key) {
+			return data_[lookup_->at(key)].second;
+		};
+		const T& at(const K& key) const {
+			return data_[lookup_->at(key)].second;
+		};
 
 		bool empty() const {
 			return data_.empty();
 		}
 
-		bool has(const K& k) const;
+		bool has(const K& k) const {
+			return lookup_->find(k) != lookup_->end();
+		};
 
-		void clear();
+		void clear() {
+			data_.clear();  lookup_->clear();
+		};
 
-		std::vector<K> get_list_of_keys() const;
+		std::vector<K> get_list_of_keys() const {
+			std::vector<K> keys;
+			typename std::vector<Value>::const_iterator it;
+			for (it = data_.begin(); it < data_.end(); it++)
+				keys.push_back(it->first);
+			return keys;
+		};
 	};
 	//----------------------------------------------------------------------------
 
