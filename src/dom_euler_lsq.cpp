@@ -6,13 +6,15 @@
 
 #include "bc_euler.h"
 
+#include "ghost_euler.h"
+
 void t_DomEuLSQ::allocateFlowSolution() {
 
 	t_DomEuBase::allocateFlowSolution();
 
 	ZonesRecData = new t_ZoneReconstData[nZones];
 
-	for (int i = 0; i < nZones; i++) {
+	for (int i = iZneMPIs; i <= iZneMPIe; i++) {
 
 		t_Zone& zne = Zones[i];
 		t_ZoneReconstData& fdata = ZonesRecData[i];
@@ -27,7 +29,7 @@ void t_DomEuLSQ::allocateFlowSolution() {
 
 t_DomEuLSQ::~t_DomEuLSQ() {
 
-	for (int i = 0; i < nZones; i++) {
+	for (int i = iZneMPIs; i <= iZneMPIe; i++) {
 
 		t_Zone& zne = Zones[i];
 		t_ZoneReconstData& fdata = ZonesRecData[i];
@@ -107,7 +109,7 @@ void t_DomEuLSQ::calcReconstDataLSQ(int iZone, lint iCell) {
 
 void t_DomEuLSQ::calcReconstData() {
 
-	for (int iZone = 0; iZone < nZones; iZone++) {
+	for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
 
 		const t_Zone& zne = Zones[iZone];
 
@@ -118,6 +120,8 @@ void t_DomEuLSQ::calcReconstData() {
 		}
 
 	}
+
+	G_GhostMngEu.exchangeReconstData();
 
 }
 // we have precomputed scaled inverse Mc matrix
@@ -201,7 +205,9 @@ void t_DomEuLSQ::calcFaceFlux(int iZone, lint iFace) {
 		calcCellGradPrimVars(iZone, face.pMyCell->Id, CellGradPVMy);
 		// TODO:: compute only for real cells, ghost cells must receive!
 		t_Mat<NConsVars, 3> CellGradPVOp;
-		calcCellGradPrimVars(iZone, face.pOppCell->Id, CellGradPVOp);
+		// if ghosts cell, this will reduce to first order now
+		if (zne.isRealCell(face.pOppCell->Id))
+			calcCellGradPrimVars(iZone, face.pOppCell->Id, CellGradPVOp);
 
 		// distances from cell centers to face center
 		t_Vec3 drMy = face.Center - CellMy.Center;

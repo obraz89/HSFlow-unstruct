@@ -89,6 +89,8 @@ public:
 	virtual void calcReconstData() = 0;
 	virtual void calcFaceFlux(int iZone, lint iFace) = 0;
 
+	virtual void checkMinMaxCSV();
+
 	// debug
 	void dump_flow();
 	void dump_geom();

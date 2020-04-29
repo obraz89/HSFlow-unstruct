@@ -76,12 +76,10 @@ bool processCmdLine(int argc, char* argv[])
 
 	// Logging to file
 	const std::string& log_fn = options["log"];
-	std::string log_fn_rank = "log_" + std::to_string(G_State.mpiRank)+".txt";
-	//if (!log_fn.empty())
-	if (true)
+	if (!log_fn.empty())
 	{
-		if (!hsflow::TLog::set_file(log_fn_rank))
-			hsLogWarning("Can't open log file '%s'", log_fn_rank.c_str());
+		if (!hsflow::TLog::set_file(log_fn))
+			hsLogWarning("Can't open log file '%s'", log_fn.c_str());
 		hsflow::TLog::log_raw_from_root(szTITLE, true);
 	}
 
@@ -119,6 +117,8 @@ int main(int argc, char* argv[])
 
 	if (!processCmdLine(argc, argv))
 		goto fin;
+
+	hsLogMsgAllRanks("My rank=%d, total procs=%d", G_State.mpiRank, G_State.mpiNProcs);
 
 	// Solver run identification: current date & time + hostname
 	{
@@ -165,8 +165,13 @@ int main(int argc, char* argv[])
 	// cell connectivity, face list
 	G_pDom->initializeFromCtxStage2();
 
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	hsflow::TLog::flush();
+
 	// update cell center etc for ghosts
-	G_GhostMngEu.exchangeGeomData();
+	// cuurently not required as we store full mesh at each worker 
+	//G_GhostMngEu.exchangeGeomData();
 
 	G_pDom->allocateFlowSolution();
 
@@ -176,12 +181,11 @@ int main(int argc, char* argv[])
 
 	G_pDom->checkFlow();
 
-	//G_Domain.dump_flow();
-	int count = 0;
-
 	hsLogMessage("Computing reconstruction data...");
 
 	G_pDom->calcReconstData();
+
+	int count = 0;
 
 	for (int iTStep = 0; iTStep < g_genOpts.numTimeSteps; iTStep++) {
 
@@ -193,9 +197,12 @@ int main(int argc, char* argv[])
 			// TODO: G_Domain.saveFiled()
 			char fld_name[64];
 			sprintf(fld_name, "%.5f", G_State.time);
-			saveField(fld_name, "");
+			bool ok = saveField(fld_name, "");
+			if (!ok) hsLogError("There was an error in writing field to output file");
 			count = 0;
 		}
+
+		hsflow::TLog::flush();
 
 	}
 
@@ -205,7 +212,7 @@ fin:
 	// DEBUG: testing offsets 
 	//std::vector<t_CellKindRange> offsets = G_Domain.Zones[0].getCellsOffsets();
 
-	//hsflow::TLog::destroy();  // flushes remaining messages
+	hsflow::TLog::destroy();  // flushes remaining messages
 
 	MPI_Finalize();
 

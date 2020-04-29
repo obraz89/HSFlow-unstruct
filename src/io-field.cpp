@@ -302,9 +302,9 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 		}
 
 
-		t_ArrDbl Vals;
+		t_ArrDbl grd_coords;
 		if ((G_pMesh->iZneMPIs <= zi && zi <= G_pMesh->iZneMPIe) || G_State.mpiRank == 0)
-			Vals.alloc(zne.getnVerts());
+			grd_coords.alloc(zne.getnVerts());
 
 		//
 		// Grid coords
@@ -320,15 +320,15 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 
 					const int nVerts = zne.getnVerts();
 
-					Vals.alloc(nVerts);
+					grd_coords.alloc(nVerts);
 
 					const char* name = g_cgCoordNames[iCoord];
 					int iCoordCG;
 
-					G_pMesh->getDataAsArr(name, zi, Vals);
+					G_pMesh->getDataAsArr(name, zi, grd_coords);
 					
 					if (G_State.mpiRank !=0)
-						MPI_Ssend(Vals.data(), nVerts, MPI_DOUBLE, 0/*root*/, mpiTag, MPI_COMM_WORLD);
+						MPI_Ssend(grd_coords.data(), nVerts, MPI_DOUBLE, 0/*root*/, mpiTag, MPI_COMM_WORLD);
 
 
 				}	// if worker
@@ -341,7 +341,7 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 					if (rankSrc != 0) // don't receive from myself
 					{
 						const int nn = ok ? zne.getnVerts() : 0;  // if not OK, do a dummy recieve to unblock sender
-						MPI_Recv(Vals.data(), nn, MPI_DOUBLE,
+						MPI_Recv(grd_coords.data(), nn, MPI_DOUBLE,
 							rankSrc, mpiTag, MPI_COMM_WORLD,
 							MPI_STATUS_IGNORE  // don't use NULL as status, MPI_Ssend may get stuck (i.e. in Intel MPI 5.0.1)
 						);
@@ -350,7 +350,7 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 					int iCoordCG = -1;
 					if (ok)
 						if (cg_coord_write(fGrid, iBaseGrid, iZoneGrid,
-							CG_RealDouble, name, Vals.data(), &iCoordCG) != CG_OK) {
+							CG_RealDouble, name, grd_coords.data(), &iCoordCG) != CG_OK) {
 							hsLogError("Can't write grid coords in zone %s#%d ( %s )",
 								zne.getName(), iZone, cg_get_error());
 						};
@@ -423,7 +423,7 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 				if (rankSrc != 0) // don't receive from myself
 				{
 					// if writing was failed previously, then do a dummy recieve to unblock sender
-					MPI_Recv(Vals.data(), (ok ? zne.getnCellsReal() : 0), MPI_DOUBLE,
+					MPI_Recv(flow_sol.data(), (ok ? zne.getnCellsReal() : 0), MPI_DOUBLE,
 						rankSrc, mpiTag, MPI_COMM_WORLD,
 						MPI_STATUS_IGNORE  // don't use NULL as status, MPI_Ssend may get stuck (i.e. in Intel MPI 5.0.1)
 					);

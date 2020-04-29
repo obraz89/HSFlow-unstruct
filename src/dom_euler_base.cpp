@@ -22,7 +22,7 @@ void t_DomEuBase::allocateFlowSolution() {
 
 	ZonesSol = new t_ZoneFlowData[nZones];
 
-	for (int i = 0; i < nZones; i++) {
+	for (int i = iZneMPIs; i <= iZneMPIe; i++) {
 
 		t_Zone& zne = Zones[i];
 		t_ZoneFlowData& fdata = ZonesSol[i];
@@ -44,7 +44,7 @@ void t_DomEuBase::initializeFlow() {
 
 	if (g_genOpts.strInitFieldFN.empty()) {
 		// set real cell values
-		for (int iZone = 0; iZone < nZones; iZone++) {
+		for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
 
 			t_Zone& zne = Zones[iZone];
 
@@ -322,7 +322,11 @@ double t_DomEuBase::loadField(std::string path_field) {
 
 void t_DomEuBase::makeTimeStep() {
 
-	double dt = calcDt();
+	double dt_local = calcDt();
+
+	double dt;
+
+	MPI_Allreduce(&dt_local, &dt, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
 
 	double dU_max = 0.0;
 
@@ -332,7 +336,7 @@ void t_DomEuBase::makeTimeStep() {
 
 	G_State.ResidNormVeloWall = 0.0;
 
-	for (int iZone = 0; iZone < nZones; iZone++) {
+	for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
 
 		t_Zone& zne = Zones[iZone];
 
@@ -376,12 +380,23 @@ void t_DomEuBase::makeTimeStep() {
 
 	}
 
-	G_GhostMngEu.exchangeCSV();
-	hsLogMessage("============");
-	hsLogMessage("Time=%.6lf, Resid=%.6e, Local Max dU=%.6e", G_State.time, G_State.ResidTot, dU_max);
-	hsLogMessage("Max normal velo resid at wall(sym):%.6e", G_State.ResidNormVeloWall);
+	MPI_Barrier(MPI_COMM_WORLD);
+
+	double ResidTot;
+	MPI_Allreduce(&G_State.ResidTot, &ResidTot, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+	double dU_max_Global;
+	MPI_Allreduce(&dU_max, &dU_max_Global, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+	if (G_State.mpiRank == 0) {
+		hsLogMessage("============");
+		hsLogMessage("Time=%.6lf, Resid=%.6e, Local Max dU=%.6e", G_State.time, ResidTot, dU_max);
+		hsLogMessage("Max normal velo resid at wall(sym):%.6e", G_State.ResidNormVeloWall);
+	}
 
 	G_State.time += dt;
+
+	G_GhostMngEu.exchangeCSV();
 
 }
 
@@ -389,7 +404,7 @@ double t_DomEuBase::calcDt() const{
 
 	double dt = HUGE_VAL;
 
-	for (int iZone = 0; iZone < nZones; iZone++) {
+	for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
 
 		const t_Zone& Zne = Zones[iZone];
 
@@ -418,7 +433,46 @@ double t_DomEuBase::calcDt() const{
 
 }
 
+void t_DomEuBase::checkMinMaxCSV() {
+
+	// debug
+
+	double CSV_MIN[NConsVars] = { HUGE_VAL, HUGE_VAL, HUGE_VAL, HUGE_VAL , HUGE_VAL };
+	double CSV_MAX[NConsVars] = { 0,0,0,0,0 };
+
+	for (int i = iZneMPIs; i <= iZneMPIe; i++) {
+
+		const t_Zone& Zne = Zones[i];
+
+		lint nCellsTot = Zne.getnCellsTot();
+
+		for (int j = 0; j < nCellsTot; j++) {
+
+			const t_ConsVars& csv = getCellCSV(i, j);
+
+			for (int k = 0; k < NConsVars; k++) {
+
+				if (csv[k] < CSV_MIN[k]) CSV_MIN[k] = csv[k];
+				if (csv[k] > CSV_MAX[k] ) CSV_MAX[k] = csv[k];
+
+			}
+		}
+	}
+
+	for (int i = 0; i < NConsVars; i++) {
+
+		hsLogMsgAllRanks("CSV_MIN[%d]=%lf", i, CSV_MIN[i]);
+		hsLogMsgAllRanks("CSV_MAX[%d]=%lf", i, CSV_MAX[i]);
+	}
+
+}
+
 void t_DomEuBase::dump_flow() {
+
+	if (G_State.mpiNProcs > 1) {
+		hsLogWarning("t_DomEuBase::dump_flow: not working in MPI case");
+		return;
+	}
 
 	std::string fn("dump_flow.txt");
 
@@ -453,7 +507,7 @@ void t_DomEuBase::checkFlow() {
 	double DiaMin = HUGE_VAL;
 	double DiaMax = 0.0;
 
-	for (int iZone = 0; iZone < nZones; iZone++) {
+	for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
 
 		const t_Zone& Zne = Zones[iZone];
 
@@ -476,11 +530,28 @@ void t_DomEuBase::checkFlow() {
 			if (face.Area > AreaMax) AreaMax = face.Area;
 		}
 	}
+	
+	double VolMinGlob, VolMaxGlob;
+	MPI_Allreduce(&VolMin, &VolMinGlob, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+	MPI_Allreduce(&VolMax, &VolMaxGlob, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
-	hsLogMessage("Domain info:");
-	hsLogMessage("Min Volume=%lf, Max Volume=%lf", VolMin, VolMax);
-	hsLogMessage("Min Cell Diameter=%lf, Max Cell Diameter=%lf", DiaMin, DiaMax);
-	hsLogMessage("Min Face Area=%lf, Max Face Area=%lf", AreaMin, AreaMax);
+	double DiaMinGlob, DiaMaxGlob;
+	MPI_Allreduce(&DiaMin, &DiaMinGlob, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+	MPI_Allreduce(&DiaMax, &DiaMaxGlob, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+	double AreaMinGlob, AreaMaxGlob;
+	MPI_Allreduce(&AreaMin, &AreaMinGlob, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+	MPI_Allreduce(&AreaMax, &AreaMaxGlob, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+	
+	if (G_State.mpiRank == 0) {
+
+		hsLogMessage("Domain check:");
+		hsLogMessage("Min Volume=%lf, Max Volume=%lf", VolMinGlob, VolMaxGlob);
+		hsLogMessage("Min Cell Diameter=%lf, Max Cell Diameter=%lf", DiaMin, DiaMax);
+		hsLogMessage("Min Face Area=%lf, Max Face Area=%lf", AreaMin, AreaMax);
+
+	}
+
 
 }
 
@@ -492,7 +563,7 @@ void t_DomEuBase::dump_geom() {
 
 t_DomEuBase::~t_DomEuBase() {
 
-	for (int i = 0; i < nZones; i++) {
+	for (int i = iZneMPIs; i <= iZneMPIe; i++) {
 
 		t_Zone& zne = Zones[i];
 		t_ZoneFlowData& fdata = ZonesSol[i];

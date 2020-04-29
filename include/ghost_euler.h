@@ -20,6 +20,8 @@ public:
 
 	void exchangeCSV();
 
+	void exchangeReconstData();
+
 };
 
 extern t_GhostMngEuler G_GhostMngEu;
