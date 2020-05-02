@@ -155,13 +155,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)/include;$(MPI_DIR)/include;$(CGNS_DIR)/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)/include;$(MPI_DIR)/include;$(PETSC_DIR)/include;$(CGNS_DIR)/include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MPI_DIR)/lib/x64;$(CGNS_DIR)/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>msmpi.lib;libzlib.lib;libhdf5.lib;cgns.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MPI_DIR)/lib/x64;$(PETSC_DIR)/lib;$(CGNS_DIR)/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>msmpi.lib;libpetsc.lib;libzlib.lib;libhdf5.lib;cgns.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -193,15 +193,15 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(MPI_DIR)/include;$(CGNS_DIR)/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(MPI_DIR)/include;$(PETSC_DIR)/include;$(CGNS_DIR)/include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MPI_DIR)/lib/x64;$(CGNS_DIR)/lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>msmpi.lib;libzlib.lib;libhdf5.lib;cgns.lib;ws2_32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MPI_DIR)/lib/x64;$(CGNS_DIR)/lib;$(PETSC_DIR)/lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>msmpi.lib;libpetsc.lib;libzlib.lib;libhdf5.lib;cgns.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

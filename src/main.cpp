@@ -16,7 +16,8 @@
 
 #include "io-field.h"
 
-#include "mpi.h"
+//#include "mpi.h"
+#include "petsc.h"
 
 // model-specific part
 #include "bc_euler.h"
@@ -108,11 +109,14 @@ int main(int argc, char* argv[])
 
 	int err = EXIT_FAILURE;
 
-	if (MPI_Init(&argc, &argv) != 0)
+	//if (MPI_Init(&argc, &argv) != 0)
+	if (PetscInitializeNoArguments() != 0)
 	{
-		printf("Can't initialize MPI" "\n");  // don't use `hsLog*()`
+		printf("Can't initialize Petsc" "\n");  // don't use `hsLog*()`
 		return err;
 	}
+
+	//PetscPopSignalHandler();  // don't let PETSc handle signals
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &G_State.mpiRank);
 	MPI_Comm_size(MPI_COMM_WORLD, &G_State.mpiNProcs);
@@ -223,7 +227,8 @@ fin:
 
 	hsflow::TLog::destroy();  // flushes remaining messages
 
-	MPI_Finalize();
+	//MPI_Finalize();
+	PetscFinalize();
 
 	return err;
 

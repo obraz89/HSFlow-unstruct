@@ -10,6 +10,14 @@
 
 #include "mpi.h"
 
+#include "petsc.h"
+
+void t_DomEu1stImpl::testPetsc() {
+
+	PetscInitializeNoArguments();
+
+}
+
 void t_DomEu1stImpl::calcFaceFlux(int iZone, lint iFace) {
 
 	t_Zone& zne = Zones[iZone];

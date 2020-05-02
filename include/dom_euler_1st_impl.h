@@ -9,5 +9,8 @@ public:
 	void calcReconstData() {};
 	void calcFaceFlux(int iZone, lint iFace);
 	virtual void makeTimeStep();
+
+	// test
+	void testPetsc();
 };
 
