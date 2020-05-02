@@ -8,13 +8,100 @@
 
 #include "ghost_euler.h"
 
-#include "mpi.h"
+int t_DomEu1stImpl::getLocInd(const int iZone, const int iCell) {
 
-#include "petsc.h"
+	int idZoneOffset = 0;
 
-void t_DomEu1stImpl::testPetsc() {
+	for (int i = iZneMPIs; i < iZone; i++)
+		idZoneOffset += Zones[i].getnCellsReal();
 
-	PetscInitializeNoArguments();
+	return idZoneOffset + iCell;
+
+
+}
+
+int t_DomEu1stImpl::getGlobInd(const int iZone, const int iCell) {
+
+	int idZoneOffset = 0;
+
+	for (int i = 0; i < iZone; i++)
+		idZoneOffset += Zones[i].getnCellsReal();
+
+	return idZoneOffset + iCell;
+
+};
+
+void t_DomEu1stImpl::allocateFlowSolution() {
+
+	t_DomEuBase::allocateFlowSolution();
+
+	// get dimensions of global unknown vector du
+	// and starting offset for each rank
+	int NCellsMy = 0;
+
+	for (int i = iZneMPIs; i <= iZneMPIe; i++)
+			NCellsMy += Zones[i].getnCellsReal();
+
+	ctxKSP.dim = NCellsMy*NConsVars;
+
+	// number of non-zeros in diagonal (d_nnz) and non-diagonal (o_nnz) 
+	// part for each row in ownership of this rank
+	int* d_nnz = new int[ctxKSP.dim];
+	int* o_nnz = new int[ctxKSP.dim];
+
+	for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
+		const t_Zone& Zne = Zones[iZone];
+		for (int iCell = 0; iCell < Zne.getnCellsReal(); iCell++) {
+			int idMy = getLocInd(iZone, iCell);
+			// block non-zeros are the same
+			int dz = NConsVars;
+			int oz = Zne.getCell(iCell).NCellsNeig() * NConsVars;
+			for (int k = 0; k < NConsVars; k++) {
+				int iRow = NConsVars * idMy + k;
+				d_nnz[iRow] = dz;
+				o_nnz[iRow] = oz;
+			}
+		}
+	}
+
+	PetscErrorCode perr;
+	// allocate vectors
+	perr = VecCreate(PETSC_COMM_WORLD, &ctxKSP.x);
+	perr = VecSetSizes(ctxKSP.x, ctxKSP.dim, PETSC_DECIDE);
+	perr = VecSetBlockSize(ctxKSP.x, NConsVars);
+	perr = VecSetType(ctxKSP.x, VECMPI);
+	if (perr) hsTHROW("Failed to init PETSc field vector");
+
+	VecDuplicate(ctxKSP.x, &ctxKSP.b);
+	VecDuplicate(ctxKSP.x, &ctxKSP.exact_sol);
+
+	// allocate matrix
+	int NRowsMy = NCellsMy * NConsVars;
+
+	perr = MatCreateAIJ(PETSC_COMM_WORLD,
+		NRowsMy, NRowsMy,
+		PETSC_DETERMINE, PETSC_DETERMINE,
+		0, d_nnz, 0, o_nnz, &ctxKSP.A);
+	if (perr) hsTHROW("Failed to init PETSc Jacobi matrix");
+
+	//MatSetOption(ctx.matJac, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
+
+	perr = KSPCreate(PETSC_COMM_WORLD, &ctxKSP.ksp);
+	// deflated GMRES, the adaptive strategy allows to switch to the deflated GMRES when the stagnation occurs
+	//perr = KSPSetType(ctxKSP.ksp, KSPDGMRES); 
+
+	KSPSetOperators(ctxKSP.ksp, ctxKSP.A, ctxKSP.A);
+	// ???
+	KSPSetTolerances(ctxKSP.ksp, 1.e-5, 1.e-50, PETSC_DEFAULT, PETSC_DEFAULT);
+
+	KSPSetFromOptions(ctxKSP.ksp);
+	
+	delete[] d_nnz, o_nnz;
+}
+
+void t_DomEu1stImpl::makeTimeStep_SingleZone() {
+
+	Vec v;
 
 }
 
@@ -159,8 +246,6 @@ void t_DomEu1stImpl::makeTimeStep() {
 
 	hsLogMessage("Hello world");
 
-	return;
-
 	double dt_local = calcDt();
 
 	double dt;
@@ -175,51 +260,49 @@ void t_DomEu1stImpl::makeTimeStep() {
 
 	G_State.ResidNormVeloWall = 0.0;
 
+	int idxm;
+	int idxn;
+	double val = 1.0;
 	for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
 
 		t_Zone& zne = Zones[iZone];
 
-		for (int iFace = 0; iFace < zne.getNFaces(); iFace++) {
-			calcFaceFlux(iZone, iFace);
-		}
+		//for (int iFace = 0; iFace < zne.getNFaces(); iFace++) {
+		//	calcFaceFlux(iZone, iFace);
+		//}
 
-		t_ConsVars dU;
-
+		// testing : inserting just diag elems
 		for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
 
-			dU.reset();
+			int idGlob = getGlobInd(iZone, iCell);
+			int iRowBase = NConsVars * idGlob;
 
-			t_Cell& cell = zne.getCell(iCell);
-
-			for (int j = 0; j < cell.NFaces; j++) {
-
-				const t_Face& face = cell.getFace(j);
-
-				// U[n+1] = U[n] - summ(flux_j), so we summ fluxes multiplied by minus 1
-				double coef = cell.isMyFace(j) ? -1.0 : 1.0;
-
-				coef *= dt * face.Area / cell.Volume;
-
-				t_Flux flux = getFlux(iZone, face.Id);
-
-				dU += coef * flux;
-
+			for (int k = 0; k < NConsVars; k++) {
+				idxm = iRowBase + k;
+				idxn = iRowBase + k;
+				MatSetValues(ctxKSP.A, 1, &idxm, 1, &idxn, &val, ADD_VALUES);
 			}
-
-			getCellCSV(iZone, iCell) += dU;
-
-			double dU_norm = dU.norm();
-
-			// max local resid for a cell
-			if (dU_norm > dU_max) dU_max = dU_norm;
-			// du/dt=rhs, sum all rhs to get resid
-			G_State.ResidTot += dU_norm / dt;
-
 		}
+
 
 	}
 
-	MPI_Barrier(MPI_COMM_WORLD);
+	MatAssemblyBegin(ctxKSP.A, MAT_FINAL_ASSEMBLY);
+	MatAssemblyEnd(ctxKSP.A, MAT_FINAL_ASSEMBLY);
+
+	VecSet(ctxKSP.exact_sol, 1.0);
+	MatMult(ctxKSP.A, ctxKSP.exact_sol, ctxKSP.b);
+
+	KSPSolve(ctxKSP.ksp, ctxKSP.b, ctxKSP.x);
+
+	VecAXPY(ctxKSP.x, -1.0, ctxKSP.exact_sol);
+	double norm;
+	VecNorm(ctxKSP.x, NORM_2, &norm);
+	int nits;
+	KSPGetIterationNumber(ctxKSP.ksp, &nits);
+
+	return;
+
 
 	double ResidTot;
 	MPI_Allreduce(&G_State.ResidTot, &ResidTot, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
