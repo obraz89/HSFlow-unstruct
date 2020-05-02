@@ -87,8 +87,6 @@ void  t_GhostMngEuler::exchangeCSV() {
 		}
 	}
 
-	_pDomEu->checkMinMaxCSV();
-
 };
 
 void t_GhostMngEuler::exchangeReconstData() {

@@ -24,6 +24,7 @@
     <ClCompile Include="src\CGNS-ctx.cpp" />
     <ClCompile Include="src\common_procs.cpp" />
     <ClCompile Include="src\dom_euler_1st.cpp" />
+    <ClCompile Include="src\dom_euler_1st_impl.cpp" />
     <ClCompile Include="src\dom_euler_base.cpp" />
     <ClCompile Include="src\dom_euler_lsq.cpp" />
     <ClCompile Include="src\flow_model_perfect_gas.cpp" />
@@ -48,6 +49,7 @@
     <ClInclude Include="include\common_data.h" />
     <ClInclude Include="include\common_procs.h" />
     <ClInclude Include="include\dom_euler_1st.h" />
+    <ClInclude Include="include\dom_euler_1st_impl.h" />
     <ClInclude Include="include\dom_euler_base.h" />
     <ClInclude Include="include\dom_euler_lsq.h" />
     <ClInclude Include="include\flow_model_perfect_gas.h" />

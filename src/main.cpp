@@ -190,6 +190,7 @@ int main(int argc, char* argv[])
 
 	G_pDom->calcReconstData();
 
+	hsflow::TLog::flush();
 	{
 		int count = 0; 
 
@@ -198,6 +199,7 @@ int main(int argc, char* argv[])
 			hsLogMessage("Iter #%d:", iTStep);
 
 			G_pDom->makeTimeStep();
+			G_pDom->checkMinMaxCSV();
 
 			if (++count >= g_genOpts.timeSteps2Write) {
 				// TODO: G_Domain.saveFiled()

@@ -90,6 +90,9 @@
     <ClCompile Include="src\rs_procs.cpp">
       <Filter>Source Files\phys_common</Filter>
     </ClCompile>
+    <ClCompile Include="src\dom_euler_1st_impl.cpp">
+      <Filter>Source Files\euler</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\logging.h">
@@ -159,6 +162,9 @@
       <Filter>Header Files\euler</Filter>
     </ClInclude>
     <ClInclude Include="include\schemes_euler.h">
+      <Filter>Header Files\euler</Filter>
+    </ClInclude>
+    <ClInclude Include="include\dom_euler_1st_impl.h">
       <Filter>Header Files\euler</Filter>
     </ClInclude>
   </ItemGroup>

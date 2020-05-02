@@ -6,7 +6,9 @@
 
 #include "dom_euler_lsq.h"
 
-static const char* strSupportedSchemes[] = { "euler_1st", "euler_lsq" };
+#include "dom_euler_1st_impl.h"
+
+static const char* strSupportedSchemes[] = { "euler_1st", "euler_lsq", "euler_1st_impl" };
 
 static void loadSchemeEuler(std::string strName) {
 
@@ -22,7 +24,14 @@ static void loadSchemeEuler(std::string strName) {
 		return;
 	}
 
+	if (strName.compare(strSupportedSchemes[2]) == 0) {
+		G_pDom = new t_DomEu1stImpl();
+		G_pMesh = G_pDom;
+		return;
+	}
+
 	hsLogError("loadSchemeEuler: unsupported scheme=%s", strName.c_str());
+	hsflow::TLog::flush();
 
 };
 
