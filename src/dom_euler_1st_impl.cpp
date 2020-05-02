@@ -68,21 +68,20 @@ void t_DomEu1stImpl::allocateFlowSolution() {
 	// allocate vectors
 	perr = VecCreate(PETSC_COMM_WORLD, &ctxKSP.x);
 	perr = VecSetSizes(ctxKSP.x, ctxKSP.dim, PETSC_DECIDE);
-	perr = VecSetBlockSize(ctxKSP.x, NConsVars);
-	perr = VecSetType(ctxKSP.x, VECMPI);
-	if (perr) hsTHROW("Failed to init PETSc field vector");
+	VecSetFromOptions(ctxKSP.x);
+	//perr = VecSetType(ctxKSP.x, VECMPI);
+	if (perr) hsLogMessage("Error:Failed to init PETSc field vector");
 
 	VecDuplicate(ctxKSP.x, &ctxKSP.b);
 	VecDuplicate(ctxKSP.x, &ctxKSP.exact_sol);
 
 	// allocate matrix
-	int NRowsMy = NCellsMy * NConsVars;
 
 	perr = MatCreateAIJ(PETSC_COMM_WORLD,
-		NRowsMy, NRowsMy,
+		ctxKSP.dim, ctxKSP.dim,
 		PETSC_DETERMINE, PETSC_DETERMINE,
 		0, d_nnz, 0, o_nnz, &ctxKSP.A);
-	if (perr) hsTHROW("Failed to init PETSc Jacobi matrix");
+	if (perr) hsLogMessage("Error:Failed to init PETSc Jacobi matrix");
 
 	//MatSetOption(ctx.matJac, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
 
@@ -289,6 +288,9 @@ void t_DomEu1stImpl::makeTimeStep() {
 
 	MatAssemblyBegin(ctxKSP.A, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(ctxKSP.A, MAT_FINAL_ASSEMBLY);
+
+	hsLogMessage("Matrix assembled");
+	return;
 
 	VecSet(ctxKSP.exact_sol, 1.0);
 	MatMult(ctxKSP.A, ctxKSP.exact_sol, ctxKSP.b);

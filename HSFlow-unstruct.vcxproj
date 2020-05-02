@@ -160,8 +160,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MPI_DIR)/lib/x64;$(PETSC_DIR)/lib;$(CGNS_DIR)/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>msmpi.lib;libpetsc.lib;libzlib.lib;libhdf5.lib;cgns.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MPI_DIR)/lib/x64;$(PETSC_DIR)/lib;$(CGNS_DIR)/lib;$(MKL_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>msmpi.lib;mkl_intel_lp64.lib;mkl_core.lib;mkl_sequential.lib;libpetsc.lib;libzlib.lib;libhdf5.lib;cgns.lib;ws2_32.lib;legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -200,8 +200,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MPI_DIR)/lib/x64;$(CGNS_DIR)/lib;$(PETSC_DIR)/lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>msmpi.lib;libpetsc.lib;libzlib.lib;libhdf5.lib;cgns.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MPI_DIR)/lib/x64;$(CGNS_DIR)/lib;$(PETSC_DIR)/lib;$(MKL_DIR)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>msmpi.lib;libpetsc.lib;libzlib.lib;libhdf5.lib;cgns.lib;ws2_32.lib;legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
