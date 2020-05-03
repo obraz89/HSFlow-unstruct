@@ -79,7 +79,11 @@ public:
 
 };
 
+
+
 // calc CV & Flux from primitive Vars
 void calcCVFlux(const t_PrimVars& pv, t_ConsVars& cv, t_Flux& f);
+
+void calcJac(const t_PrimVars& pv, t_SqMat<NConsVars>& Jac);
 
 
