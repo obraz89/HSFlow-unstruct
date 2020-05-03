@@ -31,6 +31,10 @@ public:
 
 	void reset() { for (int i = 0; i < N; i++) data[i] = 0.0; }
 
+	void cpy_to_c_arr(double(&c_arr)[N]) const {
+		for (int i = 0; i < N; i++) c_arr[i] = data[i];
+	}
+
 	/**
 	*  Make vector to be of unit length
 	*  @return previous vector length
