@@ -35,6 +35,20 @@ void t_DomEu1stImpl::allocateFlowSolution() {
 
 	t_DomEuBase::allocateFlowSolution();
 
+	ZonesLambdaCD = new t_ZoneLambdasCD[nZonesMy()];
+
+	for (int i = iZneMPIs; i <= iZneMPIe; i++) {
+		const t_Zone& zne = Zones[i];
+		int nfaces = zne.getNFaces();
+
+		ZonesLambdaCD[i].Lambdas = new double[nfaces];
+
+		double* lambdas = ZonesLambdaCD[i].Lambdas;
+
+		for (int j = 0; j < nfaces; j++)
+			lambdas[j] = 0.0;
+	}
+
 	// get dimensions of global unknown vector du
 	// and starting offset for each rank
 	int NCellsMy = 0;
@@ -42,12 +56,15 @@ void t_DomEu1stImpl::allocateFlowSolution() {
 	for (int i = iZneMPIs; i <= iZneMPIe; i++)
 			NCellsMy += Zones[i].getnCellsReal();
 
-	ctxKSP.dim = NCellsMy*NConsVars;
+	ctxKSP.dimMy = NCellsMy*NConsVars;
+
+	// dimGlob is a sum of dimMy for all ranks 
+	MPI_Allreduce(&ctxKSP.dimMy, &ctxKSP.dimGlob, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
 	// number of non-zeros in diagonal (d_nnz) and non-diagonal (o_nnz) 
 	// part for each row in ownership of this rank
-	int* d_nnz = new int[ctxKSP.dim];
-	int* o_nnz = new int[ctxKSP.dim];
+	int* d_nnz = new int[ctxKSP.dimMy];
+	int* o_nnz = new int[ctxKSP.dimMy];
 
 	for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
 		const t_Zone& Zne = Zones[iZone];
@@ -65,23 +82,24 @@ void t_DomEu1stImpl::allocateFlowSolution() {
 	}
 
 	PetscErrorCode perr;
-	// allocate vectors
+	// create vectors
+	// x - let petsc decide storage
 	perr = VecCreate(PETSC_COMM_WORLD, &ctxKSP.x);
-	perr = VecSetSizes(ctxKSP.x, ctxKSP.dim, PETSC_DECIDE);
-	VecSetFromOptions(ctxKSP.x);
-	//perr = VecSetType(ctxKSP.x, VECMPI);
-	if (perr) hsLogMessage("Error:Failed to init PETSc field vector");
+	perr = VecSetSizes(ctxKSP.x, PETSC_DECIDE, ctxKSP.dimGlob);
+	if (perr) hsLogMessage("Error:Failed to init PETSc solution vector");
 
-	VecDuplicate(ctxKSP.x, &ctxKSP.b);
-	VecDuplicate(ctxKSP.x, &ctxKSP.exact_sol);
+	// create rhs
+	perr = VecCreateMPI(PETSC_COMM_WORLD, ctxKSP.dimMy, PETSC_DETERMINE, &ctxKSP.b);
+	if (perr) hsLogMessage("Error:Failed to init PETSc rhs vector");
+
 
 	// allocate matrix
 
 	perr = MatCreateAIJ(PETSC_COMM_WORLD,
-		ctxKSP.dim, ctxKSP.dim,
+		ctxKSP.dimMy, ctxKSP.dimMy,
 		PETSC_DETERMINE, PETSC_DETERMINE,
 		0, d_nnz, 0, o_nnz, &ctxKSP.A);
-	if (perr) hsLogMessage("Error:Failed to init PETSc Jacobi matrix");
+	if (perr) hsLogMessage("Error:Failed to init PETSc matrix");
 
 	//MatSetOption(ctx.matJac, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
 
@@ -91,9 +109,10 @@ void t_DomEu1stImpl::allocateFlowSolution() {
 
 	KSPSetOperators(ctxKSP.ksp, ctxKSP.A, ctxKSP.A);
 	// ???
-	KSPSetTolerances(ctxKSP.ksp, 1.e-5, 1.e-50, PETSC_DEFAULT, PETSC_DEFAULT);
+	//KSPSetTolerances(ctxKSP.ksp, 1.e-5, 1.e-50, PETSC_DEFAULT, PETSC_DEFAULT);
+	KSPSetTolerances(ctxKSP.ksp, PETSC_DEFAULT, 1.e-12, PETSC_DEFAULT, PETSC_DEFAULT);
 
-	KSPSetFromOptions(ctxKSP.ksp);
+	//KSPSetFromOptions(ctxKSP.ksp);
 	
 	delete[] d_nnz, o_nnz;
 }
@@ -137,6 +156,8 @@ void t_DomEu1stImpl::calcFaceFlux(int iZone, lint iFace) {
 		pvr.rotate(R);
 
 		calcRSFlux(pvl, pvr, flux);
+		ZonesLambdaCD[iZone].Lambdas[face.Id] = 
+			calcWaveSpeedDavisEstimMaxAbs(pvl,pvr);
 
 		// rotate flux back
 		R.set_inv(mat_rot_coefs);
@@ -183,6 +204,11 @@ void t_DomEu1stImpl::calcFaceFlux(int iZone, lint iFace) {
 
 		csv_face.rotate(R);
 
+		t_PrimVars pv = csv_face.calcPrimVars();
+		// assuming that virtual cell pv is equal to cell pv
+		ZonesLambdaCD[iZone].Lambdas[face.Id] =
+			calcWaveSpeedDavisEstimMaxAbs(pv, pv);
+
 		flux.calc(csv_face);
 
 		R.set_inv(mat_rot_coefs);
@@ -219,8 +245,8 @@ void t_DomEu1stImpl::calcFaceFlux(int iZone, lint iFace) {
 		double v_norm = flux[0];
 		if (v_norm > G_State.ResidNormVeloWall) G_State.ResidNormVeloWall = v_norm;
 
-		// TODO: is this correct
-		//flux[1] = 0.0;
+		ZonesLambdaCD[iZone].Lambdas[face.Id] =
+			calcWaveSpeedDavisEstimMaxAbs(pv_loc_my, pv_loc_virt);
 
 		R.set_inv(mat_rot_coefs);
 
@@ -243,8 +269,6 @@ void t_DomEu1stImpl::calcFaceFlux(int iZone, lint iFace) {
 
 void t_DomEu1stImpl::makeTimeStep() {
 
-	hsLogMessage("Hello world");
-
 	double dt_local = calcDt();
 
 	double dt;
@@ -259,49 +283,91 @@ void t_DomEu1stImpl::makeTimeStep() {
 
 	G_State.ResidNormVeloWall = 0.0;
 
-	int idxm;
-	int idxn;
-	double val = 1.0;
 	for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
 
 		t_Zone& zne = Zones[iZone];
 
-		//for (int iFace = 0; iFace < zne.getNFaces(); iFace++) {
-		//	calcFaceFlux(iZone, iFace);
-		//}
+		for (int iFace = 0; iFace < zne.getNFaces(); iFace++) {
+			calcFaceFlux(iZone, iFace);
+		}
 
-		// testing : inserting just diag elems
-		for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
+		// constructing rhs (du from explicit scheme)
+		{
+			t_ConsVars dU_rhs;
 
-			int idGlob = getGlobInd(iZone, iCell);
-			int iRowBase = NConsVars * idGlob;
+			double buf[NConsVars];
+			int idx[NConsVars];
 
-			for (int k = 0; k < NConsVars; k++) {
-				idxm = iRowBase + k;
-				idxn = iRowBase + k;
-				MatSetValues(ctxKSP.A, 1, &idxm, 1, &idxn, &val, ADD_VALUES);
+			for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
+
+				int idGlob = getGlobInd(iZone, iCell);
+				int iRowBase = NConsVars * idGlob;
+
+				dU_rhs.reset();
+
+				t_Cell& cell = zne.getCell(iCell);
+
+				for (int j = 0; j < cell.NFaces; j++) {
+
+					const t_Face& face = cell.getFace(j);
+
+					// U[n+1] = U[n] - summ(flux_j), so we summ fluxes multiplied by minus 1
+					double coef = cell.isMyFace(j) ? -1.0 : 1.0;
+
+					coef *= dt * face.Area / cell.Volume;
+
+					const t_Flux& flux = getFlux(iZone, face.Id);
+
+					dU_rhs += coef * flux;
+
+				}
+
+				// insert values in my portion of rhs vector
+				for (int k = 0; k < NConsVars; k++) {
+					buf[k] = dU_rhs[k];
+					idx[k] = iRowBase + k;
+				}
+
+				VecSetValues(ctxKSP.b, NConsVars, idx, buf, INSERT_VALUES);
+
 			}
+
+			VecAssemblyBegin(ctxKSP.b);
+			VecAssemblyEnd(ctxKSP.b);
+		
 		}
 
 
+
+		// constructing The Matrix 
+		{
+			for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
+
+				t_Cell& cell = zne.getCell(iCell);
+
+				for (int j = 0; j < cell.NFaces; j++) {
+
+				}
+
+			}
+
+			MatAssemblyBegin(ctxKSP.A, MAT_FINAL_ASSEMBLY);
+			MatAssemblyEnd(ctxKSP.A, MAT_FINAL_ASSEMBLY);
+
+		}
+
 	}
 
-	MatAssemblyBegin(ctxKSP.A, MAT_FINAL_ASSEMBLY);
-	MatAssemblyEnd(ctxKSP.A, MAT_FINAL_ASSEMBLY);
-
-	hsLogMessage("Matrix assembled");
+	hsLogMessage("dfgsdfgsdfg");
 	return;
-
-	VecSet(ctxKSP.exact_sol, 1.0);
-	MatMult(ctxKSP.A, ctxKSP.exact_sol, ctxKSP.b);
 
 	KSPSolve(ctxKSP.ksp, ctxKSP.b, ctxKSP.x);
 
-	VecAXPY(ctxKSP.x, -1.0, ctxKSP.exact_sol);
 	double norm;
-	VecNorm(ctxKSP.x, NORM_2, &norm);
 	int nits;
+	KSPGetResidualNorm(ctxKSP.ksp, &norm);
 	KSPGetIterationNumber(ctxKSP.ksp, &nits);
+	hsLogMessage("KSP: Norm of error %.6e iterations %d\n", norm, nits);
 
 	return;
 
@@ -321,5 +387,81 @@ void t_DomEu1stImpl::makeTimeStep() {
 	G_State.time += dt;
 
 	G_GhostMngEu.exchangeCSV();
+
+}
+
+void t_DomEu1stImpl::testKSP() {
+
+
+	int idxm[3];
+	int idxn[3];
+	double vals[3];
+
+	for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
+
+		t_Zone& zne = Zones[iZone];
+
+
+		// insert some elements in matrix and probe ksp
+		for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
+
+			int idGlob = getGlobInd(iZone, iCell);
+			int iRowBase = NConsVars * idGlob;
+
+			for (int k = 0; k < NConsVars; k++) {
+				if (k == 0) {
+					idxm[0] = iRowBase + k;
+					idxn[0] = iRowBase + k;
+					idxn[1] = idxn[0] + 1;
+
+					vals[0] = 1.001;
+					vals[1] = -1;
+
+					MatSetValues(ctxKSP.A, 1, idxm, 2, idxn, vals, ADD_VALUES);
+					continue;
+				}
+				if (k == NConsVars - 1) {
+					idxm[0] = iRowBase + k;
+					idxn[0] = iRowBase + k - 1;
+					idxn[1] = idxn[0] + 1;
+
+					vals[0] = -1;
+					vals[1] = 1.001;
+
+					MatSetValues(ctxKSP.A, 1, idxm, 2, idxn, vals, ADD_VALUES);
+					continue;
+				}
+				idxm[0] = iRowBase + k;
+				idxn[0] = iRowBase + k - 1;
+				idxn[1] = idxn[0] + 1;
+				idxn[2] = idxn[1] + 1;
+				vals[0] = -1;
+				vals[1] = 2;
+				vals[2] = -1;
+				MatSetValues(ctxKSP.A, 1, idxm, 3, idxn, vals, ADD_VALUES);
+			}
+		}
+
+
+	}
+
+	MatAssemblyBegin(ctxKSP.A, MAT_FINAL_ASSEMBLY);
+	MatAssemblyEnd(ctxKSP.A, MAT_FINAL_ASSEMBLY);
+
+	Vec exact_sol;
+	VecCreate(PETSC_COMM_WORLD, &exact_sol);
+	VecDuplicate(ctxKSP.x, &exact_sol);
+
+	VecSet(exact_sol, 1.0);
+	MatMult(ctxKSP.A, exact_sol, ctxKSP.b);
+
+	KSPSolve(ctxKSP.ksp, ctxKSP.b, ctxKSP.x);
+
+	VecAXPY(ctxKSP.x, -1.0, exact_sol);
+	double norm;
+	VecNorm(ctxKSP.x, NORM_2, &norm);
+	int nits;
+	KSPGetIterationNumber(ctxKSP.ksp, &nits);
+	hsLogMessage("Norm of error %.6e iterations %d\n", norm, nits);
 
 }

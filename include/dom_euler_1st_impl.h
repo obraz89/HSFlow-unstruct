@@ -14,11 +14,10 @@ struct t_KSPSolver {
 	KSP ksp;
 	PetscReal resid;
 
-	// size of vecs & mat
-	int dim;
-
-	// for debug only
-	Vec exact_sol;
+	// number of rows that are stored at this rank
+	int dimMy;
+	// number of rows of global matrix
+	int dimGlob;
 
 	~t_KSPSolver() {
 		KSPDestroy(&ksp);
@@ -26,13 +25,20 @@ struct t_KSPSolver {
 		VecDestroy(&b);  
 		MatDestroy(&A);
 
-		VecDestroy(&exact_sol);
 	}
 
 
 };
 
+// absolute value of largest eigenvalue of the linearized Riemann problem between cells c and d
+// i.e. store this for every face
+struct t_ZoneLambdasCD {
+	double* Lambdas;
+	~t_ZoneLambdasCD() { delete[] Lambdas; }
+};
+
 class t_DomEu1stImpl : public t_DomEuBase {
+	t_ZoneLambdasCD* ZonesLambdaCD;
 	t_KSPSolver ctxKSP;
 public:
 	void calcReconstData() {};
@@ -46,5 +52,12 @@ public:
 
 	// test
 	void makeTimeStep_SingleZone();
+	void testKSP();
+	virtual ~t_DomEu1stImpl() {
+		for (int i = iZneMPIs; i <= iZneMPIe; i++) {
+			delete[] ZonesLambdaCD[i].Lambdas;
+		}
+		delete[] ZonesLambdaCD;
+	}
 };
 
