@@ -37,6 +37,12 @@ void calcWaveSpeedDavisEstim(
 
 };
 
+double calcWaveSpeedDavisEstimMaxAbs(const t_PrimVars& pvl, const t_PrimVars& pvr) {
+	double sl, sr;
+	calcWaveSpeedDavisEstim(pvl, pvr, sl, sr);
+	return fmax(fabs(sl), fabs(sr));
+}
+
 void calcRusanovFlux(
 	const t_PrimVars& pvl, const t_PrimVars& pvr, t_Flux& flux) {
 
