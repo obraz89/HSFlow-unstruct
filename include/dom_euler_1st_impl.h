@@ -46,12 +46,12 @@ public:
 	virtual void makeTimeStep();
 	virtual void allocateFlowSolution();
 	// local for this rank 0-based index of cell
-	int getLocInd(const int iZone, const int iCell);
+	int getLocInd(const int iZone, const int iCell) const;
 	// global (all-ranks) 0-based index of cell
-	int getGlobInd(const int iZone, const int iCell);
+	int getGlobInd(const int iZone, const int iCell) const;
 
-	// test
-	void makeTimeStep_SingleZone();
+	bool isMyCell(int iZone, int iCell) const;
+
 	void testKSP();
 	virtual ~t_DomEu1stImpl() {
 		for (int i = iZneMPIs; i <= iZneMPIe; i++) {

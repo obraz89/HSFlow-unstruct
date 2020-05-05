@@ -93,6 +93,48 @@ void t_PrimVars::setValAtInf() {
 	setP(1.0/calcGMaMa());
 
 }
+
+void t_PrimVars::calcJac(t_SqMat<NConsVars>& Jac) const {
+
+	const double H = calcH();
+	const double& Gamma = G_FlowModelParams.Gamma;
+	const double q2 = calcVeloSq();
+
+	const double& u = getU();
+	const double& v = getV();
+	const double& w = getW();
+
+	Jac[0][0] = 0.0;
+	Jac[0][1] = 1.0;
+	Jac[0][2] = 0.0;
+	Jac[0][3] = 0.0;
+	Jac[0][4] = 0.0;
+
+	Jac[1][0] = 0.5 * (Gamma - 1.0) * q2 - u * u;
+	Jac[1][1] = (3.0 - Gamma) * u;
+	Jac[1][2] = (1.0 - Gamma) * v;
+	Jac[1][3] = (1.0 - Gamma) * w;
+	Jac[1][4] = Gamma - 1.0;
+
+	Jac[2][0] = -1.0 * u * v;
+	Jac[2][1] = v;
+	Jac[2][2] = u;
+	Jac[2][3] = 0.0;
+	Jac[2][4] = 0.0;
+
+	Jac[3][0] = -1.0 * u * w;
+	Jac[3][1] = w;
+	Jac[3][2] = 0.0;
+	Jac[3][3] = u;
+	Jac[3][4] = 0.0;
+
+	Jac[4][0] = (0.5 * (Gamma - 1.0) * q2 - H) * u;
+	Jac[4][1] = H + (1.0 - Gamma) * u * u;
+	Jac[4][2] = (1.0 - Gamma) * u * v;
+	Jac[4][3] = (1.0 - Gamma) * u * w;
+	Jac[4][4] = Gamma * u;
+
+};
 //******************************************ConsVars
 
 t_ConsVars& t_ConsVars::setByPV(const t_PrimVars& pv) {
@@ -142,6 +184,41 @@ void t_ConsVars::setValAtInf() {
 	*this = prv.calcConsVars();
 
 }
+
+void t_ConsVars::_inflate(const t_SqMat<3>& R, t_SqMat<NConsVars>& dest) {
+
+	dest.reset();
+
+	// first row
+	dest[0][0] = 1.0;
+	// rows 2-4 from rotation matrix
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			dest[i + 1][j + 1] = R[i][j];
+
+	dest[4][4] = 1.0;
+
+}
+
+void t_ConsVars::inflateRotMat(const t_MatRotN& mat_rot_coefs, t_SqMat<NConsVars>& mat) {
+
+	t_SqMat3 R;
+
+	R.set(mat_rot_coefs);
+
+	_inflate(R, mat);
+
+}
+
+void t_ConsVars::inflateRotMatInv(const t_MatRotN& mat_rot_coefs, t_SqMat<NConsVars>& mat) {
+
+	t_SqMat3 R;
+
+	R.set_inv(mat_rot_coefs);
+
+	_inflate(R, mat);
+
+}
 //******************************************Flux
 // we are in some reference frame (x,y,z) which is rotation from global (X,Y,Z)
 // compute inviscid face flux through area with normal (1;0;0) 
@@ -177,47 +254,5 @@ void calcCVFlux(const t_PrimVars& pv, t_ConsVars& cv, t_Flux& f) {
 
 	cv.setByPV(pv);
 	f.calc(pv);
-
-};
-
-void calcJac(const t_PrimVars& pv, t_SqMat<NConsVars>& Jac) {
-
-	const double H = pv.calcH();
-	const double& Gamma = G_FlowModelParams.Gamma;
-	const double q2 = pv.calcVeloSq();
-
-	const double& u = pv.getU();
-	const double& v = pv.getV();
-	const double& w = pv.getW();
-
-	Jac[0][0] = 0.0;
-	Jac[0][1] = 1.0;
-	Jac[0][2] = 0.0;
-	Jac[0][3] = 0.0;
-	Jac[0][4] = 0.0;
-
-	Jac[1][0] = 0.5 * (Gamma - 1.0) * q2 - u * u;
-	Jac[1][1] = (3.0 - Gamma) * u;
-	Jac[1][2] = (1.0 - Gamma) * v;
-	Jac[1][3] = (1.0 - Gamma) * w;
-	Jac[1][4] = Gamma - 1.0;
-
-	Jac[2][0] = -1.0 * u * v;
-	Jac[2][1] = v;
-	Jac[2][2] = u;
-	Jac[2][3] = 0.0;
-	Jac[2][4] = 0.0;
-
-	Jac[3][0] = -1.0 * u * w;
-	Jac[3][1] = w;
-	Jac[3][2] = 0.0;
-	Jac[3][3] = u;
-	Jac[3][4] = 0.0;
-
-	Jac[4][0] = (0.5 * (Gamma - 1.0) * q2 - H) * u;
-	Jac[4][1] = H + (1.0 - Gamma) * u * u;
-	Jac[4][2] = (1.0 - Gamma) * u * v;
-	Jac[4][3] = (1.0 - Gamma) * u * w;
-	Jac[4][4] = Gamma * u;
 
 };

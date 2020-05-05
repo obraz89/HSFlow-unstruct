@@ -93,6 +93,8 @@ public:
 
 	t_GhostMngBase(): _pGLayers(), _pDom(nullptr) {}
 
+	void getDonor(int iZone, int iCell, int& iZoneDnr, int& iCellDnr) const;
+
 	// 
 	virtual void exchangeGeomData();
 

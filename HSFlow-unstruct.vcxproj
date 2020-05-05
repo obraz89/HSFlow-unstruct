@@ -201,7 +201,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(MPI_DIR)/lib/x64;$(CGNS_DIR)/lib;$(PETSC_DIR)/lib;$(MKL_DIR)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>msmpi.lib;libpetsc.lib;libzlib.lib;libhdf5.lib;cgns.lib;ws2_32.lib;legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msmpi.lib;mkl_intel_lp64.lib;mkl_core.lib;mkl_sequential.lib;libpetsc.lib;libzlib.lib;libhdf5.lib;cgns.lib;ws2_32.lib;legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

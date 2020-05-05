@@ -144,6 +144,44 @@ lint t_GhostMngBase::calcIndOffset(int zone_id_my, int zone_id_dnr) const{
 
 };
 
+void t_GhostMngBase::getDonor(int iZone, int iCell, int& a_iZoneDnr, int& a_iCellDnr) const{
+
+	// check that iCell is ghost
+	const t_Zone& zne = _pDom->Zones[iZone];
+
+	if (zne.isRealCell(iCell))
+		hsLogError("t_GhostMngBase::getDonor: trying to find donor for real cell: iZone=%d, iCell=%d", 
+			iZone, iCell);
+
+	const t_GhostLayer* pLayer;
+
+	for (int iZoneDnr = 0; iZoneDnr < _pDom->nZones; iZoneDnr++) {
+
+		pLayer = _pGLayers[getPlainInd(iZone, iZoneDnr)];
+
+		if (pLayer->size() > 0) {
+
+			int idStart = calcIndOffset(iZone, iZoneDnr);
+			int idEnd = idStart + pLayer->size() - 1;
+
+			if (idStart <= iCell && iCell <= idEnd) {
+				int shift = iCell - idStart;
+				// donor 2 ghost data
+				const t_Cell2GhostData& d2g = pLayer->data[shift];
+				if (d2g.id_my != iCell) {
+					hsLogError("t_GhostMngBase::getDonor: found entry, but cell 2 ghost data is wrong...");
+					hsLogError("... tried to find donor for: iZone=%d, iCell=%d", iZone, iCell);
+					hsLogError("... corresponding data in ghost layer: iCell=%d", d2g.id_my);
+				}
+				a_iZoneDnr = iZoneDnr;
+				a_iCellDnr = d2g.id_dnr;
+			}
+		}
+	}
+
+
+};
+
 void t_GhostMngBase::exchangeGeomData() {
 
 	for (int i = 0; i < _pDom->nZones; i++) {

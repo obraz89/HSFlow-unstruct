@@ -21,7 +21,7 @@ using t_BufEdge2Vert = t_BufIndsStat<lint, MaxNumEdgesInCell, 2>;
 struct t_Vert;
 using t_SetOfpVerts = t_TSet<const t_Vert*, MaxNumVertsInFace>;
 
-struct t_Zone;
+class t_Zone;
 
 struct t_Cell;
 
@@ -67,6 +67,8 @@ struct t_Face {
 	t_Face() { pMyCell = nullptr; pOppCell = nullptr; }
 
 	void ComputeFaceCenter();
+
+	bool isFluid() const { return BCId.get() == t_FaceBCID::Fluid; }
 
 	t_SetOfpVerts getVerts() const;
 
@@ -289,7 +291,7 @@ public:
 
 	void getNeigAbutCellId(const std::vector<lint>& vert_ids, lint& cell_id, int& face_pos) const;
 
-	bool isRealCell(lint cell_id) {
+	bool isRealCell(lint cell_id) const{
 		// indices of real nodes are [0...nCellsReal-1]
 		return (0 <= cell_id && cell_id <= nCellsReal - 1);
 	}

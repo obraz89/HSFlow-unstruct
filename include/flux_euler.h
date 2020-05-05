@@ -55,11 +55,14 @@ public:
 
 	void setValAtInf();
 
+	void calcJac(t_SqMat<NConsVars>& Jac) const;
+
 };
 
 // vector of conservative flow variables
 // (rho, rho*u, rho*v, rho*w, rho*E)
 class t_ConsVars : public t_VecConsVars {
+	static void _inflate(const t_SqMat<3>& R, t_SqMat<NConsVars>& dest);
 public:
 	t_ConsVars() :t_VecConsVars() {}
 	t_ConsVars(const t_VecConsVars& v) :t_VecConsVars(v) {}
@@ -68,6 +71,9 @@ public:
 	t_PrimVars calcPrimVars() const;
 
 	void setValAtInf();
+
+	static void inflateRotMat(const t_MatRotN& mat_rot, t_SqMat<NConsVars>& mat);
+	static void inflateRotMatInv(const t_MatRotN& mat_rot, t_SqMat<NConsVars>& mat);
 };
 
 class t_Flux : public t_VecConsVars{
@@ -83,7 +89,5 @@ public:
 
 // calc CV & Flux from primitive Vars
 void calcCVFlux(const t_PrimVars& pv, t_ConsVars& cv, t_Flux& f);
-
-void calcJac(const t_PrimVars& pv, t_SqMat<NConsVars>& Jac);
 
 

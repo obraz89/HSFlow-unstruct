@@ -8,7 +8,12 @@
 
 #include "ghost_euler.h"
 
-int t_DomEu1stImpl::getLocInd(const int iZone, const int iCell) {
+int t_DomEu1stImpl::getLocInd(const int iZone, const int iCell) const{
+
+#ifdef _DEBUG
+	if (!Zones[iZone].isRealCell(iCell))
+		hsLogError("t_DomEu1stImpl::getLocInd: trying to calc loc index for ghost cell (cell must be real!)");
+#endif
 
 	int idZoneOffset = 0;
 
@@ -20,16 +25,63 @@ int t_DomEu1stImpl::getLocInd(const int iZone, const int iCell) {
 
 }
 
-int t_DomEu1stImpl::getGlobInd(const int iZone, const int iCell) {
+int t_DomEu1stImpl::getGlobInd(const int iZone, const int iCell) const{
 
-	int idZoneOffset = 0;
+#ifdef _DEBUG
+	if (iZone<iZneMPIs || iZone>iZneMPIe)
+		hsLogError("t_DomEu1stImpl::getGlobInd: trying to calculate global index for cell that is not in my zones");
+#endif
 
-	for (int i = 0; i < iZone; i++)
-		idZoneOffset += Zones[i].getnCellsReal();
+	const t_Zone& zne = Zones[iZone];
 
-	return idZoneOffset + iCell;
+	if (zne.isRealCell(iCell)) {
+
+		int idZoneOffset = 0;
+
+		for (int i = 0; i < iZone; i++)
+			idZoneOffset += Zones[i].getnCellsReal();
+
+		return idZoneOffset + iCell;
+
+	}
+	else {
+		int iZoneDnr;
+		int iCellDnr;
+		G_GhostMngEu.getDonor(iZone, iCell, iZoneDnr, iCellDnr);
+
+		int idZoneOffset = 0;
+
+		for (int i = 0; i < iZoneDnr; i++)
+			idZoneOffset += Zones[i].getnCellsReal();
+
+		return idZoneOffset + iCellDnr;
+
+	}
 
 };
+
+bool t_DomEu1stImpl::isMyCell(int iZone, int iCell) const{
+
+	if (iZone<iZneMPIs || iZone>iZneMPIe)
+		hsLogError("t_DomEu1stImpl::isMyCell: trying to check cell that is not in my zones");
+
+	const t_Zone& Zne = Zones[iZone];
+
+	// check if cell is real
+	if (Zne.isRealCell(iCell))
+		return true;
+	// check if ghost but donor also belongs to me
+	int iZoneDnr;
+	int iCellDnr;
+	G_GhostMngEu.getDonor(iZone, iCell, iZoneDnr, iCellDnr);
+
+	if (iZneMPIs <= iZoneDnr && iZoneDnr <= iZneMPIe)
+		return true;
+
+	// cell is ghost and donor is not mine
+	return false;
+
+}
 
 void t_DomEu1stImpl::allocateFlowSolution() {
 
@@ -61,47 +113,62 @@ void t_DomEu1stImpl::allocateFlowSolution() {
 	// dimGlob is a sum of dimMy for all ranks 
 	MPI_Allreduce(&ctxKSP.dimMy, &ctxKSP.dimGlob, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
-	// number of non-zeros in diagonal (d_nnz) and non-diagonal (o_nnz) 
-	// part for each row in ownership of this rank
-	int* d_nnz = new int[ctxKSP.dimMy];
-	int* o_nnz = new int[ctxKSP.dimMy];
+	// number of non-zero blocks in diag block-row (d_nnz) and non-diagonal block-row (o_nnz) 
+	// diag submatrix is for all my non-ghost cells
+	// non-diagonal blocks occur when cell neighbor is ghost
+	int* d_nnz = new int[NCellsMy];
+	int* o_nnz = new int[NCellsMy];
+
+	//debug
+	int maxNDiagBlocks = 0;
+	int maxNNonDiagBlocks = 0;
 
 	for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
 		const t_Zone& Zne = Zones[iZone];
 		for (int iCell = 0; iCell < Zne.getnCellsReal(); iCell++) {
-			int idMy = getLocInd(iZone, iCell);
-			// block non-zeros are the same
-			int dz = NConsVars;
-			int oz = Zne.getCell(iCell).NCellsNeig() * NConsVars;
-			for (int k = 0; k < NConsVars; k++) {
-				int iRow = NConsVars * idMy + k;
-				d_nnz[iRow] = dz;
-				o_nnz[iRow] = oz;
+			int iBlockRowLocal = getLocInd(iZone, iCell);
+			const t_Cell& cell = Zne.getCell(iCell);
+			int NDiagBlocks = 1;
+			int NNonDiagBlocks = 0;
+			for (int k = 0; k < MaxNumFacesInCell; k++) {
+				if (cell.pCellsNeig[k] != nullptr) {
+					const t_Cell& cell_op = *cell.pCellsNeig[k];
+					if (isMyCell(iZone, cell_op.Id))
+						NDiagBlocks++;
+					else
+						NNonDiagBlocks++;
+				}
 			}
+			// number of non-diag blocks
+			d_nnz[iBlockRowLocal] = NDiagBlocks;
+			o_nnz[iBlockRowLocal] = NNonDiagBlocks;
+
+			//debug
+			if (NDiagBlocks > maxNDiagBlocks) maxNDiagBlocks = NDiagBlocks;
+			if (NNonDiagBlocks > maxNNonDiagBlocks) maxNNonDiagBlocks = NNonDiagBlocks;
 		}
 	}
 
+	hsLogMessage("MaxDiagBlocks=%d, MaxNonDiagBlocks=%d", maxNDiagBlocks, maxNNonDiagBlocks);
+
 	PetscErrorCode perr;
 	// create vectors
-	// x - let petsc decide storage
-	perr = VecCreate(PETSC_COMM_WORLD, &ctxKSP.x);
-	perr = VecSetSizes(ctxKSP.x, PETSC_DECIDE, ctxKSP.dimGlob);
-	if (perr) hsLogMessage("Error:Failed to init PETSc solution vector");
-
 	// create rhs
 	perr = VecCreateMPI(PETSC_COMM_WORLD, ctxKSP.dimMy, PETSC_DETERMINE, &ctxKSP.b);
 	if (perr) hsLogMessage("Error:Failed to init PETSc rhs vector");
 
+	// x - store exactly as rhs as we need to copy data from solution later
+	perr = VecDuplicate(ctxKSP.b, &ctxKSP.x);
+	if (perr) hsLogMessage("Error:Failed to init PETSc solution vector");
 
 	// allocate matrix
-
-	perr = MatCreateAIJ(PETSC_COMM_WORLD,
-		ctxKSP.dimMy, ctxKSP.dimMy,
-		PETSC_DETERMINE, PETSC_DETERMINE,
+	perr = MatCreateBAIJ(PETSC_COMM_WORLD, NConsVars,
+		ctxKSP.dimMy, ctxKSP.dimGlob,
+		PETSC_DETERMINE, ctxKSP.dimGlob,
 		0, d_nnz, 0, o_nnz, &ctxKSP.A);
 	if (perr) hsLogMessage("Error:Failed to init PETSc matrix");
 
-	//MatSetOption(ctx.matJac, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
+	MatSetOption(ctxKSP.A, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
 
 	perr = KSPCreate(PETSC_COMM_WORLD, &ctxKSP.ksp);
 	// deflated GMRES, the adaptive strategy allows to switch to the deflated GMRES when the stagnation occurs
@@ -116,13 +183,7 @@ void t_DomEu1stImpl::allocateFlowSolution() {
 	
 	delete[] d_nnz, o_nnz;
 }
-
-void t_DomEu1stImpl::makeTimeStep_SingleZone() {
-
-	Vec v;
-
-}
-
+// explicit face flux
 void t_DomEu1stImpl::calcFaceFlux(int iZone, lint iFace) {
 
 	t_Zone& zne = Zones[iZone];
@@ -258,13 +319,14 @@ void t_DomEu1stImpl::calcFaceFlux(int iZone, lint iFace) {
 
 	}
 
-
 	hsLogError(
 		"t_DomainEuler::calcFaceFlux: unknow bc kind : Zone #%ld, face #%ld",
 		iZone, iFace);
 
+}
 
-
+inline int plainInd4Blk(int i, int j) {
+	return i * NConsVars + j;
 }
 
 void t_DomEu1stImpl::makeTimeStep() {
@@ -323,6 +385,7 @@ void t_DomEu1stImpl::makeTimeStep() {
 				}
 
 				// insert values in my portion of rhs vector
+				// TODO:VecSetValuesBlocked
 				for (int k = 0; k < NConsVars; k++) {
 					buf[k] = dU_rhs[k];
 					idx[k] = iRowBase + k;
@@ -332,34 +395,178 @@ void t_DomEu1stImpl::makeTimeStep() {
 
 			}
 
-			VecAssemblyBegin(ctxKSP.b);
-			VecAssemblyEnd(ctxKSP.b);
 		
 		}
 
-
-
-		// constructing The Matrix 
+		// inserting values into The Matrix 
 		{
+			// reset non-zeros
+
+			// one block per insertion
+			int idxm;
+			int idxn;
+			double buf[NConsVars*NConsVars];
+
+			t_MatRotN mat_rot_coefs;
+
+			t_SqMat3 R, R_inv;
+
+			t_SqMat<NConsVars> Jac_c, Jac_d;
+
+			t_SqMat<NConsVars> Jac_c_glob, Jac_d_glob;
+
+			t_SqMat<NConsVars> R_inv_infl, R_infl;
+
 			for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
 
-				t_Cell& cell = zne.getCell(iCell);
+				const t_Cell& cell = zne.getCell(iCell);
+
+				const int idGlob = getGlobInd(iZone, iCell);
+				// diagonal unity block
+				{
+					for (int i = 0; i < NConsVars; i++) 
+						for (int j = 0; j < NConsVars; j++)
+							buf[plainInd4Blk(i, j)] = (i==j) ? 1.0 : 0.0;
+				}
+				
+				idxm = idGlob;
+				idxn = idGlob;
+				int* pidxm = &idxm;
+				int val = pidxm[0];
+				MatSetValuesBlocked(ctxKSP.A, 1, &idxm, 1, &idxn, buf, ADD_VALUES);
 
 				for (int j = 0; j < cell.NFaces; j++) {
 
-				}
+					const t_Face& face = cell.getFace(j);
 
-			}
+					t_Vec3 Normal = cell.getFaceNormalOutward(j);
 
-			MatAssemblyBegin(ctxKSP.A, MAT_FINAL_ASSEMBLY);
-			MatAssemblyEnd(ctxKSP.A, MAT_FINAL_ASSEMBLY);
+					mat_rot_coefs.calc_rot_angles_by_N(Normal);
 
-		}
+					R.set(mat_rot_coefs);
+					R_inv.set_inv(mat_rot_coefs);
 
-	}
+					t_ConsVars::inflateRotMat(mat_rot_coefs, R_infl);
+					t_ConsVars::inflateRotMatInv(mat_rot_coefs, R_inv_infl);
 
-	hsLogMessage("dfgsdfgsdfg");
-	return;
+					double coef = dt * (face.Area / cell.Volume);
+
+					if (face.isFluid()) {
+
+						t_PrimVars pvc, pvd;
+
+						pvc = getCellCSV(iZone, iCell).calcPrimVars();
+
+						const t_Cell& cell_opp = *cell.pCellsNeig[j];
+
+						pvd = getCellCSV(iZone, cell_opp.Id).calcPrimVars();
+
+						double LamAbs = ZonesLambdaCD[iZone].Lambdas[face.Id];
+
+						// rotate to local rf
+
+						pvc.rotate(R);
+						pvd.rotate(R);
+
+						pvc.calcJac(Jac_c);
+						pvd.calcJac(Jac_d);
+
+						// rotate matrices back
+						// Jac_glob = R_inv*Jac_loc*R
+						Jac_c_glob = R_inv_infl * Jac_c * R_infl;
+						Jac_d_glob = R_inv_infl * Jac_d * R_infl;
+
+						// diagonal block for c
+						{
+							double LamAdd;
+							for (int i = 0; i < NConsVars; i++) {
+								for (int j = 0; j < NConsVars; j++) {
+									LamAdd = (i == j) ? LamAbs : 0.0;
+									buf[plainInd4Blk(i, j)] = 
+										0.5 * coef * (Jac_c_glob[i][j] + LamAdd);
+								}
+							}
+							idxm = idGlob;
+							idxn = idGlob;
+							MatSetValuesBlocked(ctxKSP.A, 1, &idxm, 1, &idxn, buf, ADD_VALUES);
+						}
+						// offset block for d 
+						{
+							double LamAdd;
+							for (int i = 0; i < NConsVars; i++) {
+								for (int j = 0; j < NConsVars; j++) {
+									LamAdd = (i == j) ? -1.0 * LamAbs : 0.0;
+									buf[plainInd4Blk(i, j)] =
+										0.5 * coef * (Jac_d_glob[i][j] + LamAdd);
+								}
+							}
+							idxm = idGlob;
+							idxn = getGlobInd(iZone, cell_opp.Id);
+							MatSetValuesBlocked(ctxKSP.A, 1, &idxm, 1, &idxn, buf, ADD_VALUES);
+						}
+
+						continue;
+					}
+
+					t_BCKindEuler bc_kind = G_BCListEuler.getKind(face.BCId.get());
+
+					if (bc_kind == t_BCKindEuler::Inflow) {
+						// nothing to add, Fc=const, no jac additions
+						continue;
+					}
+
+					if (bc_kind == t_BCKindEuler::Outflow ||
+						bc_kind == t_BCKindEuler::Sym ||
+						bc_kind == t_BCKindEuler::Wall) {
+						// calculate diagonal addition, 
+						// opposite cell is virtual, no non-diag addition
+						t_PrimVars pvc;
+
+						pvc = getCellCSV(iZone, iCell).calcPrimVars();
+
+						double LamAbs = ZonesLambdaCD[iZone].Lambdas[face.Id];
+
+						pvc.rotate(R);
+
+						pvc.calcJac(Jac_c);
+
+						// rotate Jac back
+						Jac_c_glob = R_inv_infl * Jac_c * R_infl;
+
+						// diagonal block for c
+						{
+							double LamAdd;
+							for (int i = 0; i < NConsVars; i++) {
+								for (int j = 0; j < NConsVars; j++) {
+									LamAdd = (i == j) ? LamAbs : 0.0;
+									buf[plainInd4Blk(i, j)] =
+										0.5 * coef * (Jac_c_glob[i][j] + LamAdd);
+								}
+							}
+							idxm = idGlob;
+							idxn = idGlob;
+							MatSetValuesBlocked(ctxKSP.A, 1, &idxm, 1, &idxn, buf, ADD_VALUES);
+						}
+
+						continue;
+					}
+
+					hsLogError(
+						"t_DomEu1stImpl::makeTimeStep: unsupported face type for global Jac calculation");
+
+				}	// iterate over cell faces
+
+			}	// iterate over cells
+
+		} // matrix & rhs insertions for the zone
+
+	}	// for Zones
+
+	VecAssemblyBegin(ctxKSP.b);
+	VecAssemblyEnd(ctxKSP.b);
+
+	MatAssemblyBegin(ctxKSP.A, MAT_FINAL_ASSEMBLY);
+	MatAssemblyEnd(ctxKSP.A, MAT_FINAL_ASSEMBLY);
 
 	KSPSolve(ctxKSP.ksp, ctxKSP.b, ctxKSP.x);
 
@@ -369,14 +576,41 @@ void t_DomEu1stImpl::makeTimeStep() {
 	KSPGetIterationNumber(ctxKSP.ksp, &nits);
 	hsLogMessage("KSP: Norm of error %.6e iterations %d\n", norm, nits);
 
-	return;
+	// update my portion of solution
+	double ResidTot = 0.0;
+	double dU_max_Global = 0.0;
+	{
+		PetscScalar* ardU;  // processor's portion of the global field vector
+		VecGetArray(ctxKSP.x, &ardU);
 
+		int iRowBase;
+		t_ConsVars dU;
 
-	double ResidTot;
-	MPI_Allreduce(&G_State.ResidTot, &ResidTot, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
 
-	double dU_max_Global;
-	MPI_Allreduce(&dU_max, &dU_max_Global, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+			t_Zone& zne = Zones[iZone];
+
+			for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
+
+				iRowBase = getGlobInd(iZone, iCell) * NConsVars;
+				for (int k = 0; k < NConsVars; k++)
+					dU[k] = ardU[iRowBase + k];
+
+				getCellCSV(iZone, iCell) += dU;
+
+				double dU_norm = dU.norm();
+				ResidTot += dU_norm;
+				if (dU_norm > dU_max_Global) dU_max_Global = dU_norm;
+
+			}
+		}
+
+		VecRestoreArray(ctxKSP.x, &ardU);
+	}
+
+	MPI_Allreduce(&ResidTot, &G_State.ResidTot, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+	MPI_Allreduce(&dU_max_Global, &dU_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
 	if (G_State.mpiRank == 0) {
 		hsLogMessage("============");
@@ -387,6 +621,9 @@ void t_DomEu1stImpl::makeTimeStep() {
 	G_State.time += dt;
 
 	G_GhostMngEu.exchangeCSV();
+
+	MatZeroEntries(ctxKSP.A);
+	VecZeroEntries(ctxKSP.b);
 
 }
 
