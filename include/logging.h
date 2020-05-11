@@ -94,7 +94,43 @@ void hs_log_error_src(const std::string& msg, const char* src, int line);
 #endif
  //-----------------------------------------------------------------------------
 
+#define hsTHROW(...)  \
+	throw TError( hs_string_format(__VA_ARGS__), __FILE__, __LINE__ )
 
+// Use for compile-time checking of format arguments
+// #define hsTHROW(...)  printf(__VA_ARGS__)
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+
+	/**
+	 * The TError class
+	 *
+	 * A class for all HSFlow exceptions
+	 */
+class TError
+{
+protected:
+	std::string _what;  // description of the error
+	std::string _file;  // source file path
+	int         _line;  // source file line number
+
+public:
+	TError(const std::string& what, const char* src, const int line)
+		: _what(what), _file(src), _line(line) {   }
+
+	std::string what() const { return _what; }
+	std::string file() const { return _file; }
+	int line() const { return _line; }
+	std::string what_detailed() const
+	{
+		return  hs_string_format("%s\n\t@ %s(%d)",
+			_what.c_str(), _file.c_str(), _line
+		);
+	}
+};
+//-----------------------------------------------------------------------------
 
  /**
   * Guard for showing messages on exiting a scope (e.g. function)
