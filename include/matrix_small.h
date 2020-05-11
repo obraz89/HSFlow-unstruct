@@ -232,7 +232,10 @@ public:
 
 		t_Mat<N,N>::flatten(A);
 
-		Crout_LU_Decomposition_with_Pivoting(A, pivot, N);
+		int ok = Crout_LU_Decomposition_with_Pivoting(A, pivot, N);
+
+		if (ok < 0)
+			hsLogMessage("Error: t_SqMat::CalcInv: matrix is singular");
 
 		t_SqMat inv;
 
