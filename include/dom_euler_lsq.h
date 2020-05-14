@@ -15,8 +15,14 @@ struct t_ZoneReconstData {
 	t_ReconstDataLSQ* ReconstData;
 };
 
+// virtual cell abutts real cell via BC face
+struct t_ZoneVirtCells {
+	t_Cell* VirtCells;
+};
+
 class t_DomEuLSQ : public t_DomEuBase {
 	t_ZoneReconstData* ZonesRecData;
+	t_ZoneVirtCells* ZonesVirtCells;
 public:
 	void allocateFlowSolution();
 	void calcReconstData();
@@ -30,6 +36,10 @@ public:
 	};
 	void calcCellGradPrimVars(int iZone, lint iCell, t_Mat<NConsVars, 3>& CellGrad);
 	void calcReconstDataLSQ(int iZone, lint iCell);
+
+	void initializeVirtCells();
+
+	t_ConsVars calcVirtCellCSV(int iZone, lint iFace) const;
 	~t_DomEuLSQ();
 };
 
