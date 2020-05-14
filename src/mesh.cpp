@@ -562,49 +562,6 @@ t_SetOfpVerts t_Face::getVerts() const {
 	return verts;
 };
 
-void t_Zone::init_face2cell_conn(lint a_id, t_Cell& cell, int face_ind) {
-
-	t_Face& face = Faces[a_id];
-
-	face.Id = a_id;
-
-	t_CellFaceList flist(cell);
-
-	face.NVerts = flist.NVertInFace(face_ind);
-
-	t_SetOfpVerts vertices = flist.getVertices(face_ind);
-
-	for (int i = 0; i < face.NVerts; i++) {
-
-		face.pVerts[i] = vertices[i];
-
-	}
-
-
-	face.pMyCell = &cell;
-
-	face.IndLeftCellFace = face_ind;
-
-	cell.pFaces[face_ind] = &face;
-
-	if (cell.pCellsNeig[face_ind] != nullptr) {
-
-		t_Cell& cell_neig = *cell.pCellsNeig[face_ind];
-
-		face.pOppCell = &cell_neig;
-
-		int neig_face_ind = cell.FaceIndNeig[face_ind];
-
-		cell_neig.pFaces[neig_face_ind] = &face;
-
-		face.IndRightCellFace = cell.FaceIndNeig[face_ind];
-
-		face.BCId.set(t_FaceBCID::Fluid);
-
-	}
-
-}
-
 void t_Face::ComputeFaceCenter() {
 
 	this->Center.reset();
@@ -958,9 +915,54 @@ void t_Zone::makeFaces() {
 
 }
 
+void t_Zone::init_face2cell_conn(lint a_id, t_Cell& cell, int face_ind) {
+
+	t_Face& face = Faces[a_id];
+
+	face.Id = a_id;
+
+	t_CellFaceList flist(cell);
+
+	face.NVerts = flist.NVertInFace(face_ind);
+
+	t_SetOfpVerts vertices = flist.getVertices(face_ind);
+
+	for (int i = 0; i < face.NVerts; i++) {
+
+		face.pVerts[i] = vertices[i];
+
+	}
+
+
+	face.pMyCell = &cell;
+
+	face.IndLeftCellFace = face_ind;
+
+	cell.pFaces[face_ind] = &face;
+
+	if (cell.pCellsNeig[face_ind] != nullptr) {
+
+		t_Cell& cell_neig = *cell.pCellsNeig[face_ind];
+
+		face.pOppCell = &cell_neig;
+
+		int neig_face_ind = cell.FaceIndNeig[face_ind];
+
+		cell_neig.pFaces[neig_face_ind] = &face;
+
+		face.IndRightCellFace = cell.FaceIndNeig[face_ind];
+
+		face.BCId.set(t_FaceBCID::Fluid);
+
+	}
+
+}
+
 // cgns ctx prepared face_patch data
 // compare all faces to faces from face patch and update their BCKind
 void t_Zone::updateFacesWithBCPatch(const t_Face* face_patch, const int NFacesInPatch) {
+
+	nFacesBC += NFacesInPatch;
 
 	for (int i = 0; i < NFacesInPatch; i++) {
 

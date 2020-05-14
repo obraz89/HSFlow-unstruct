@@ -218,17 +218,18 @@ class t_Zone {
 
 	std::string name;  // name of the zone, initialized by '\0'
 
-
 	// Global 0-based id of a zone on current worker
-	int idGlob;
+	int idGlob = -1;
 	// for now all vertices in the zone are real
-	lint nVerts;
+	lint nVerts = 0;
 	// cells are stored as plain array
-	lint nCellsReal;
+	lint nCellsReal = 0;
 	// total number of cells, real+ghosts
-	lint nCellsTot;
+	lint nCellsTot = 0;
 	// number of faces in zone
-	lint nFaces;
+	lint nFaces = 0;
+	// number of BC faces
+	lint nFacesBC = 0;
 	// verts are real verts of the zone
 	t_Vert* Verts;
 	// plain array of cells, layout:
@@ -297,6 +298,7 @@ public:
 	}
 
 	lint getNFaces() const { return nFaces; }
+	lint getNFacesBC() const { return nFacesBC; }
 
 	~t_Zone() { delete[] Verts, Cells, Faces; }
 
