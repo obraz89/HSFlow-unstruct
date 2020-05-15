@@ -6,6 +6,8 @@
 
 #include <sstream>
 
+#include "logging.h"
+
 // classes for small matrix computations
 // small means that size is known at compile time and is ... small
 
