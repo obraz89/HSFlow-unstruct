@@ -34,12 +34,15 @@ public:
 	const t_ReconstDataLSQ& getReconstData(int iZone, lint iCell) const{
 		return ZonesRecData[iZone].ReconstData[iCell];
 	};
-	void calcCellGradPrimVars(int iZone, lint iCell, t_Mat<NConsVars, 3>& CellGrad);
+	void calcCellGradCSV(int iZone, lint iCell, t_Mat<NConsVars, 3>& CellGrad);
 	void calcReconstDataLSQ(int iZone, lint iCell);
 
 	void initializeVirtCells();
 
 	t_ConsVars calcVirtCellCSV(int iZone, lint iFace) const;
+	t_ConsVars getNeigCellCSV(int iZone, lint iCell, int indFace) const;
+
+	t_Vec<NConsVars> calcSlopeLimiters(int iZone, lint iCell, const t_Mat<NConsVars, 3>& CellGradPV) const;
 	~t_DomEuLSQ();
 };
 

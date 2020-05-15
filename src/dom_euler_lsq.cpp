@@ -168,9 +168,9 @@ void t_DomEuLSQ::calcReconstData() {
 }
 // we have precomputed scaled inverse Mc matrix;
 // grad(U_i) = McInv*Summ((rd-rc)/r*(Ud_i - Uc_i)/r)
-// i is component of prim or consv vars to reconstruct i=0...NConsVars-1
+// i is component of consv vars to reconstruct i=0...NConsVars-1
 // r is scale introduced to make all multipliers in formula O(1)
-void t_DomEuLSQ::calcCellGradPrimVars(int iZone, lint iCell, t_Mat<NConsVars, 3>& CellGradPV) {
+void t_DomEuLSQ::calcCellGradCSV(int iZone, lint iCell, t_Mat<NConsVars, 3>& CellGradCSV) {
 
 	const t_ConsVars& csv_c = getCellCSV(iZone, iCell);
 
@@ -178,11 +178,7 @@ void t_DomEuLSQ::calcCellGradPrimVars(int iZone, lint iCell, t_Mat<NConsVars, 3>
 
 	const t_ReconstDataLSQ& RecData = getReconstData(iZone, iCell);
 
-	t_PrimVars pvs_c = csv_c.calcPrimVars();
-
-	CellGradPV.reset();
-
-	return;
+	CellGradCSV.reset();
 	
 	t_Vec3 grad_cur, dr;
 
@@ -190,34 +186,115 @@ void t_DomEuLSQ::calcCellGradPrimVars(int iZone, lint iCell, t_Mat<NConsVars, 3>
 
 	double r_inv = 1.0 / RecData.r;
 
-	t_PrimVars pvs_n;
+	t_ConsVars csv_n;
 
 	// iterate over neighbors, including virtual cells
 	for (int j = 0; j < Cell.NFaces; j++) {
 
-		const t_Face& face = Cell.getFace(j);
-
 		const t_Cell& CellNeig = *Cell.pCellsNeig[j];
-
-		if (face.isFluid())
-			pvs_n = getCellCSV(iZone, CellNeig.Id).calcPrimVars();
-		else
-			pvs_n = calcVirtCellCSV(iZone, face.Id).calcPrimVars();
 
 		dr = r_inv * (CellNeig.Center - Cell.Center);
 
+		csv_n = getNeigCellCSV(iZone, iCell, j);
+
 		for (int i = 0; i < NConsVars; i++) {
 
-			du = r_inv * (pvs_n[i] - pvs_c[i]);
+			du = r_inv * (csv_n[i] - csv_c[i]);
 
 			grad_cur = RecData.MInvRR * dr;
 			grad_cur *= du;
 
 			for (int k = 0; k < 3; k++)
-				CellGradPV[i][k] += grad_cur[k];
+				CellGradCSV[i][k] += grad_cur[k];
 		}
 
 	}
+
+};
+
+double calcLimiterMinmod(double r) {
+	return fmin(fabs(r), 1.0);
+}
+
+t_Vec<NConsVars> t_DomEuLSQ::calcSlopeLimiters(
+	int iZone, lint iCell, const t_Mat<NConsVars, 3>& CellGradCSV) const {
+
+	t_Vec<NConsVars> limiters({1,1,1,1,1});
+
+	const t_Cell& Cell = Zones[iZone].getCell(iCell);
+
+	const t_ConsVars& csvMy = getCellCSV(iZone, iCell);
+
+	t_ConsVars csvMin = csvMy;
+	t_ConsVars csvMax = csvMy;
+
+	t_ConsVars csvNeig;
+
+	// iterate over neighbors to find min max values
+	for (int j = 0; j < Cell.NFaces; j++) {
+
+		csvNeig = getNeigCellCSV(iZone, iCell, j);
+
+		for (int k = 0; k < NConsVars; k++) {
+			if (csvNeig[k] > csvMax[k]) csvMax[k] = csvNeig[k];
+			if (csvNeig[k] < csvMin[k]) csvMin[k] = csvNeig[k];
+		}
+
+	}
+
+	t_Vec3 dr;
+
+	t_ConsVars csvVert;
+
+	{
+		double r;
+		double lim; 
+
+		// if difference in fluid vars is less then tol 
+		// limiter is not applied
+		// TODO: this is an empirical constant
+		const double LIM_TOL = 1.0e-03;
+
+		// iterate over vertices, 
+		// compute limiter for each vertex
+		double Uc;
+		double Up;
+		double Umax, Umin;
+		for (int nv = 0; nv < Cell.NVerts; nv++) {
+
+			dr = Cell.getVert(nv).xyz - Cell.Center;
+
+			csvVert = csvMy + CellGradCSV * dr;
+
+			for (int k = 0; k < NConsVars; k++) {
+
+				Uc = csvMy[k];
+				Up = csvVert[k];
+
+				Umax = csvMax[k];
+				Umin = csvMin[k];
+
+				if (fabs(Up - Uc) > LIM_TOL) {
+					if (Up > Uc)
+						r = (Umax - Uc) / (Up - Uc);
+					else
+						r = (Umin - Uc) / (Up - Uc);
+
+					lim = calcLimiterMinmod(r);
+				}
+				else {
+					lim = 1.0;
+				}
+
+				if (lim < limiters[k]) limiters[k] = lim;
+
+			}
+
+		}
+
+	}
+
+	return limiters;
 
 };
 
@@ -286,6 +363,25 @@ t_ConsVars t_DomEuLSQ::calcVirtCellCSV(int iZone, lint iFace) const{
 
 }
 
+// get csv of neighbor cell
+// if it is real cell, just read the values
+// if it is virtual cell, compute csv
+t_ConsVars t_DomEuLSQ::getNeigCellCSV(int iZone, lint iCell, int indFace) const {
+
+	const t_Cell& Cell = Zones[iZone].getCell(iCell);
+
+	const t_Face& Face = Cell.getFace(indFace);
+
+	t_ConsVars csv;
+
+	if (Face.isFluid())
+		csv = getCellCSV(iZone, Cell.pCellsNeig[indFace]->Id);
+	else
+		csv = calcVirtCellCSV(iZone, Face.Id);
+
+	return csv;
+};
+
 void t_DomEuLSQ::calcFaceFlux(int iZone, lint iFace) {
 
 	t_Zone& zne = Zones[iZone];
@@ -310,27 +406,36 @@ void t_DomEuLSQ::calcFaceFlux(int iZone, lint iFace) {
 	const t_Cell& CellMy = *face.pMyCell;
 	const t_Cell& CellOp = *face.pOppCell;
 
-	// prim vars at cell centers
-	t_PrimVars pvl_c = csv_my.calcPrimVars();
-	t_PrimVars pvr_c = csv_op.calcPrimVars();
-
-	t_Mat<NConsVars, 3> CellGradPVMy;
-	calcCellGradPrimVars(iZone, face.pMyCell->Id, CellGradPVMy);
+	t_Mat<NConsVars, 3> CellGradCSVMy;
+	t_Vec<NConsVars> limMy;
+	calcCellGradCSV(iZone, face.pMyCell->Id, CellGradCSVMy);
 	// TODO: ghost cells must receive!
 	// virt cells grads are zero
-	t_Mat<NConsVars, 3> CellGradPVOp;
-	if (face.isFluid())
-		calcCellGradPrimVars(iZone, face.pOppCell->Id, CellGradPVOp);
+	t_Mat<NConsVars, 3> CellGradCSVOp;
+	t_Vec<NConsVars> limOp({0,0,0,0,0});
+	if (face.isFluid()) {
+		calcCellGradCSV(iZone, face.pOppCell->Id, CellGradCSVOp);
+		calcSlopeLimiters(iZone, face.pOppCell->Id, CellGradCSVOp);
+	}
 
 	// distances from cell centers to face center
 	t_Vec3 drMy = face.Center - CellMy.Center;
 	t_Vec3 drOp = face.Center - CellOp.Center;
 
-	t_PrimVars dUMy = CellGradPVMy * drMy;
-	t_PrimVars dUOp = CellGradPVOp * drOp;
+	t_ConsVars dUMy = CellGradCSVMy * drMy;
+	t_ConsVars dUOp = CellGradCSVOp * drOp;
 
-	t_PrimVars pvl = pvl_c + dUMy;
-	t_PrimVars pvr = pvr_c + dUOp;
+	// apply limiters
+	for (int k = 0; k < NConsVars; k++) {
+		dUMy[k] *= limMy[k];
+		dUOp[k] *= limOp[k];
+	}
+
+	t_ConsVars csv_l = csv_my + dUMy;
+	t_ConsVars csv_r = csv_op + dUOp;
+
+	t_PrimVars pvl = csv_l.calcPrimVars();
+	t_PrimVars pvr = csv_r.calcPrimVars();
 
 	// rotate everything to local rf
 	R.set(mat_rot_coefs);
