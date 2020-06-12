@@ -15,9 +15,6 @@
 
 #include <fstream>
 
-
-t_DomEuBase* G_pDom;
-
 void t_DomEuBase::allocateFlowSolution() {
 
 	ZonesSol = new t_ZoneFlowData[nZones];

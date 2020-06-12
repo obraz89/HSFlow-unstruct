@@ -24,7 +24,7 @@
 #include "settings.h"
 
 #include "io-field.h"
-#include "mesh.h"
+#include "dom_base.h"
 
 #include "flow_params.h"
 
@@ -65,8 +65,8 @@ bool writeMetaInfoToCGNS(const int fileID, const int iBase, const short time_lay
 bool read_zone_cgns(const int fileID, const int iBase, const int idxZne,
 					TpakArraysDyn<double>& field)
 {
-	const int& cgZneID = G_pMesh->map_iZne2cgID[idxZne];
-	const t_Zone& Zne = G_pMesh->Zones[idxZne];
+	const int& cgZneID = G_pDom->map_iZne2cgID[idxZne];
+	const t_Zone& Zne = G_pDom->Zones[idxZne];
 
 	// Get zone size and name
 	char szZone[33];
@@ -119,7 +119,7 @@ bool read_zone_cgns(const int fileID, const int iBase, const int idxZne,
 	// Read functions
 	//
 	assert(field.size() > 0);
-	std::vector<std::string> funcNames = G_pMesh->getFuncNamesIO();
+	std::vector<std::string> funcNames = G_pDom->getFuncNamesIO();
 
 	irmin = 1;
 	irmax = Zne.getnCellsReal();
@@ -212,7 +212,7 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 		}
 
 		// Create base
-		if (cg_base_write(f, g_szCGBase, G_pMesh->nDim, G_pMesh->nDim, &iBase) != CG_OK)
+		if (cg_base_write(f, g_szCGBase, G_pDom->nDim, G_pDom->nDim, &iBase) != CG_OK)
 		{
 			hsLogError("Can't write base into '%s' ( %s )",
 				path_field.c_str(), cg_get_error());
@@ -226,7 +226,7 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 		iBaseGrid = iBase;
 		if (fGrid != f && fGrid >= 0) // grid in separate file
 		{
-			if (cg_base_write(fGrid, g_szCGBase, G_pMesh->nDim, G_pMesh->nDim, &iBaseGrid) != CG_OK)
+			if (cg_base_write(fGrid, g_szCGBase, G_pDom->nDim, G_pDom->nDim, &iBaseGrid) != CG_OK)
 			{
 				hsLogError("Can't write CGNS base node into '%s' ( %s )",
 					path_grid.c_str(), cg_get_error());
@@ -250,20 +250,20 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 	static int* map_cgID2iZne = nullptr;
 	if (!map_cgID2iZne)
 	{
-		map_cgID2iZne = new int[G_pMesh->nZones];
-		for (int b = 0; b < G_pMesh->nZones; ++b)
-			map_cgID2iZne[G_pMesh->map_iZne2cgID[b] - 1] = b;
+		map_cgID2iZne = new int[G_pDom->nZones];
+		for (int b = 0; b < G_pDom->nZones; ++b)
+			map_cgID2iZne[G_pDom->map_iZne2cgID[b] - 1] = b;
 	}
 
 	//
 	// Write grid & field data
 	//
-	for (int cgZneID = 1; cgZneID <= G_pMesh->nZones; ++cgZneID)
+	for (int cgZneID = 1; cgZneID <= G_pDom->nZones; ++cgZneID)
 	{
 		const int& zi = map_cgID2iZne[cgZneID - 1];
 		int iZone = -1;   int iZoneGrid = -1;
 
-		t_Zone& zne = G_pMesh->Zones[zi];
+		t_Zone& zne = G_pDom->Zones[zi];
 
 		if (G_State.mpiRank == 0)
 		{
@@ -303,7 +303,7 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 
 
 		t_ArrDbl grd_coords;
-		if ((G_pMesh->iZneMPIs <= zi && zi <= G_pMesh->iZneMPIe) || G_State.mpiRank == 0)
+		if ((G_pDom->iZneMPIs <= zi && zi <= G_pDom->iZneMPIe) || G_State.mpiRank == 0)
 			grd_coords.alloc(zne.getnVerts());
 
 		//
@@ -316,7 +316,7 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 				const int mpiTag = 'g' + 'r' + 'd' + iCoord;
 
 				// worker, pack coords
-				if (G_pMesh->iZneMPIs <= zi && zi <= G_pMesh->iZneMPIe ) {
+				if (G_pDom->iZneMPIs <= zi && zi <= G_pDom->iZneMPIe ) {
 
 					const int nVerts = zne.getnVerts();
 
@@ -325,7 +325,7 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 					const char* name = g_cgCoordNames[iCoord];
 					int iCoordCG;
 
-					G_pMesh->getDataAsArr(name, zi, grd_coords);
+					G_pDom->getDataAsArr(name, zi, grd_coords);
 					
 					if (G_State.mpiRank !=0)
 						MPI_Ssend(grd_coords.data(), nVerts, MPI_DOUBLE, 0/*root*/, mpiTag, MPI_COMM_WORLD);
@@ -384,7 +384,7 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 
 		// 3) write flow solution
 
-		std::vector<std::string> flow_vars = G_pMesh->getFuncNamesIO();
+		std::vector<std::string> flow_vars = G_pDom->getFuncNamesIO();
 
 		int iSol = -1;
 		if (G_State.mpiRank == 0)
@@ -392,7 +392,7 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 
 
 		t_ArrDbl flow_sol;
-		if ((G_pMesh->iZneMPIs <= zi && zi <= G_pMesh->iZneMPIe) || G_State.mpiRank == 0)
+		if ((G_pDom->iZneMPIs <= zi && zi <= G_pDom->iZneMPIe) || G_State.mpiRank == 0)
 			flow_sol.alloc(zne.getnCellsReal());
 
 		for (int iFlow = 0; iFlow < flow_vars.size(); iFlow++) {
@@ -402,9 +402,9 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 			const char* flow_sol_name = flow_vars[iFlow].c_str();
 
 			// worker, pack coords
-			if (G_pMesh->iZneMPIs <= zi && zi <= G_pMesh->iZneMPIe) {
+			if (G_pDom->iZneMPIs <= zi && zi <= G_pDom->iZneMPIe) {
 
-				G_pMesh->getDataAsArr(flow_sol_name, zi, flow_sol);
+				G_pDom->getDataAsArr(flow_sol_name, zi, flow_sol);
 
 				if (G_State.mpiRank != 0)
 				{

@@ -25,6 +25,12 @@
     <Filter Include="Source Files\euler">
       <UniqueIdentifier>{d3f358b9-4bb6-4bd7-ae77-91f0a210607b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\ns">
+      <UniqueIdentifier>{1b3a2229-11a9-48de-943e-df802e59e6d9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ns">
+      <UniqueIdentifier>{41e65fef-0862-4865-aaa6-8687e373e40b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -60,9 +66,6 @@
     <ClCompile Include="src\io-field.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\mesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\bc_common.cpp">
       <Filter>Source Files\phys_common</Filter>
     </ClCompile>
@@ -92,6 +95,15 @@
     </ClCompile>
     <ClCompile Include="src\dom_euler_1st_impl.cpp">
       <Filter>Source Files\euler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\case_euler.cpp">
+      <Filter>Source Files\euler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dom_base.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\case_ns.cpp">
+      <Filter>Source Files\ns</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -131,9 +143,6 @@
     <ClInclude Include="include\io-field.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\mesh.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\bc_euler.h">
       <Filter>Header Files\euler</Filter>
     </ClInclude>
@@ -166,6 +175,9 @@
     </ClInclude>
     <ClInclude Include="include\dom_euler_1st_impl.h">
       <Filter>Header Files\euler</Filter>
+    </ClInclude>
+    <ClInclude Include="include\dom_base.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

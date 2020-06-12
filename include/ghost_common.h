@@ -11,7 +11,7 @@ between zones by layers of ghost cells
 
 #include "common_data.h"
 
-#include "mesh.h"
+#include "dom_base.h"
 
 #include "CGNS-ctx.h"
 
@@ -50,7 +50,7 @@ class t_GhostMngBase {
 
 protected:
 
-	t_Mesh* _pDom;
+	t_DomBase* _pDom;
 
 	// connections between zones
 	// in MPI case, should be initialized via receive from master
@@ -83,11 +83,9 @@ public:
 	void getGhostsZiFromZj_Neig(const t_CGNSContext& ctx, int cgZneID_I, int cgZneID_J,
 		t_GhostLayer& glayer) const;
 
-	virtual void setDom(t_Mesh& a_dom) {
+	virtual void setDom(t_DomBase& a_dom) {
 
 		_pDom = &a_dom;
-
-		_pGLayers.resize(_pDom->nZones * _pDom->nZones, nullptr);
 
 	}
 

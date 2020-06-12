@@ -17,6 +17,11 @@ t_GhostMngBase* G_pGhostMngBase;
 // at this moment mesh is not fully initialized
 void t_GhostMngBase::initialize(const t_CGNSContext& ctx) {
 
+	if (_pDom->nZones == 0)
+		hsLogMessage("Error: Initializing ghost manager while domain is not initialized!");
+
+	_pGLayers.resize(_pDom->nZones * _pDom->nZones, nullptr);
+
 	for (int i = 0; i < _pDom->nZones; i++) {
 
 		for (int j = 0; j < _pDom->nZones; j++) {
@@ -78,8 +83,8 @@ void t_GhostMngBase::getGhostsZiFromZj_Neig(const t_CGNSContext& ctx, int cgZneI
 				for (int k = 0; k < verts_ids_dnr.size(); k++) verts_ids_dnr[k] -= 1;
 
 				// now we need to use vertexConnectivity
-				const t_Zone& ZneMy = G_pMesh->Zones[cgZneID_I - 1];
-				const t_Zone& ZneDnr = G_pMesh->Zones[cgZneID_J - 1];
+				const t_Zone& ZneMy = G_pDom->Zones[cgZneID_I - 1];
+				const t_Zone& ZneDnr = G_pDom->Zones[cgZneID_J - 1];
 
 				int face_pos_my, face_pos_dnr;
 

@@ -10,23 +10,17 @@
 
 #include "settings.h"
 
-#include "mesh.h"
+#include "dom_base.h"
 
 #include "bc_common.h"
 
+#include "ghost_common.h"
+
 #include "io-field.h"
 
-//#include "mpi.h"
 #include "petsc.h"
 
-// model-specific part
-#include "bc_euler.h"
-
 #include "flow_model_perfect_gas.h"
-
-#include "schemes_euler.h"
-
-#include "ghost_euler.h"
 
 #include <ctime>
 
@@ -141,24 +135,11 @@ int main(int argc, char* argv[])
 		);
 	}
 	hsLogWTime(true);
-
-	// important section:
-	// initialize references for bases
-	// TODO: this can be a part of "before-main" initializers
-	// but currently trying to avoid this...
-	{
-		G_pBCList = &G_BCListEuler;
-		G_pGhostMngBase = &G_GhostMngEu;
-	}
 	
 	if (!load_settings())
 		goto fin;
 
-	// initializes G_pDom, G_pMesh
-	loadSchemeEuler(g_genOpts.strScheme);
-
 	G_CGNSCtx.readMesh(g_genOpts.strGridFN);
-
 
 	// load cells & vertices
 	// make vertex connectivity so ghost manager is able to do some funcs
@@ -166,8 +147,7 @@ int main(int argc, char* argv[])
 
 	// initialize ghost manager, it uses some basic funcs of mesh
 	// requires first stage of mesh init
-	G_GhostMngEu.setDom(*G_pDom);
-	G_GhostMngEu.initialize(G_CGNSCtx);
+	G_pGhostMngBase->initialize(G_CGNSCtx);
 
 	// cell connectivity, face list
 	G_pDom->initializeFromCtxStage2();
@@ -175,8 +155,6 @@ int main(int argc, char* argv[])
 
 	MPI_Barrier(MPI_COMM_WORLD);
 	hsflow::TLog::flush();
-
-
 
 	// update cell center etc for ghosts
 	// cuurently not required as we store full mesh at each worker 

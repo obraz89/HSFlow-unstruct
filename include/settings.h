@@ -22,6 +22,9 @@ struct TgenericSettings
 	int numTimeSteps; // number of time steps to do
 	double convergenceResidual; // stop solver at this residual
 
+	// euler, ns, rans etc
+	std::string strCase;
+
 	// TODO: scheme (domain) options
 	double CFL;	// Courant number
 	std::string strScheme;
@@ -67,3 +70,9 @@ extern TgenericSettings g_genOpts;
 //-----------------------------------------------------------------------------
 
 bool load_settings();
+
+void load_case(std::string& ini_data);
+
+void load_case_euler(std::string& ini_data);
+
+void load_case_ns(std::string& ini_data);

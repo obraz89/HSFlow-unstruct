@@ -21,6 +21,8 @@
   <ItemGroup>
     <ClCompile Include="src\bc_common.cpp" />
     <ClCompile Include="src\bc_euler.cpp" />
+    <ClCompile Include="src\case_euler.cpp" />
+    <ClCompile Include="src\case_ns.cpp" />
     <ClCompile Include="src\CGNS-ctx.cpp" />
     <ClCompile Include="src\common_procs.cpp" />
     <ClCompile Include="src\dom_euler_1st.cpp" />
@@ -37,7 +39,7 @@
     <ClCompile Include="src\logging.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\matrix_small.cpp" />
-    <ClCompile Include="src\mesh.cpp" />
+    <ClCompile Include="src\dom_base.cpp" />
     <ClCompile Include="src\PluginBase.cpp" />
     <ClCompile Include="src\rs_procs.cpp" />
     <ClCompile Include="src\settings.cpp" />
@@ -61,7 +63,7 @@
     <ClInclude Include="include\io-field.h" />
     <ClInclude Include="include\logging.h" />
     <ClInclude Include="include\matrix_small.h" />
-    <ClInclude Include="include\mesh.h" />
+    <ClInclude Include="include\dom_base.h" />
     <ClInclude Include="include\optParse.h" />
     <ClInclude Include="include\PluginBase.h" />
     <ClInclude Include="include\rs_euler.h" />

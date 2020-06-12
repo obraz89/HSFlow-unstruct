@@ -7,7 +7,7 @@
 
 #include "bc_common.h"
 
-#include "mesh.h"
+#include "dom_base.h"
 
 #include <stdlib.h> // free()
 #include <string.h> // strtok(), strdup()
@@ -223,6 +223,8 @@ bool load_settings() {
 		g_genOpts.numTimeSteps = iniAD.read_int("NumTimeSteps", 100000);
 		g_genOpts.timeSteps2Write = iniAD.read_int("TimeSteps2Write", 500);
 
+		g_genOpts.strCase = iniAD.read_string("case", "euler");
+
 	}
 
 	iniAD.set_section("scheme");
@@ -232,16 +234,11 @@ bool load_settings() {
 		g_genOpts.strRiemannSolver = iniAD.read_string("RiemannSolver", "Roe");
 	}
 
-
-
 	// TODO: just do this in MPI case
 	//TPlugin::load_settings(fn, ini_data);
-
 	ini_data = iniAD.get_ini().encode();
 
-	G_FreeStreamParams.init(ini_data, "");
-
-	G_pBCList->init(ini_data, "");
+	load_case(ini_data);
 
 	// for now rewriting ini every time (to get defaults for the first time) 
 	// TODO: replace by TPlugin::save_settings(fn, ini_data); 
@@ -253,3 +250,23 @@ bool load_settings() {
 	return true;
 
 };
+
+void load_case(std::string& ini_data) {
+
+	if (g_genOpts.strCase.compare("euler") == 0) {
+
+		load_case_euler(ini_data);
+		return;
+
+	}
+
+	if (g_genOpts.strCase.compare("ns") == 0) {
+
+		load_case_ns(ini_data);
+		return;
+
+	}
+
+	hsLogMessage("Error: unsupported case option, supported options are: euler, ns");
+
+}

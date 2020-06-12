@@ -1,4 +1,4 @@
-#include "mesh.h"
+#include "dom_base.h"
 
 #include "ghost_common.h"
 
@@ -10,7 +10,7 @@
 
 #include "common_procs.h"
 
-t_Mesh* G_pMesh;
+t_DomBase* G_pDom;
 
 t_CellKind getElementKind(CG_ElementType_t cg_type) {
 
@@ -802,7 +802,7 @@ void t_Zone::makeCellConnectivity() {
 	// real-2-real connections are set, now add real-2-ghost connections
 	// TODO: all zones involved here, must be a method from ghost manager...
 	int ZoneID = this->idGlob;
-	for (int j = 0; j < G_pMesh->nZones; j++) {
+	for (int j = 0; j < G_pDom->nZones; j++) {
 
 		// ghost nodes from zone j for zoneID
 		const t_GhostLayer& glayer = G_pGhostMngBase->getGhostLayer(ZoneID, j);
@@ -1048,7 +1048,7 @@ std::vector<t_CellKindRange> t_Zone::getCellsOffsets() const{
  *   Distribute grid zones through MPI ranks (procs)
  *   assigns G_Domain.bs & G_Domain.be
 **/
-bool t_Mesh::assignZonesToProcs()
+bool t_DomBase::assignZonesToProcs()
 {
 	if (this->nZones < G_State.mpiNProcs)
 	{
@@ -1099,7 +1099,7 @@ bool t_Mesh::assignZonesToProcs()
 // (vertexes & cells & vertex-2-cell connections)
 // maybe its ok... 
 // main reason is that ghost manager requires all zone-2-zone connections to produce ghost layers...
-void t_Mesh::initializeFromCtxStage1() {
+void t_DomBase::initializeFromCtxStage1() {
 
 	this->nZones = G_CGNSCtx.nZones;
 
@@ -1130,7 +1130,7 @@ void t_Mesh::initializeFromCtxStage1() {
 	makeVertexConnectivity();
 
 }
-void t_Mesh::initializeFromCtxStage2() {
+void t_DomBase::initializeFromCtxStage2() {
 
 	makeCellConnectivity();
 
@@ -1149,7 +1149,7 @@ void t_Mesh::initializeFromCtxStage2() {
 
 }
 
-void t_Mesh::loadCells() {
+void t_DomBase::loadCells() {
 
 	const t_CGNSContext& ctx = G_CGNSCtx;
 	// NB: storing entire mesh on each worker
@@ -1229,7 +1229,7 @@ void t_Mesh::loadCells() {
 
 // parse BCs after they have already been read into ctx
 // face lists in zones must be initialized too
-void t_Mesh::loadBCs() {
+void t_DomBase::loadBCs() {
 
 	const t_CGNSContext& ctx = G_CGNSCtx;
 
@@ -1275,26 +1275,26 @@ void t_Mesh::loadBCs() {
 	}
 };     // boundary conditions
 
-void t_Mesh::makeVertexConnectivity() {
+void t_DomBase::makeVertexConnectivity() {
 	// NB: storing vartex-2-cell connectivity for all zones on each worker
 	for (int i = 0; i < nZones; i++) Zones[i].makeVertexConnectivity();
 
 }
 
 
-void t_Mesh::makeCellConnectivity() {
+void t_DomBase::makeCellConnectivity() {
 
 	for (int i = iZneMPIs; i <= iZneMPIe; i++) Zones[i].makeCellConnectivity();
 
 }
 
-void t_Mesh::makeFaces() {
+void t_DomBase::makeFaces() {
 
 	for (int i = iZneMPIs; i <= iZneMPIe; i++) Zones[i].makeFaces();
 
 }
 
-bool t_Mesh::checkNormalOrientations() {
+bool t_DomBase::checkNormalOrientations() {
 
 	bool ok = true;
 
@@ -1336,7 +1336,7 @@ bool t_Mesh::checkNormalOrientations() {
 }
 // calculate residual for a Ostrogradsky theorem
 // for all cells
-double t_Mesh::calcUnitOstrogradResid() {
+double t_DomBase::calcUnitOstrogradResid() {
 
 	double max_resid = 0.0;
 	double resid;

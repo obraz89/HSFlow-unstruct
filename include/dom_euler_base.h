@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mesh.h"
+#include "dom_base.h"
 
 #include "io-field.h"
 
@@ -56,7 +56,7 @@ struct t_PrimVarsIO {
 
 };
 
-class t_DomEuBase : public t_Mesh {
+class t_DomEuBase : public t_DomBase {
 
 protected:
 
@@ -83,13 +83,12 @@ public:
 	std::vector<std::string> getFuncNamesIO() const;
 	virtual void getDataAsArr(std::string name, int zoneID, t_ArrDbl& Vals) const;
 
-
-	virtual void makeTimeStep();
 	virtual double calcDt() const;
 	virtual void calcReconstData() = 0;
 	virtual void calcFaceFlux(int iZone, lint iFace) = 0;
 
 	virtual void checkMinMaxCSV();
+	virtual void makeTimeStep();
 
 	// debug
 	void dump_flow();
@@ -98,4 +97,4 @@ public:
 	virtual ~t_DomEuBase();
 };
 
-extern t_DomEuBase* G_pDom;
+extern t_DomEuBase* G_pDomEu;

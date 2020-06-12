@@ -304,13 +304,13 @@ public:
 
 };
 
-struct t_Mesh
+struct t_DomBase
 {
 
 	const int nDim = 3; // number of independent variables (problem dimensions)
 
-			  // Physical equations of the problem
-			  //
+	// Physical equations of the problem
+	//
 	//hsflow::TPhysPluginBase* phys = nullptr;
 
 	// Domain zones with grid and solution data
@@ -353,16 +353,20 @@ struct t_Mesh
 	// interface for the flow domain
 	virtual void allocateFlowSolution() = 0;
 	virtual void initializeFlow() = 0;
+	virtual void checkFlow() = 0;
+	virtual void calcReconstData() = 0;
 	virtual double loadField(std::string FieldName) = 0;
 	virtual int getNu() const= 0;
 	virtual std::vector<std::string> getFuncNamesIO() const = 0;
 	virtual void getDataAsArr(std::string name, int zoneID, t_ArrDbl& Vals) const= 0;
+	virtual void checkMinMaxCSV() = 0;
+	virtual void makeTimeStep() = 0;
 
 	// for debug
 	virtual void dump_flow() = 0;
 	virtual void dump_geom() = 0;
 
-	virtual ~t_Mesh() { delete[] Zones; };
+	virtual ~t_DomBase() { delete[] Zones; };
 };
 
-extern t_Mesh* G_pMesh;
+extern t_DomBase* G_pDom;
