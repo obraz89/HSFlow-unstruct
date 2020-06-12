@@ -27,7 +27,7 @@ void t_DomEuBase::allocateFlowSolution() {
 		lint nFaces = zne.getNFaces();
 		lint nCellsTot = zne.getnCellsTot();
 
-		fdata.Fluxes = new t_Flux[nFaces];
+		fdata.Fluxes = new t_FluxEu[nFaces];
 		fdata.ConsVars = new t_ConsVars[nCellsTot];
 
 
@@ -358,7 +358,7 @@ void t_DomEuBase::makeTimeStep() {
 
 				coef *= dt * face.Area / cell.Volume;
 
-				t_Flux flux = getFlux(iZone, face.Id);
+				t_FluxEu flux = getFlux(iZone, face.Id);
 
 				dU += coef * flux;
 

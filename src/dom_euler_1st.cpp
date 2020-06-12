@@ -19,7 +19,7 @@ void t_DomEu1st::calcFaceFlux(int iZone, lint iFace) {
 	// local vars for csvs, do not modify cell csv here
 	t_ConsVars csv_my = getCellCSV(iZone, face.pMyCell->Id);
 
-	t_Flux flux;
+	t_FluxEu flux;
 
 	if (face.BCId.get() == t_FaceBCID::Fluid) {
 

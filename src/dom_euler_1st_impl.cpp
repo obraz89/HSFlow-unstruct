@@ -197,7 +197,7 @@ void t_DomEu1stImpl::calcFaceFlux(int iZone, lint iFace) {
 	// local vars for csvs, do not modify cell csv here
 	t_ConsVars csv_my = getCellCSV(iZone, face.pMyCell->Id);
 
-	t_Flux flux;
+	t_FluxEu flux;
 
 	if (face.BCId.get() == t_FaceBCID::Fluid) {
 
@@ -378,7 +378,7 @@ void t_DomEu1stImpl::makeTimeStep() {
 
 					coef *= dt * face.Area / cell.Volume;
 
-					const t_Flux& flux = getFlux(iZone, face.Id);
+					const t_FluxEu& flux = getFlux(iZone, face.Id);
 
 					dU_rhs += coef * flux;
 

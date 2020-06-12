@@ -76,10 +76,10 @@ public:
 	static void inflateRotMatInv(const t_MatRotN& mat_rot, t_SqMat<NConsVars>& mat);
 };
 
-class t_Flux : public t_VecConsVars{
+class t_FluxEu : public t_VecConsVars{
 public:
-	t_Flux() :t_VecConsVars() {}
-	t_Flux(const t_VecConsVars& v) :t_VecConsVars(v) {}
+	t_FluxEu() :t_VecConsVars() {}
+	t_FluxEu(const t_VecConsVars& v) :t_VecConsVars(v) {}
 	void calc(const t_ConsVars& csv);
 	void calc(const t_PrimVars& pvs);
 
@@ -88,6 +88,6 @@ public:
 
 
 // calc CV & Flux from primitive Vars
-void calcCVFlux(const t_PrimVars& pv, t_ConsVars& cv, t_Flux& f);
+void calcCVFlux(const t_PrimVars& pv, t_ConsVars& cv, t_FluxEu& f);
 
 

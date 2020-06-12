@@ -223,7 +223,7 @@ void t_ConsVars::inflateRotMatInv(const t_MatRotN& mat_rot_coefs, t_SqMat<NConsV
 // we are in some reference frame (x,y,z) which is rotation from global (X,Y,Z)
 // compute inviscid face flux through area with normal (1;0;0) 
 // velocities must be in reference frame (x,y,z)!
-void t_Flux::calc(const t_PrimVars& pv) {
+void t_FluxEu::calc(const t_PrimVars& pv) {
 
 	const double& r = pv[0];
 	const double& u = pv[1];
@@ -243,14 +243,14 @@ void t_Flux::calc(const t_PrimVars& pv) {
 
 // TODO: avoid this function
 // use faster calcCVFlux()
-void t_Flux::calc(const t_ConsVars& cv) {
+void t_FluxEu::calc(const t_ConsVars& cv) {
 
 	calc(cv.calcPrimVars());
 
 }
 
 // calc CV & Flux from primitive Vars
-void calcCVFlux(const t_PrimVars& pv, t_ConsVars& cv, t_Flux& f) {
+void calcCVFlux(const t_PrimVars& pv, t_ConsVars& cv, t_FluxEu& f) {
 
 	cv.setByPV(pv);
 	f.calc(pv);

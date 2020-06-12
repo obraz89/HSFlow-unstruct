@@ -395,7 +395,7 @@ void t_DomEuLSQ::calcFaceFlux(int iZone, lint iFace) {
 	// local vars for csvs, do not modify cell csv here
 	t_ConsVars csv_my = getCellCSV(iZone, face.pMyCell->Id);
 
-	t_Flux flux;
+	t_FluxEu flux;
 
 	t_ConsVars csv_op;
 	if (face.isFluid())

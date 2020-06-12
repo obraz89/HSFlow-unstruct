@@ -44,7 +44,7 @@ double calcWaveSpeedDavisEstimMaxAbs(const t_PrimVars& pvl, const t_PrimVars& pv
 }
 
 void calcRusanovFlux(
-	const t_PrimVars& pvl, const t_PrimVars& pvr, t_Flux& flux) {
+	const t_PrimVars& pvl, const t_PrimVars& pvr, t_FluxEu& flux) {
 
 	double sl, sr;
 
@@ -53,7 +53,7 @@ void calcRusanovFlux(
 
 	t_ConsVars cvl, cvr;
 
-	t_Flux fl, fr;
+	t_FluxEu fl, fr;
 
 	calcCVFlux(pvl, cvl, fl);
 	calcCVFlux(pvr, cvr, fr);
@@ -66,11 +66,11 @@ void calcRusanovFlux(
 };
 
 void calcRoeFlux(
-	const t_PrimVars& pvl, const t_PrimVars& pvr, t_Flux& flux) {
+	const t_PrimVars& pvl, const t_PrimVars& pvr, t_FluxEu& flux) {
 
 	t_ConsVars cvl, cvr;
 
-	t_Flux fl, fr;
+	t_FluxEu fl, fr;
 
 	calcCVFlux(pvl, cvl, fl);
 	calcCVFlux(pvr, cvr, fr);
@@ -203,7 +203,7 @@ void calcRoeFlux(
 
 };
 
-void calcRSFlux(const t_PrimVars& pvl, const t_PrimVars& pvr, t_Flux& flux) {
+void calcRSFlux(const t_PrimVars& pvl, const t_PrimVars& pvr, t_FluxEu& flux) {
 
 	if (g_genOpts.strRiemannSolver.compare("Rusanov") == 0) {
 

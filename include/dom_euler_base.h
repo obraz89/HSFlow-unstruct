@@ -14,7 +14,7 @@
 // ConsVars - conservative flow variables at cell centers
 struct t_ZoneFlowData {
 	// fluxes through
-	t_Flux* Fluxes;
+	t_FluxEu* Fluxes;
 	t_ConsVars* ConsVars;
 };
 
@@ -72,7 +72,7 @@ public:
 		return ZonesSol[zone_id].ConsVars[cell_id];
 	};
 
-	t_Flux& getFlux(int zone_id, lint face_id) {
+	t_FluxEu& getFlux(int zone_id, lint face_id) {
 		return ZonesSol[zone_id].Fluxes[face_id];
 	}
 
