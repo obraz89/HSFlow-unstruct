@@ -1,17 +1,19 @@
 
 :: copy this file to your case dir and launch !!!
 
-@set HSFlowRoot=E:\science\devel\HSFlow-unstruct
+@set HSFlowRoot=S:\science\HSFlow-unstruct
 
-@if %HSFLOW_CASE_DIR%.==. set HSFLOW_CASE_DIR=%HSFlowRoot%/test_case 
+@set HSFLOW_CASE_DIR=%CD% 
 
 :: set paths to required libs
 
-@set MPI_DIR=%HSFlowRoot%/lib/msmpi_v8
+@set MPI_DIR=S:\Science\HSFlow-unstruct\lib\msmpi_v8
 
 @set CGNS_DIR=%HSFlowRoot%/lib/cgns-vc14-rlz-win64
 
-@set PATH=%PATH%;%INTEL_COMPILERS%/bin/intel64;
+@set PETSC_DIR=%HSFlowRoot%/lib/petsc_3.8.2-vc14-rlz
+
+@set MKL_DIR=%HSFlowRoot%/lib/mkl/lib/intel64
 
 @start %HSFlowRoot%/HSFlow-unstruct.sln
 
