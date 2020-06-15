@@ -105,6 +105,12 @@
     <ClCompile Include="src\case_ns.cpp">
       <Filter>Source Files\ns</Filter>
     </ClCompile>
+    <ClCompile Include="src\bc_ns.cpp">
+      <Filter>Source Files\ns</Filter>
+    </ClCompile>
+    <ClCompile Include="src\flux_ns.cpp">
+      <Filter>Source Files\ns</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\logging.h">
@@ -178,6 +184,12 @@
     </ClInclude>
     <ClInclude Include="include\dom_base.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\bc_ns.h">
+      <Filter>Header Files\ns</Filter>
+    </ClInclude>
+    <ClInclude Include="include\flux_ns.h">
+      <Filter>Header Files\ns</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
