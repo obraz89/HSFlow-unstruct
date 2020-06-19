@@ -166,7 +166,7 @@ int main(int argc, char* argv[])
 
 	G_pDom->initializeFlow();
 
-	G_pDom->checkFlow();
+	G_pDom->checkMesh();
 
 	hsLogMessage("Computing reconstruction data...");
 

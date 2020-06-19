@@ -1,3 +1,5 @@
+#include "mpi.h"
+
 #include "dom_base.h"
 
 #include "ghost_common.h"
@@ -1366,6 +1368,63 @@ double t_DomBase::calcUnitOstrogradResid() {
 	}
 	hsLogMsgAllRanks("Check volumes (Ostrogradsky): Max resid = %lf", max_resid);
 	return max_resid;
+}
+
+void t_DomBase::checkMesh() {
+
+	double VolMin = HUGE_VAL;
+	double VolMax = 0.0;
+	double AreaMin = HUGE_VAL;
+	double AreaMax = 0.0;
+	double DiaMin = HUGE_VAL;
+	double DiaMax = 0.0;
+
+	for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
+
+		const t_Zone& Zne = Zones[iZone];
+
+		for (int iCell = 0; iCell < Zne.getnCellsReal(); iCell++) {
+
+			const t_Cell& cell = Zne.getCell(iCell);
+
+			if (cell.Volume < VolMin) VolMin = cell.Volume;
+			if (cell.Volume > VolMax) VolMax = cell.Volume;
+
+			if (cell.Diameter < DiaMin) DiaMin = cell.Diameter;
+			if (cell.Diameter > DiaMax) DiaMax = cell.Diameter;
+		}
+
+		for (int iFace = 0; iFace < Zne.getNFaces(); iFace++) {
+
+			const t_Face& face = Zne.getFace(iFace);
+
+			if (face.Area < AreaMin) AreaMin = face.Area;
+			if (face.Area > AreaMax) AreaMax = face.Area;
+		}
+	}
+
+	double VolMinGlob, VolMaxGlob;
+	MPI_Allreduce(&VolMin, &VolMinGlob, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+	MPI_Allreduce(&VolMax, &VolMaxGlob, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+	double DiaMinGlob, DiaMaxGlob;
+	MPI_Allreduce(&DiaMin, &DiaMinGlob, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+	MPI_Allreduce(&DiaMax, &DiaMaxGlob, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+	double AreaMinGlob, AreaMaxGlob;
+	MPI_Allreduce(&AreaMin, &AreaMinGlob, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+	MPI_Allreduce(&AreaMax, &AreaMaxGlob, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+	if (G_State.mpiRank == 0) {
+
+		hsLogMessage("Domain check:");
+		hsLogMessage("Min Volume=%lf, Max Volume=%lf", VolMinGlob, VolMaxGlob);
+		hsLogMessage("Min Cell Diameter=%lf, Max Cell Diameter=%lf", DiaMin, DiaMax);
+		hsLogMessage("Min Face Area=%lf, Max Face Area=%lf", AreaMin, AreaMax);
+
+	}
+
+
 }
 
 

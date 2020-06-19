@@ -1,10 +1,10 @@
 #include "mpi.h"
 
-#include "dom_euler_base.h"
+#include "dom_ns_base.h"
 
-#include "ghost_euler.h"
+#include "ghost_ns.h"
 
-#include "flux_euler.h"
+#include "flux_ns.h"
 
 // TODO: make interface for flow model
 #include "flow_model_perfect_gas.h"
@@ -15,19 +15,19 @@
 
 #include <fstream>
 
-void t_DomEuBase::allocateFlowSolution() {
+void t_DomNSBase::allocateFlowSolution() {
 
-	ZonesSol = new t_ZoneFlowData[nZones];
+	ZonesSol = new t_ZoneFlowDataNS[nZones];
 
 	for (int i = iZneMPIs; i <= iZneMPIe; i++) {
 
 		t_Zone& zne = Zones[i];
-		t_ZoneFlowData& fdata = ZonesSol[i];
+		t_ZoneFlowDataNS& fdata = ZonesSol[i];
 
 		lint nFaces = zne.getNFaces();
 		lint nCellsTot = zne.getnCellsTot();
 
-		fdata.Fluxes = new t_FluxEu[nFaces];
+		fdata.Fluxes = new t_FluxNS[nFaces];
 		fdata.ConsVars = new t_ConsVars[nCellsTot];
 
 
@@ -35,14 +35,14 @@ void t_DomEuBase::allocateFlowSolution() {
 
 }
 
-void t_DomEuBase::exchangeCSV() { G_GhostMngEu.exchangeCSV(); }
+void t_DomNSBase::exchangeCSV() { G_GhostMngNS.exchangeCSV(); }
 
-t_DomEuBase::~t_DomEuBase() {
+t_DomNSBase::~t_DomNSBase() {
 
 	for (int i = iZneMPIs; i <= iZneMPIe; i++) {
 
 		t_Zone& zne = Zones[i];
-		t_ZoneFlowData& fdata = ZonesSol[i];
+		t_ZoneFlowDataNS& fdata = ZonesSol[i];
 
 		delete[] fdata.Fluxes;
 		delete[] fdata.ConsVars;

@@ -31,6 +31,12 @@
     <Filter Include="Source Files\ns">
       <UniqueIdentifier>{41e65fef-0862-4865-aaa6-8687e373e40b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\phys_common\uvwpt">
+      <UniqueIdentifier>{e737afeb-9749-4d43-8ca7-6c41ed59436b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\phys_common\uvwpt">
+      <UniqueIdentifier>{cf066bc3-9c9e-431b-8763-03d90e5f089e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -111,6 +117,21 @@
     <ClCompile Include="src\flux_ns.cpp">
       <Filter>Source Files\ns</Filter>
     </ClCompile>
+    <ClCompile Include="src\dom_ns_base.cpp">
+      <Filter>Source Files\ns</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ghost_ns.cpp">
+      <Filter>Source Files\ns</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dom_base_uvwpt.cpp">
+      <Filter>Source Files\phys_common\uvwpt</Filter>
+    </ClCompile>
+    <ClCompile Include="src\flow_vars_uvwpt.cpp">
+      <Filter>Source Files\phys_common\uvwpt</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ghost_uvwpt.cpp">
+      <Filter>Source Files\phys_common\uvwpt</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\logging.h">
@@ -190,6 +211,21 @@
     </ClInclude>
     <ClInclude Include="include\flux_ns.h">
       <Filter>Header Files\ns</Filter>
+    </ClInclude>
+    <ClInclude Include="include\dom_ns_base.h">
+      <Filter>Header Files\ns</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ghost_ns.h">
+      <Filter>Header Files\ns</Filter>
+    </ClInclude>
+    <ClInclude Include="include\dom_base_uvwpt.h">
+      <Filter>Header Files\phys_common\uvwpt</Filter>
+    </ClInclude>
+    <ClInclude Include="include\flow_vars_uvwpt.h">
+      <Filter>Header Files\phys_common\uvwpt</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ghost_uvwpt.h">
+      <Filter>Header Files\phys_common\uvwpt</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

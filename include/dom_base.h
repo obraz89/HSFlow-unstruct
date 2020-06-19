@@ -350,10 +350,11 @@ struct t_DomBase
 
 	void initializeFromCtxStage2();
 
+	virtual void checkMesh();
+
 	// interface for the flow domain
 	virtual void allocateFlowSolution() = 0;
 	virtual void initializeFlow() = 0;
-	virtual void checkFlow() = 0;
 	virtual void calcReconstData() = 0;
 	virtual double loadField(std::string FieldName) = 0;
 	virtual int getNu() const= 0;
@@ -361,10 +362,6 @@ struct t_DomBase
 	virtual void getDataAsArr(std::string name, int zoneID, t_ArrDbl& Vals) const= 0;
 	virtual void checkMinMaxCSV() = 0;
 	virtual void makeTimeStep() = 0;
-
-	// for debug
-	virtual void dump_flow() = 0;
-	virtual void dump_geom() = 0;
 
 	virtual ~t_DomBase() { delete[] Zones; };
 };

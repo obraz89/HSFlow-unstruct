@@ -1,12 +1,11 @@
 #include "flux_ns.h"
 
-#include "flow_params.h"
-
 #include "flow_model_perfect_gas.h"
+
 
 //******************************************Flux
 // we are in some reference frame (x,y,z) which is rotation from global (X,Y,Z)
-// compute viscous face flux through area with normal (1;0;0) 
+// compute inviscid face flux through area with normal (1;0;0) 
 // velocities must be in reference frame (x,y,z)!
 void t_FluxNS::calc(const t_PrimVars& pv) {
 

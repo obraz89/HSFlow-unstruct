@@ -1,6 +1,6 @@
 #pragma once
 
-#include "flux_euler.h"
+#include "flow_vars_uvwpt.h"
 
 class t_FluxNS : public t_VecConsVars {
 public:
@@ -11,7 +11,7 @@ public:
 
 };
 
-
-
 // calc CV & Flux from primitive Vars
 void calcCVFlux(const t_PrimVars& pv, t_ConsVars& cv, t_FluxNS& f);
+
+
