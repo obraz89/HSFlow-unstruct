@@ -132,6 +132,12 @@
     <ClCompile Include="src\ghost_uvwpt.cpp">
       <Filter>Source Files\phys_common\uvwpt</Filter>
     </ClCompile>
+    <ClCompile Include="src\lsq_uvwpt.cpp">
+      <Filter>Source Files\phys_common\uvwpt</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dom_ns_lsq_expl.cpp">
+      <Filter>Source Files\ns</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\logging.h">
@@ -218,13 +224,19 @@
     <ClInclude Include="include\ghost_ns.h">
       <Filter>Header Files\ns</Filter>
     </ClInclude>
-    <ClInclude Include="include\dom_base_uvwpt.h">
-      <Filter>Header Files\phys_common\uvwpt</Filter>
-    </ClInclude>
     <ClInclude Include="include\flow_vars_uvwpt.h">
       <Filter>Header Files\phys_common\uvwpt</Filter>
     </ClInclude>
     <ClInclude Include="include\ghost_uvwpt.h">
+      <Filter>Header Files\phys_common\uvwpt</Filter>
+    </ClInclude>
+    <ClInclude Include="include\dom_ns_lsq_expl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\dom_base_uvwpt.h">
+      <Filter>Header Files\phys_common\uvwpt</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lsq_uvwpt.h">
       <Filter>Header Files\phys_common\uvwpt</Filter>
     </ClInclude>
   </ItemGroup>

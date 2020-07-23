@@ -4,9 +4,6 @@
 
 #include "flux_euler.h"
 
-// TODO: interface for flow model
-#include "flow_model_perfect_gas.h"
-
 // Flow solution for a zone:
 // Fluxes - fluxes at faces
 // ConsVars - conservative flow variables at cell centers
@@ -36,7 +33,7 @@ public:
 		return ZonesSol[zone_id].ConsVars[cell_id];
 	};
 
-	void allocateFlowSolution();
+	virtual void allocateFlowSolution();
 	virtual void exchangeCSV();
 
 	t_FluxEu& getFlux(int zone_id, lint face_id) {

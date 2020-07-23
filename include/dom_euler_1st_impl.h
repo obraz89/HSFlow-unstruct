@@ -41,7 +41,7 @@ class t_DomEu1stImpl : public t_DomEuBase {
 	t_ZoneLambdasCD* ZonesLambdaCD;
 	t_KSPSolver ctxKSP;
 public:
-	void calcReconstData() {};
+	void prepareBeforeTimeMarch() {};
 	void calcFaceFlux(int iZone, lint iFace);
 	virtual void makeTimeStep();
 	virtual void allocateFlowSolution();

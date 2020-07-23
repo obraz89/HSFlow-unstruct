@@ -355,7 +355,7 @@ struct t_DomBase
 	// interface for the flow domain
 	virtual void allocateFlowSolution() = 0;
 	virtual void initializeFlow() = 0;
-	virtual void calcReconstData() = 0;
+	virtual void prepareBeforeTimeMarch() = 0;
 	virtual double loadField(std::string FieldName) = 0;
 	virtual int getNu() const= 0;
 	virtual std::vector<std::string> getFuncNamesIO() const = 0;

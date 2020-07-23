@@ -31,7 +31,9 @@
     <ClCompile Include="src\dom_euler_1st_impl.cpp" />
     <ClCompile Include="src\dom_euler_base.cpp" />
     <ClCompile Include="src\dom_euler_lsq.cpp" />
+    <ClCompile Include="src\lsq_uvwpt.cpp" />
     <ClCompile Include="src\dom_ns_base.cpp" />
+    <ClCompile Include="src\dom_ns_lsq_expl.cpp" />
     <ClCompile Include="src\flow_model_perfect_gas.cpp" />
     <ClCompile Include="src\flow_params.cpp" />
     <ClCompile Include="src\flow_vars_uvwpt.cpp" />
@@ -63,7 +65,9 @@
     <ClInclude Include="include\dom_euler_1st_impl.h" />
     <ClInclude Include="include\dom_euler_base.h" />
     <ClInclude Include="include\dom_euler_lsq.h" />
+    <ClInclude Include="include\lsq_uvwpt.h" />
     <ClInclude Include="include\dom_ns_base.h" />
+    <ClInclude Include="include\dom_ns_lsq_expl.h" />
     <ClInclude Include="include\flow_model_perfect_gas.h" />
     <ClInclude Include="include\flow_params.h" />
     <ClInclude Include="include\flow_vars_uvwpt.h" />

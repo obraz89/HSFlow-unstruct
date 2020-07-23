@@ -170,7 +170,7 @@ int main(int argc, char* argv[])
 
 	hsLogMessage("Computing reconstruction data...");
 
-	G_pDom->calcReconstData();
+	G_pDom->prepareBeforeTimeMarch();
 
 	hsflow::TLog::flush();
 	{

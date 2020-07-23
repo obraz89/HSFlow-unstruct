@@ -4,16 +4,15 @@
 
 #include "flux_ns.h"
 
-// TODO: interface for flow model
-#include "flow_model_perfect_gas.h"
-
 // Flow solution for a zone:
 // Fluxes - fluxes at faces
 // ConsVars - conservative flow variables at cell centers
+// CellPVGrads - gradients of primitive variables at cell centers
 struct t_ZoneFlowDataNS {
 	// fluxes through
 	t_FluxNS* Fluxes;
 	t_ConsVars* ConsVars;
+	t_Mat<NConsVars, 3>* CellPVGrads;
 };
 
 // Domain for Euler equations 
@@ -23,7 +22,6 @@ struct t_ZoneFlowDataNS {
 class t_DomNSBase : public t_Dom5 {
 
 protected:
-
 	t_ZoneFlowDataNS* ZonesSol;
 
 public:
@@ -36,7 +34,7 @@ public:
 		return ZonesSol[zone_id].ConsVars[cell_id];
 	};
 
-	void allocateFlowSolution();
+	virtual void allocateFlowSolution();
 	virtual void exchangeCSV();
 
 	t_FluxNS& getFlux(int zone_id, lint face_id) {
@@ -46,6 +44,8 @@ public:
 	t_VecConsVars& getFlux5(int zone_id, lint face_id) {
 		return getFlux(zone_id, face_id);
 	}
+
+	virtual void calcCellGradPV(int iZone, lint iCell) =0;
 
 	virtual ~t_DomNSBase();
 };

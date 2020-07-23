@@ -1,28 +1,22 @@
-#include "dom_euler_lsq.h"
+#include "dom_ns_lsq_expl.h"
 
-#include "flux_euler.h"
+#include "flux_ns.h"
 
 #include "rs_euler.h"
 
-#include "bc_euler.h"
+#include "bc_ns.h"
 
-#include "ghost_euler.h"
+#include "ghost_ns.h"
 
-void t_DomEuLSQ::allocateFlowSolution() {
+void t_DomNSLSQ::allocateFlowSolution() {
 
-	t_DomEuBase::allocateFlowSolution();
+	t_DomNSBase::allocateFlowSolution();
 
 	t_LSQData::allocateLSQData(this);
 
 }
 
-void t_DomEuLSQ::prepareBeforeTimeMarch() {
-
-	t_LSQData::calcReconstData(G_GhostMngEu);
-
-}
-
-t_ConsVars t_DomEuLSQ::calcVirtCellCSV(int iZone, lint iFace) const{
+t_ConsVars t_DomNSLSQ::calcVirtCellCSV(int iZone, lint iFace) const {
 
 	t_ConsVars csv_virt;
 
@@ -34,27 +28,29 @@ t_ConsVars t_DomEuLSQ::calcVirtCellCSV(int iZone, lint iFace) const{
 
 	{
 		TLogSyncGuard sg;
-		if (face.isFluid()) 
+		if (face.isFluid())
 			hsLogError("t_DomEuLSQ::calcVirtCellCSV: trying to calc virt cell csv for fluid face");
 	}
-		
-	t_BCKindEuler bc_kind = G_BCListEuler.getKind(face.BCId.get());
 
-	if (bc_kind == t_BCKindEuler::Inflow) {
+	t_BCKindNS bc_kind = G_BCListNS.getKind(face.BCId.get());
+
+	if (bc_kind == t_BCKindNS::InflowSup) {
 
 		csv_virt.setValAtInf();
 		return csv_virt;
 
 	}
 
-	if (bc_kind == t_BCKindEuler::Outflow) {
+	if (bc_kind == t_BCKindNS::OutflowSup) {
 
 		csv_virt = csv_my;
 		return csv_virt;
 
 	}
 
-	if ((bc_kind == t_BCKindEuler::Wall) || (bc_kind == t_BCKindEuler::Sym)) {
+	if (bc_kind == t_BCKindNS::WallNoSlip ) {
+
+		hsLogError("WallNoSlip:Implement me !");
 
 		t_MatRotN mat_rot_coefs;
 
@@ -78,16 +74,22 @@ t_ConsVars t_DomEuLSQ::calcVirtCellCSV(int iZone, lint iFace) const{
 
 	}
 
+	if (bc_kind == t_BCKindNS::WallNoSlip) {
+
+		hsLogError("Sym:Implement me !");
+
+	}
+
 
 	hsLogError(
-		"t_DomEuLSQ::calcVirtCellCSV: unknow bc kind : Zone #%ld, face #%ld",
+		"t_DomNSLSQ::calcVirtCellCSV: unknow bc kind : Zone #%ld, face #%ld",
 		iZone, iFace);
 
 	return csv_virt;
 
 }
 
-void t_DomEuLSQ::calcFaceFlux(int iZone, lint iFace) {
+void t_DomNSLSQ::calcFaceFluxInviscid(int iZone, lint iFace) {
 
 	t_Zone& zne = Zones[iZone];
 	t_Face& face = zne.getFace(iFace);
@@ -117,7 +119,7 @@ void t_DomEuLSQ::calcFaceFlux(int iZone, lint iFace) {
 	// TODO: ghost cells must receive!
 	// virt cells grads are zero
 	t_Mat<NConsVars, 3> CellGradCSVOp;
-	t_Vec<NConsVars> limOp({0,0,0,0,0});
+	t_Vec<NConsVars> limOp({ 0,0,0,0,0 });
 	if (face.isFluid()) {
 		calcCellGradCSV(iZone, face.pOppCell->Id, CellGradCSVOp);
 		calcSlopeLimiters(iZone, face.pOppCell->Id, CellGradCSVOp);
@@ -160,3 +162,7 @@ void t_DomEuLSQ::calcFaceFlux(int iZone, lint iFace) {
 	return;
 
 };
+
+void t_DomNSLSQ::calcFaceFluxViscous(int iZone, lint iFace) {
+
+}

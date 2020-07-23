@@ -29,6 +29,7 @@ void t_DomNSBase::allocateFlowSolution() {
 
 		fdata.Fluxes = new t_FluxNS[nFaces];
 		fdata.ConsVars = new t_ConsVars[nCellsTot];
+		fdata.CellPVGrads = new t_Mat<NConsVars, 3>[nCellsTot];
 
 
 	}

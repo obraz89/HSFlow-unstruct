@@ -55,7 +55,6 @@ public:
 	virtual void getDataAsArr(std::string name, int zoneID, t_ArrDbl& Vals) const;
 
 	virtual double calcDt() const;
-	virtual void calcReconstData() = 0;
 	virtual void calcFaceFlux(int iZone, lint iFace) = 0;
 
 	virtual void checkMinMaxCSV();
