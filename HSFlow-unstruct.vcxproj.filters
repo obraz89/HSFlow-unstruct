@@ -230,14 +230,14 @@
     <ClInclude Include="include\ghost_uvwpt.h">
       <Filter>Header Files\phys_common\uvwpt</Filter>
     </ClInclude>
-    <ClInclude Include="include\dom_ns_lsq_expl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\dom_base_uvwpt.h">
       <Filter>Header Files\phys_common\uvwpt</Filter>
     </ClInclude>
     <ClInclude Include="include\lsq_uvwpt.h">
       <Filter>Header Files\phys_common\uvwpt</Filter>
+    </ClInclude>
+    <ClInclude Include="include\dom_ns_lsq_expl.h">
+      <Filter>Header Files\ns</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
