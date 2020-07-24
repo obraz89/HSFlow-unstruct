@@ -25,5 +25,12 @@ double calcPressureByRT(double rho, double temperature);
 
 double calcRhoByPT(double pressure, double temperature);
 
-// 1/(gamma*Mach*Mach)
+// gamma*Mach*Mach
 double calcGMaMa();
+
+// (gamma-1)*Mach*Mach
+double calcG_1MaMa();
+
+double calcViscosity(double T);
+
+double calcThermalConductivity(double T);

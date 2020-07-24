@@ -49,13 +49,14 @@ public:
 
 	double getP() const { return data[4]; }
 	void setP(double val) { data[4] = val; }
-	//double calcRhoE() const;
 
 	void setByRhoUH(double rho, const t_Vec3& UVW, double H);
 
 	void setValAtInf();
 
 	void calcJac(t_SqMat<NConsVars>& Jac) const;
+
+	double calcT() const;
 
 };
 

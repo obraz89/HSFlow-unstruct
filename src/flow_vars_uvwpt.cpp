@@ -135,6 +135,10 @@ void t_PrimVars::calcJac(t_SqMat<NConsVars>& Jac) const {
 	Jac[4][4] = Gamma * u;
 
 };
+
+double t_PrimVars::calcT() const {
+	return calcTempByRP(getR(), getP());
+}
 //******************************************ConsVars
 
 t_ConsVars& t_ConsVars::setByPV(const t_PrimVars& pv) {

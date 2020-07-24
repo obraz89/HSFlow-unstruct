@@ -2,16 +2,17 @@
 
 #include "flow_vars_uvwpt.h"
 
-class t_FluxNS : public t_VecConsVars {
-public:
-	t_FluxNS() :t_VecConsVars() {}
-	t_FluxNS(const t_VecConsVars& v) :t_VecConsVars(v) {}
-	void calc(const t_ConsVars& csv);
-	void calc(const t_PrimVars& pvs);
+#include "matrix_small.h"
 
-};
+//********************************Viscous Flux addition
+// compute viscous flux vector
+// all input vectors must be in global reference frame
+// gradients matrix must be for UVWPT (NOT prim vec RUVWP)
+void calcNSViscFlux(const t_Vec3& normal, const t_PrimVars& PV, const t_Mat<5, 3> GradUVWPT, t_VecConsVars& flux);
 
-// calc CV & Flux from primitive Vars
-void calcCVFlux(const t_PrimVars& pv, t_ConsVars& cv, t_FluxNS& f);
+// calc CV & Total Flux for the face from primitive Vars 
+// Total Flux = Euler Flux + Viscous Flux
+// All input values in global reference frame
+void calcNSFluxTotal(const t_PrimVars& pv, t_ConsVars& cv, t_VecConsVars& f);
 
 

@@ -24,6 +24,10 @@ protected:
 
 	// non-dimensional velocity vector at infinity
 	t_Vec3 UInf;
+
+	// non-dimensional Reynolds number via values at infinity & 
+	// reference Length used to non-dim grid 
+	double Re;
 public:
 	t_FlowParamsFreeStream() :name(STR_FLOW_PARAMS) { default_settings(); }
 	// implement TPugin
@@ -35,6 +39,7 @@ public:
 		g.add("Tinf", 300.0, "Temperature");
 		g.add("AoA", 0.0, "Angle of attack (degrees)");
 		g.add("AoS", 0.0, "Angle of glide (Skol'zhenie) (degrees)");
+		g.add("Re", 1.0e+06, "Reynolds number");
 		_mapParamsGrps.emplace(g.get_name(), g);
 	};
 
@@ -66,11 +71,14 @@ public:
 		double Uz = cos(AoARad) * sin(AoSRad);
 
 		UInf.set(Ux, Uy, Uz);
+
+		Re = g.get_real_param("Re");
 	};
 
 	const t_Vec3& getUInf() const { return UInf; }
 	double getMach() const { return Mach; }
 	double getTinfDim() const { return TinfDim; }
+	double getRe() const { return Re; }
 
 };
 
