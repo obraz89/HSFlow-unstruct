@@ -58,6 +58,8 @@ public:
 
 	double calcT() const;
 
+	t_VecConsVars calcUVWPT() const;
+
 };
 
 // vector of conservative flow variables

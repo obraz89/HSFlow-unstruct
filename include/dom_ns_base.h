@@ -7,12 +7,11 @@
 // Flow solution for a zone:
 // Fluxes - fluxes at faces
 // ConsVars - conservative flow variables at cell centers
-// CellPVGrads - gradients of primitive variables at cell centers
+// FaceGrdUVWPT - gradients of UVWPT variables at the faces
 struct t_ZoneFlowDataNS {
-	// fluxes through
-	t_FluxNS* Fluxes;
+	t_VecConsVars* Fluxes;
 	t_ConsVars* ConsVars;
-	t_Mat<NConsVars, 3>* CellPVGrads;
+	t_Mat<NConsVars, 3>* FaceGrdUVWPT;
 };
 
 // Domain for Euler equations 
@@ -37,15 +36,9 @@ public:
 	virtual void allocateFlowSolution();
 	virtual void exchangeCSV();
 
-	t_FluxNS& getFlux(int zone_id, lint face_id) {
+	t_VecConsVars& getFlux(int zone_id, lint face_id) {
 		return ZonesSol[zone_id].Fluxes[face_id];
 	}
-
-	t_VecConsVars& getFlux5(int zone_id, lint face_id) {
-		return getFlux(zone_id, face_id);
-	}
-
-	virtual void calcCellGradPV(int iZone, lint iCell) =0;
 
 	virtual ~t_DomNSBase();
 };

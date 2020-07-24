@@ -139,6 +139,20 @@ void t_PrimVars::calcJac(t_SqMat<NConsVars>& Jac) const {
 double t_PrimVars::calcT() const {
 	return calcTempByRP(getR(), getP());
 }
+
+t_VecConsVars t_PrimVars::calcUVWPT() const {
+
+	t_VecConsVars UVWPT;
+
+	UVWPT[0] = getU();
+	UVWPT[1] = getV();
+	UVWPT[2] = getW();
+	UVWPT[3] = getP();
+	UVWPT[4] = calcT();
+
+	return UVWPT;
+
+};
 //******************************************ConsVars
 
 t_ConsVars& t_ConsVars::setByPV(const t_PrimVars& pv) {
