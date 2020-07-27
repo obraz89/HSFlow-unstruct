@@ -64,9 +64,23 @@ struct t_Face {
 
 	double Area;
 
+	// index of vertex with max angle 
+	// it is the root to compute base vectors in plane
+	int IndVertRoot;
+
+	// matrix for gradient reconstruction of flow vars
+	t_SqMat3 MatGrad;
+
+	// for debug
+	double AngEdgeMin, AngEdgeMax;
+
 	t_Face() { pMyCell = nullptr; pOppCell = nullptr; }
 
 	void ComputeFaceCenter();
+
+	void ComputeRootVertex();
+
+	void ComputeMatGrad();
 
 	bool isFluid() const { return BCId.get() == t_FaceBCID::Fluid; }
 

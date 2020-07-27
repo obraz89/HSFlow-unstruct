@@ -575,6 +575,56 @@ void t_Face::ComputeFaceCenter() {
 
 };
 
+void t_Face::ComputeRootVertex() {
+
+	// for easy iterating :
+	// [v2, v0, v1, v2, v0] for tris
+	// [v3, v0, v1, v2, v3, v0] for quad
+	const t_Vert* vert_cycle[MaxNumVertsInFace + 2];
+
+	vert_cycle[0] = pVerts[NVerts - 1];
+
+	for (int i = 1; i < NVerts+1; i++) vert_cycle[i] = pVerts[i-1];
+
+	vert_cycle[NVerts + 1] = pVerts[0];
+
+	double angles[MaxNumVertsInFace];
+
+	t_Vec3 v1, v2;
+
+	AngEdgeMax = 0.0;
+
+	const double PI = acos(-1.0);
+
+	AngEdgeMin = PI;
+
+	double resid = 0.5*PI;
+
+	for (int i = 0; i < NVerts; i++) {
+
+		int icyc = i + 1;
+
+		v1 = vert_cycle[icyc + 1]->xyz - vert_cycle[icyc]->xyz;
+		v2 = vert_cycle[icyc - 1]->xyz - vert_cycle[icyc]->xyz;
+
+		angles[i] = acos(v1.dot(v2));
+
+		// choose as root angle closest to PI/2
+		if (abs(angles[i] - 0.5*PI) < resid) IndVertRoot = i;
+
+		AngEdgeMax = std::max(AngEdgeMax, angles[i]);
+		AngEdgeMin = std::min(AngEdgeMin, angles[i]);
+
+	}
+
+}
+
+void t_Face::ComputeMatGrad() {
+
+	//
+
+}
+
 //************************************* Zone methods
 
 void t_Zone::initialize(lint a_nVerts, lint a_nCellsReal, lint a_nCellsTot) {
