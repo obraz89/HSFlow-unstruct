@@ -280,7 +280,8 @@ public:
 	t_Face* getpFace(lint face_ID) { return &Faces[face_ID]; }
 	const t_Face* getpFace(lint face_ID) const{ return &Faces[face_ID]; }
 
-	void makeVertexConnectivity();
+	void makeVertexConnectivityRealCells();
+
 	void makeCellConnectivity();
 	void makeFaces();
 	void updateFacesWithBCPatch(const t_Face* face_patch, const int NFacesInPatch);
@@ -332,7 +333,9 @@ struct t_DomBase
 
 	void loadBCs();
 
-	void makeVertexConnectivity();
+	void makeVertexConnectivityRealCells();
+	void updateVertexConnectivityWithGhosts();
+
 	void makeCellConnectivity();
 	void makeFaces();
 

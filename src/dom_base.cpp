@@ -593,8 +593,8 @@ void t_Zone::initialize(lint a_nVerts, lint a_nCellsReal, lint a_nCellsTot) {
 // make connectivity of real vertices to real cells
 // TODO: atm ghost cells do not have vertices (only 1 face)
 // so vertex is NOT connected to any ghosts;
-// ghosts are connected only via cell-2-cell connectivity
-void t_Zone::makeVertexConnectivity() {
+// ghosts are connected later, when ghost manager is up
+void t_Zone::makeVertexConnectivityRealCells() {
 
 	t_Cell* pCell;
 	t_Vert* pVert;
@@ -1129,15 +1129,23 @@ void t_DomBase::initializeFromCtxStage1() {
 	loadCells();
 
 	// set up connections from verts to real cells
-	makeVertexConnectivity();
+	makeVertexConnectivityRealCells();
 
 }
+
+// in stage 2 ghost manager is up and can be used
 void t_DomBase::initializeFromCtxStage2() {
 
 	makeCellConnectivity();
 
 	makeFaces();
 
+	// send required geom data to ghosts
+	// (currently cell centers)
+	G_pGhostMngBase->exchangeGeomData();
+
+	// requires cell connectivity & faces
+	updateVertexConnectivityWithGhosts();
 
 	// update mesh with bc sets
 	loadBCs();
@@ -1277,9 +1285,122 @@ void t_DomBase::loadBCs() {
 	}
 };     // boundary conditions
 
-void t_DomBase::makeVertexConnectivity() {
-	// NB: storing vartex-2-cell connectivity for all zones on each worker
-	for (int i = 0; i < nZones; i++) Zones[i].makeVertexConnectivity();
+// NB: storing vartex-2-cell connectivity for all zones on each worker
+// as ghost manager requires all vertex2cell connections to initialize
+// TODO: store only connectivity for worker range of zones
+void t_DomBase::makeVertexConnectivityRealCells() {
+	for (int i = 0; i < nZones; i++) Zones[i].makeVertexConnectivityRealCells();
+
+}
+
+// add connection of vertices to ghost cells;
+// ghosts cells for each zone are already set,
+// so cell2cell connections of real cells to ghosts are already set
+void t_DomBase::updateVertexConnectivityWithGhosts() {
+
+	for (int i = 0; i < nZones; i++) {
+
+		t_Zone& Zne = Zones[i];
+
+		// 1) store number of Neighs for all verts before adding ghosts
+		lint* VertNeigSizesOld = new lint[Zne.getnVerts()];
+
+		for (int n = 0; n < Zne.getnVerts(); n++) 
+			VertNeigSizesOld[n] = Zne.getVert(n).NNeigCells;
+
+		// 2) update number of Neighbors for each vertex abutting another zone
+		for (int j = 0; j < nZones; j++) {
+
+			const t_Zone& ZoneDnr = Zones[j];
+
+			const t_GhostLayer& glayer =  G_pGhostMngBase->getGhostLayer(i, j);
+
+			for (int k = 0; k < glayer.size(); k++) {
+
+				const t_Cell2GhostData& c2g = glayer.data[k];
+
+				const t_Face& face = Zne.getCell(c2g.id_my).getFace(c2g.face_pos_my);
+
+				const t_Cell* CellDnr = face.pOppCell;
+
+				// check : CellDnr must be ghost
+				if (Zne.isRealCell(CellDnr->Id))
+					hsLogError("updateVertexConnectivityWithGhosts: Cell is not Ghost, Zne_id=%d Id=%ld", 
+						Zne.getIdGlob(), CellDnr->Id);
+
+				// each vert in face will have additional neighbor : CellDnr
+				for (int l = 0; l < face.NVerts; l++)
+					Zne.getVert(face.pVerts[l]->Id).NNeigCells++;
+
+			}   
+
+		} // ~glayers
+
+		// 3) resize pNeigCells array for verts that belong to ghost cells
+		for (int nv = 0; nv < Zne.getnVerts(); nv++) {
+
+			t_Vert& vert = Zne.getVert(nv);
+
+			if (vert.NNeigCells != VertNeigSizesOld[nv]) {
+
+				t_Cell** old_data = vert.pNeigCells;
+
+				vert.pNeigCells = new t_Cell*[vert.NNeigCells];
+
+				// copy old data and free memory
+				for (int nneig = 0; nneig < VertNeigSizesOld[nv]; nneig++)
+					vert.pNeigCells[nneig] = old_data[nneig];
+
+				delete[] old_data;
+
+			}
+
+		}
+
+		// 4) iterate over glayers again and update pNeigs with ghost cells
+
+		// offset in array of NeigCells for each vertex
+		int* pNeigCellOffset = new int[Zne.getnVerts()];
+
+		// ghosts start after real cells
+		for (int nv = 0; nv < Zne.getnVerts(); nv++)
+			pNeigCellOffset[nv] = VertNeigSizesOld[nv];
+
+		for (int j = 0; j < nZones; j++) {
+
+			const t_Zone& ZoneDnr = Zones[j];
+
+			const t_GhostLayer& glayer = G_pGhostMngBase->getGhostLayer(i, j);			
+
+			for (int k = 0; k < glayer.size(); k++) {
+
+				const t_Cell2GhostData& c2g = glayer.data[k];
+
+				const t_Face& face = Zne.getCell(c2g.id_my).getFace(c2g.face_pos_my);
+
+				// my ghost cell
+				t_Cell* CellDnr = face.pOppCell;
+
+				// each vertex in this face abutting the CellDnr
+				for (int n = 0; n < face.NVerts; n++) {
+
+					lint vert_id = face.pVerts[n]->Id;
+
+					t_Vert& vert = Zne.getVert(vert_id);
+
+					vert.pNeigCells[pNeigCellOffset[vert_id]] = CellDnr;
+
+					pNeigCellOffset[vert_id]++;
+
+				}
+
+			}
+
+		} // ~glayers
+
+		delete[] VertNeigSizesOld, pNeigCellOffset;
+
+	}	// iterate over zones
 
 }
 

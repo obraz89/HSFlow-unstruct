@@ -156,10 +156,6 @@ int main(int argc, char* argv[])
 	MPI_Barrier(MPI_COMM_WORLD);
 	hsflow::TLog::flush();
 
-	// update cell center etc for ghosts
-	// cuurently not required as we store full mesh at each worker 
-	//G_GhostMngEu.exchangeGeomData();
-
 	G_pDom->allocateFlowSolution();
 
 	initialize_flow_model();
