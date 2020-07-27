@@ -166,7 +166,7 @@ void t_DomNSLSQ::calcFaceFlux(int iZone, lint iFace) {
 	{
 
 		t_Mat<NConsVars, 3> CellGradUVWPT;
-		calcCellGradUVWPT(iZone, face.pMyCell->Id, CellGradUVWPT);
+		//calcCellGradUVWPT(iZone, face.pMyCell->Id, CellGradUVWPT);
 
 		t_Mat<NConsVars, 3>;
 

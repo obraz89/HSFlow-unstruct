@@ -27,9 +27,9 @@ void t_DomNSBase::allocateFlowSolution() {
 		lint nFaces = zne.getNFaces();
 		lint nCellsTot = zne.getnCellsTot();
 
-		fdata.Fluxes = new t_FluxNS[nFaces];
+		fdata.Fluxes = new t_VecConsVars[nFaces];
 		fdata.ConsVars = new t_ConsVars[nCellsTot];
-		fdata.CellPVGrads = new t_Mat<NConsVars, 3>[nCellsTot];
+		fdata.FaceGrdUVWPT = new t_Mat<NConsVars, 3>[nFaces];
 
 
 	}
