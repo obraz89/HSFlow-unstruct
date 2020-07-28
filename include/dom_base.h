@@ -86,6 +86,63 @@ struct t_Face {
 
 	void _makeCyclicListofVerts(const t_Vert* (&lst)[MaxNumVertsInFace + 2]) const;
 
+	// reconstruct face gradients for arbitrary set of values
+	// for example, in NS computations it is convinient to calculate for RUVWT
+	// IMPORTANT: finite differences must be consistent with gradient matrix!
+	template<int NVars> void ComputeFaceGrad(const t_Vec<NVars>& Umy, const t_Vec<NVars>& Uop, 
+		const t_Mat<NVars, MaxNumVertsInFace>& UVerts, t_Mat<3, NVars>& Grads) {
+
+		// make vertex values cyclic
+		t_Mat<NVars, MaxNumVertsInFace + 2> UVertsCyc;
+
+		for (int ivar = 0; ivar < NVars; ivar++) {
+
+			UVertsCyc[ivar][0] = UVerts[ivar][NVerts - 1];
+
+			for (int j = 0; j < NVerts; j++) {
+
+				jcyc = j + 1;
+
+				UVertsCyc[ivar][jcyc] = UVerts[ivar][j];
+
+			}
+
+			UVertsCyc[ivar][NVerts + 1] = UVerts[ivar][0];
+
+		}
+
+		t_Vec3 RHS, grad;
+
+		for (int ivar = 0; ivar < NVars; ivar++) {
+
+			RHS[0] = Uop[ivar] - Umy[ivar];
+
+			if (NVerts == 3) {
+
+				int jcyc = IndVertRoot + 1;
+
+				RHS[1] = UVertsCyc[ivar][jcyc + 1] - UVertsCyc[ivar][jcyc];
+				RHS[2] = UVertsCyc[ivar][jcyc - 1] - UVertsCyc[ivar][jcyc];
+			}
+
+			if (NVerts == 4) {
+
+				RHS[1] = 0.5*(UVerts[ivar][2] + UVerts[ivar][3] -
+					          UVerts[ivar][0] - UVerts[ivar][1]);
+
+				RHS[2] = 0.5*(UVerts[ivar][1] + UVerts[ivar][2] -
+					          UVerts[ivar][3] - UVerts[ivar][0]);
+
+			}
+
+			grad = MatGrad*RHS;
+
+			Grads.setCol(ivar, grad);
+
+		}
+
+	};
+
 	t_SetOfpVerts getVerts() const;
 
 };
