@@ -166,6 +166,24 @@ public:
 		return ret;
 	}
 
+	void setRow(int iRow, const t_Vec<NCols>& vec) {
+
+		if ((iRow<0) || (iRow>NRows - 1)) 
+			hsLogMessage("Mat:setRow:Error: index out of range: row=%d", iRow);
+
+		for (int j = 0; j < NCols; j++) data[iRow][j] = vec[j];
+
+	}
+
+	void setCol(int iCol, const t_Vec<NRows>& vec) {
+
+		if ((iCol<0) || (iCol>NCols - 1))
+			hsLogMessage("Mat:setRow:Error: index out of range: row=%d", iCol);
+
+		for (int i = 0; i < NRows; i++) data[i][iCol] = vec[i];
+
+	}
+
 	int getFlatInd(int i, int j) const{ return i * NCols + j; }
 
 	void flatten(double(&p)[NRows * NCols]) const {

@@ -84,6 +84,8 @@ struct t_Face {
 
 	bool isFluid() const { return BCId.get() == t_FaceBCID::Fluid; }
 
+	void _makeCyclicListofVerts(const t_Vert* (&lst)[MaxNumVertsInFace + 2]) const;
+
 	t_SetOfpVerts getVerts() const;
 
 };

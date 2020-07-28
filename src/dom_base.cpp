@@ -575,18 +575,24 @@ void t_Face::ComputeFaceCenter() {
 
 };
 
-void t_Face::ComputeRootVertex() {
+void t_Face::_makeCyclicListofVerts(const t_Vert* (&vert_cycle)[MaxNumVertsInFace + 2]) const{
 
 	// for easy iterating :
 	// [v2, v0, v1, v2, v0] for tris
 	// [v3, v0, v1, v2, v3, v0] for quad
-	const t_Vert* vert_cycle[MaxNumVertsInFace + 2];
 
 	vert_cycle[0] = pVerts[NVerts - 1];
 
-	for (int i = 1; i < NVerts+1; i++) vert_cycle[i] = pVerts[i-1];
+	for (int i = 1; i < NVerts + 1; i++) vert_cycle[i] = pVerts[i - 1];
 
 	vert_cycle[NVerts + 1] = pVerts[0];
+
+}
+
+void t_Face::ComputeRootVertex() {
+
+	const t_Vert* vert_cycle[MaxNumVertsInFace + 2];
+	_makeCyclicListofVerts(vert_cycle);
 
 	double angles[MaxNumVertsInFace];
 
@@ -619,9 +625,56 @@ void t_Face::ComputeRootVertex() {
 
 }
 
+// Compute matrix for reconstruction of face gradients;
+// basic vectors in face plane are edges from the root vertex
+// thrid vector is dr between cell centers (fluid face)
+// or dr between face center and cell center (boundary face)
 void t_Face::ComputeMatGrad() {
 
-	//
+	t_Vec3 r_my, r_op;
+
+	r_my = this->pMyCell->Center;
+
+	r_op = isFluid() ? pOppCell->Center : this->Center;
+
+	t_SqMat3 MatD;
+
+	t_Vec3 dr = r_op - r_my;
+
+	// first row of direct matrix
+	MatD.setRow(0, dr);
+
+	const t_Vert* vert_cycle[MaxNumVertsInFace + 2];
+	_makeCyclicListofVerts(vert_cycle);
+
+	int icyc = IndVertRoot + 1;
+
+	t_Vec3 v1, v2;
+
+	if (NVerts == 3) {
+
+		v1 = vert_cycle[icyc + 1]->xyz - vert_cycle[icyc]->xyz;
+		v2 = vert_cycle[icyc - 1]->xyz - vert_cycle[icyc]->xyz;
+
+	}
+
+	if (NVerts == 4) {
+
+		for (int i = 0; i < 3; i++) {
+
+			v1[i] = 0.5*(pVerts[2]->xyz[i] + pVerts[3]->xyz[i] - 
+					     pVerts[0]->xyz[i] - pVerts[1]->xyz[i]);
+
+			v2[i] = 0.5*(pVerts[1]->xyz[i] + pVerts[2]->xyz[i] -
+				         pVerts[3]->xyz[i] - pVerts[0]->xyz[i]);
+		}
+
+	}
+
+	MatD.setRow(2, v1);
+	MatD.setRow(3, v2);
+
+	this->MatGrad = MatD.CalcInv();
 
 }
 
