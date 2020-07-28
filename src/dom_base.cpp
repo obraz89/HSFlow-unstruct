@@ -30,6 +30,26 @@ t_CellKind getElementKind(CG_ElementType_t cg_type) {
 	}
 
 };
+//************************************* Vertex methods
+
+void t_Vert::calcAllocNeigCoefs() {
+
+	pNeigCoefs = new double[NNeigCells];
+
+	double dTot = 0.0;
+	double dr;
+
+	for (int i = 0; i < NNeigCells; i++) {
+		dr = (pNeigCells[i]->Center - this->xyz).norm();
+		pNeigCoefs[i] = dr;
+		dTot += dr;
+	}
+
+	for (int i = 0; i < NNeigCells; i++)
+		pNeigCoefs[i] /= dTot;
+
+
+};
 
 //************************************* Cell methods
 void t_Cell::setKind(t_CellKind a_Kind) {

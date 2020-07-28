@@ -8,10 +8,12 @@
 // Fluxes - fluxes at faces
 // ConsVars - conservative flow variables at cell centers
 // FaceGrdUVWPT - gradients of UVWPT variables at the faces
+
+// IMPORTANT TODO: better storing PVs!!!
 struct t_ZoneFlowDataNS {
 	t_VecConsVars* Fluxes;
-	t_ConsVars* ConsVars;
-	t_Mat<NConsVars, 3>* FaceGrdUVWPT;
+	t_ConsVars* PVCells;
+	t_ConsVars* PVVerts;
 };
 
 // Domain for Euler equations 
@@ -26,11 +28,11 @@ protected:
 public:
 
 	t_ConsVars& getCellCSV(int zone_id, lint cell_id) {
-		return ZonesSol[zone_id].ConsVars[cell_id];
+		return ZonesSol[zone_id].PVCells[cell_id];
 	};
 
 	const t_ConsVars& getCellCSV(int zone_id, lint cell_id) const {
-		return ZonesSol[zone_id].ConsVars[cell_id];
+		return ZonesSol[zone_id].PVCells[cell_id];
 	};
 
 	virtual void allocateFlowSolution();

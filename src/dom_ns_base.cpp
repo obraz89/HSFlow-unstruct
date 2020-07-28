@@ -26,10 +26,11 @@ void t_DomNSBase::allocateFlowSolution() {
 
 		lint nFaces = zne.getNFaces();
 		lint nCellsTot = zne.getnCellsTot();
+		lint nVerts = zne.getnVerts();
 
 		fdata.Fluxes = new t_VecConsVars[nFaces];
-		fdata.ConsVars = new t_ConsVars[nCellsTot];
-		fdata.FaceGrdUVWPT = new t_Mat<NConsVars, 3>[nFaces];
+		fdata.PVCells = new t_ConsVars[nCellsTot];
+		fdata.PVVerts = new t_ConsVars[nVerts];
 
 
 	}
@@ -46,10 +47,32 @@ t_DomNSBase::~t_DomNSBase() {
 		t_ZoneFlowDataNS& fdata = ZonesSol[i];
 
 		delete[] fdata.Fluxes;
-		delete[] fdata.ConsVars;
+		delete[] fdata.PVCells;
+		delete[] fdata.PVVerts;
 
 	}
 
 	delete[] ZonesSol;
+
+}
+
+void t_DomNSBase::calcCellWeightsForVertices() {
+
+	for (int i = iZneMPIs; i <= iZneMPIe; i++) {
+
+		t_Zone& zne = Zones[i];
+
+		for (int ivert = 0; ivert < zne.getnVerts(); ivert++) {
+
+			zne.getVert(ivert).calcAllocNeigCoefs();
+
+		}
+	}
+
+};
+
+void t_DomNSBase::prepareBeforeTimeMarch() {
+
+	calcCellWeightsForVertices();
 
 }
