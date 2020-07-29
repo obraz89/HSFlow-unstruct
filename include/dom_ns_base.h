@@ -49,6 +49,10 @@ public:
 	t_VecConsVars& getFlux(int zone_id, lint face_id) {
 		return ZonesSol[zone_id].Fluxes[face_id];
 	}
+	
+	t_VecConsVars&  getFlux5(int zone_id, lint face_id) {
+		return getFlux(zone_id, face_id);
+	};
 
 	void prepareBeforeTimeMarch();
 

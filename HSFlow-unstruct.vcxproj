@@ -86,6 +86,7 @@
     <ClInclude Include="include\PluginBase.h" />
     <ClInclude Include="include\rs_euler.h" />
     <ClInclude Include="include\schemes_euler.h" />
+    <ClInclude Include="include\schemes_ns.h" />
     <ClInclude Include="include\settings.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

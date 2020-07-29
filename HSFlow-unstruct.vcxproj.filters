@@ -239,5 +239,8 @@
     <ClInclude Include="include\dom_ns_lsq_expl.h">
       <Filter>Header Files\ns</Filter>
     </ClInclude>
+    <ClInclude Include="include\schemes_ns.h">
+      <Filter>Header Files\ns</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
