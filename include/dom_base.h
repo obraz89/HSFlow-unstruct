@@ -34,9 +34,17 @@ struct t_Vert {
 	// list of cells that has this Vertex
 	t_Cell** pNeigCells;
 
+	// weights of adjacent cells to get vertex flow vars
+	double* pNeigCoefs;
+
+	void calcAllocNeigCoefs();
+
 	t_Vec3 xyz;
 	t_Vert():pNeigCells(nullptr), Id(-1), NNeigCells(0) {}
-	~t_Vert() { if (pNeigCells!=nullptr) delete[] pNeigCells; }
+	~t_Vert() { 
+		if (pNeigCells !=nullptr) delete[] pNeigCells; 
+		if (pNeigCoefs != nullptr) delete[] pNeigCoefs;
+	}
 
 };
 

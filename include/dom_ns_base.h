@@ -42,6 +42,10 @@ public:
 		return ZonesSol[zone_id].Fluxes[face_id];
 	}
 
+	void prepareBeforeTimeMarch();
+
+	void calcCellWeightsForVertices();
+
 	virtual ~t_DomNSBase();
 };
 
