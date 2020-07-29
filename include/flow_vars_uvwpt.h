@@ -59,6 +59,7 @@ public:
 	double calcT() const;
 
 	t_VecConsVars calcUVWPT() const;
+	t_VecConsVars calcRUVWT() const;
 
 };
 

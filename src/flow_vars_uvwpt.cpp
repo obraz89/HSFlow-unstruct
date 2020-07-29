@@ -153,6 +153,14 @@ t_VecConsVars t_PrimVars::calcUVWPT() const {
 	return UVWPT;
 
 };
+
+t_VecConsVars t_PrimVars::calcRUVWT() const{
+
+	t_VecConsVars RUVWT(*this);
+	RUVWT[4] = calcT();
+
+	return RUVWT;
+}
 //******************************************ConsVars
 
 t_ConsVars& t_ConsVars::setByPV(const t_PrimVars& pv) {
