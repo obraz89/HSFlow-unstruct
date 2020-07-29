@@ -49,6 +49,16 @@ TPluginParamsGroup& TPlugin::get_settings_grp(const char* szGrpName)
 		hsTHROW("%s: Settings group '%s' doesn't exist", get_name().c_str(), szGrpName);
 	}
 }
+
+const TPluginParamsGroup& TPlugin::get_settings_grp(const char* szGrpName) const
+{
+	try {
+		return _mapParamsGrps.at(szGrpName);
+	}
+	catch (const std::out_of_range&) {
+		hsTHROW("%s: Settings group '%s' doesn't exist", get_name().c_str(), szGrpName);
+	}
+}
 //-----------------------------------------------------------------------------
 
 

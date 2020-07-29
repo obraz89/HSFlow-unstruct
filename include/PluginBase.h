@@ -249,6 +249,7 @@
 		virtual void init(std::string& ini_data, const std::string& spec);
 
 		TPluginParamsGroup& get_settings_grp(const char* szGrpName);
+		const TPluginParamsGroup& get_settings_grp(const char* szGrpName) const;
 
 		void parse_settings(std::string& ini_data);
 
