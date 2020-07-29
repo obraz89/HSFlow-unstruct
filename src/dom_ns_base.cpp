@@ -37,6 +37,25 @@ void t_DomNSBase::allocateFlowSolution() {
 
 }
 
+void t_DomNSBase::initializeFlow() {
+
+	// read CSV, exchange CSV
+	t_Dom5::initializeFlow();
+
+	// calculate vertex values via cell csvs
+	calcVertexValues();
+}
+
+void t_DomNSBase::makeTimeStep() {
+
+	// basic explicit step, update CSV of cells
+	t_Dom5::makeTimeStep();
+
+	// update vertex values
+	calcVertexValues();
+
+}
+
 void t_DomNSBase::exchangeCSV() { G_GhostMngNS.exchangeCSV(); }
 
 t_DomNSBase::~t_DomNSBase() {
@@ -71,8 +90,61 @@ void t_DomNSBase::calcCellWeightsForVertices() {
 
 };
 
+void t_DomNSBase::calcFaceGradMatrices() {
+
+	for (int i = iZneMPIs; i <= iZneMPIe; i++) {
+
+		t_Zone& zne = Zones[i];
+
+		for (int iFace = 0; iFace < zne.getNFaces(); iFace++) {
+
+			zne.getFace(iFace).ComputeMatGrad();
+
+		}
+	}
+
+}
+
 void t_DomNSBase::prepareBeforeTimeMarch() {
+
+	hsLogMessage("Calculating weights for vertices");
 
 	calcCellWeightsForVertices();
 
+	hsLogMessage("Calculating face grad reconstruction matrices");
+
+	calcFaceGradMatrices();
+
 }
+
+void t_DomNSBase::calcVertexValues() {
+
+
+	for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
+
+		t_Zone& zne = Zones[iZone];
+
+		t_ConsVars csv_vert;
+		t_ConsVars csv_neig;
+
+		for (int iVert = 0; iVert < zne.getnVerts(); iVert++) {
+
+			csv_vert.reset();
+
+			t_Vert& vert = zne.getVert(iVert);
+
+			for (int j = 0; j < vert.NNeigCells; j++) {
+
+				csv_neig = getCellCSV(iZone, vert.pNeigCells[j]->Id);
+
+				for (int k = 0; k < NConsVars; k++)
+					csv_vert[k] += vert.pNeigCoefs[j] * csv_neig[k];
+
+			}
+				
+			getVertCSV(iZone, iVert) = csv_vert;
+
+		}
+	}
+
+};

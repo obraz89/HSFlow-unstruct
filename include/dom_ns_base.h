@@ -16,7 +16,7 @@ struct t_ZoneFlowDataNS {
 	t_ConsVars* PVVerts;
 };
 
-// Domain for Euler equations 
+// Domain for NS equations, perfect gas 
 // Domain is something like Scheme, but in a little more general sense
 // (experience needed from several flow cases to produce common interface)
 
@@ -29,11 +29,19 @@ public:
 
 	t_ConsVars& getCellCSV(int zone_id, lint cell_id) {
 		return ZonesSol[zone_id].PVCells[cell_id];
-	};
+	}
 
 	const t_ConsVars& getCellCSV(int zone_id, lint cell_id) const {
 		return ZonesSol[zone_id].PVCells[cell_id];
-	};
+	}
+
+	t_ConsVars& getVertCSV(int zone_id, lint vert_id) {
+		return ZonesSol[zone_id].PVVerts[vert_id];
+	}
+
+	const t_ConsVars& getVertCSV(int zone_id, lint vert_id) const{
+		return ZonesSol[zone_id].PVVerts[vert_id];
+	}
 
 	virtual void allocateFlowSolution();
 	virtual void exchangeCSV();
@@ -45,6 +53,14 @@ public:
 	void prepareBeforeTimeMarch();
 
 	void calcCellWeightsForVertices();
+
+	void calcFaceGradMatrices();
+
+	void calcVertexValues();
+
+	// virtuals from Dom5
+	void initializeFlow();
+	void makeTimeStep();
 
 	virtual ~t_DomNSBase();
 };
