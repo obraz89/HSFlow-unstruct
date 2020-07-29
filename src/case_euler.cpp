@@ -10,6 +10,8 @@
 
 #include "ghost_euler.h"
 
+t_DomEuBase* G_pDomEu;
+
 void load_case_euler(std::string& ini_data) {
 
 	G_FreeStreamParams.init(ini_data, "");
