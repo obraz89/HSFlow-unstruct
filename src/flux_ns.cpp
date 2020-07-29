@@ -8,22 +8,22 @@
 //******************************************Flux
 // all input vectors must be in global reference frame
 
-void calcNSViscFlux(const t_Vec3& Norm, const t_PrimVars& PV, const t_Mat<5, 3> GradUVWPT, t_VecConsVars& flux) {
+void calcNSViscFlux(const t_Vec3& Norm, const t_PrimVars& PV, const t_Mat<3, 5> GradUVWPT, t_VecConsVars& flux) {
 
 	const double
 		vx = PV.getU(), vy = PV.getV(), vz = PV.getW(), p = PV.getP(), T = PV.calcT();
 
 	const double
-		vx_dx = GradUVWPT[0][0], vx_dy = GradUVWPT[0][1], vx_dz = GradUVWPT[0][2];
+		vx_dx = GradUVWPT[0][0], vx_dy = GradUVWPT[1][0], vx_dz = GradUVWPT[2][0];
 
 	const double
-		vy_dx = GradUVWPT[1][0], vy_dy = GradUVWPT[1][1], vy_dz = GradUVWPT[1][2];
+		vy_dx = GradUVWPT[0][1], vy_dy = GradUVWPT[1][1], vy_dz = GradUVWPT[2][1];
 
 	const double
-		vz_dx = GradUVWPT[2][0], vz_dy = GradUVWPT[2][1], vz_dz = GradUVWPT[2][2];
+		vz_dx = GradUVWPT[0][2], vz_dy = GradUVWPT[1][2], vz_dz = GradUVWPT[2][2];
 
 	const double
-		T_dx = GradUVWPT[4][0], T_dy = GradUVWPT[4][1], T_dz = GradUVWPT[4][2];
+		T_dx = GradUVWPT[0][4], T_dy = GradUVWPT[1][4], T_dz = GradUVWPT[2][4];
 
 
 	const double div = vx_dx + vy_dy + vz_dz;

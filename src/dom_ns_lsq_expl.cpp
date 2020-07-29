@@ -89,7 +89,7 @@ t_ConsVars t_DomNSLSQ::calcVirtCellCSV(int iZone, lint iFace) const {
 
 }
 
-void t_DomNSLSQ::calcFaceFlux(int iZone, lint iFace) {
+void t_DomNSLSQ::calcFaceFluxEuler(int iZone, lint iFace, t_FluxEu& fluxEU) {
 
 	t_Zone& zne = Zones[iZone];
 	t_Face& face = zne.getFace(iFace);
@@ -102,9 +102,7 @@ void t_DomNSLSQ::calcFaceFlux(int iZone, lint iFace) {
 	// local vars for csvs, do not modify cell csv here
 	t_ConsVars csv_my = getCellCSV(iZone, face.pMyCell->Id);
 
-	t_VecConsVars fluxTot;
-	t_FluxEu fluxEU;
-	t_VecConsVars fluxVisc;
+	fluxEU.reset();
 
 	t_ConsVars csv_op;
 	if (face.isFluid())
@@ -116,75 +114,215 @@ void t_DomNSLSQ::calcFaceFlux(int iZone, lint iFace) {
 	const t_Cell& CellOp = *face.pOppCell;
 
 	//compute inviscid flux
-	{
-		t_Mat<NConsVars, 3> CellGradCSVMy;
-		t_Vec<NConsVars> limMy;
-		calcCellGradCSV(iZone, face.pMyCell->Id, CellGradCSVMy);
-		// TODO: ghost cells must receive!
-		// virt cells grads are zero
-		t_Mat<NConsVars, 3> CellGradCSVOp;
-		t_Vec<NConsVars> limOp({ 0,0,0,0,0 });
-		if (face.isFluid()) {
-			calcCellGradCSV(iZone, face.pOppCell->Id, CellGradCSVOp);
-			calcSlopeLimiters(iZone, face.pOppCell->Id, CellGradCSVOp);
-		}
-
-		// distances from cell centers to face center
-		t_Vec3 drMy = face.Center - CellMy.Center;
-		t_Vec3 drOp = face.Center - CellOp.Center;
-
-		t_ConsVars dUMy = CellGradCSVMy * drMy;
-		t_ConsVars dUOp = CellGradCSVOp * drOp;
-
-		// apply limiters
-		for (int k = 0; k < NConsVars; k++) {
-			dUMy[k] *= limMy[k];
-			dUOp[k] *= limOp[k];
-		}
-
-		t_ConsVars csv_l = csv_my + dUMy;
-		t_ConsVars csv_r = csv_op + dUOp;
-
-		t_PrimVars pvl = csv_l.calcPrimVars();
-		t_PrimVars pvr = csv_r.calcPrimVars();
-
-		// rotate everything to local rf
-		R.set(mat_rot_coefs);
-
-		pvl.rotate(R);
-		pvr.rotate(R);
-
-		calcRSFlux(pvl, pvr, fluxEU);
-
-		// rotate flux back
-		R.set_inv(mat_rot_coefs);
-		fluxEU.rotate(R);
 	
-	}	//~compute inviscid flux
-
-	// compute viscous flux
-	{
-
-		t_Mat<NConsVars, 3> CellGradUVWPT;
-		//calcCellGradUVWPT(iZone, face.pMyCell->Id, CellGradUVWPT);
-
-		t_Mat<NConsVars, 3>;
-
-		t_PrimVars pv_my = csv_my.calcPrimVars();
-		t_PrimVars pv_op = csv_op.calcPrimVars();
-
-		t_PrimVars pv_face = 0.5*(pv_my + pv_op);
-
-
-
+	t_Mat<NConsVars, 3> CellGradCSVMy;
+	t_Vec<NConsVars> limMy;
+	calcCellGradCSV(iZone, face.pMyCell->Id, CellGradCSVMy);
+	// TODO: ghost cells must receive!
+	// virt cells grads are zero
+	t_Mat<NConsVars, 3> CellGradCSVOp;
+	t_Vec<NConsVars> limOp({ 0,0,0,0,0 });
+	if (face.isFluid()) {
+		calcCellGradCSV(iZone, face.pOppCell->Id, CellGradCSVOp);
+		calcSlopeLimiters(iZone, face.pOppCell->Id, CellGradCSVOp);
 	}
 
-	// set flux for the face
+	// distances from cell centers to face center
+	t_Vec3 drMy = face.Center - CellMy.Center;
+	t_Vec3 drOp = face.Center - CellOp.Center;
 
-	fluxTot = fluxEU + fluxVisc;
+	t_ConsVars dUMy = CellGradCSVMy * drMy;
+	t_ConsVars dUOp = CellGradCSVOp * drOp;
 
-	getFlux(iZone, iFace) = fluxTot;
+	// apply limiters
+	for (int k = 0; k < NConsVars; k++) {
+		dUMy[k] *= limMy[k];
+		dUOp[k] *= limOp[k];
+	}
+
+	t_ConsVars csv_l = csv_my + dUMy;
+	t_ConsVars csv_r = csv_op + dUOp;
+
+	t_PrimVars pvl = csv_l.calcPrimVars();
+	t_PrimVars pvr = csv_r.calcPrimVars();
+
+	// rotate everything to local rf
+	R.set(mat_rot_coefs);
+
+	pvl.rotate(R);
+	pvr.rotate(R);
+
+	calcRSFlux(pvl, pvr, fluxEU);
+
+	// rotate flux back
+	R.set_inv(mat_rot_coefs);
+	fluxEU.rotate(R);
 
 	return;
 
 };
+
+void t_DomNSLSQ::calcDataForFaceGradRUVWT(int iZone, lint iFace, t_VecConsVars& Umy,
+	t_VecConsVars& Uop, t_Mat<NConsVars, MaxNumVertsInFace>& UVerts) const{
+	
+	t_Zone& zne = Zones[iZone];
+	t_Face& face = zne.getFace(iFace);
+
+	int bcid = face.BCId.get();
+
+	if (bcid == t_FaceBCID::Fluid) {
+
+		t_PrimVars pv_my = getCellCSV(iZone, face.pMyCell->Id).calcPrimVars();
+		t_PrimVars pv_op = getCellCSV(iZone, face.pOppCell->Id).calcPrimVars();
+
+		Umy = pv_my.calcRUVWT();
+
+		Uop = pv_op.calcRUVWT();
+
+		t_PrimVars pv_vert;
+
+		for (int ivert = 0; ivert < face.NVerts; ivert++) {
+
+			pv_vert = getVertCSV(iZone, face.pVerts[ivert]->Id).calcPrimVars();
+			UVerts.setCol(ivert, pv_vert.calcRUVWT());
+
+		}
+
+		return;
+	}
+
+	if (bcid == (int)t_BCKindNS::InflowSup) {
+
+		t_PrimVars pv_my = getCellCSV(iZone, face.pMyCell->Id).calcPrimVars();
+
+		Umy = pv_my.calcRUVWT();
+
+		t_PrimVars pv_op;
+		pv_op.setValAtInf();
+
+		Uop = pv_op.calcRUVWT();
+
+		for (int ivert = 0; ivert < face.NVerts; ivert++) {
+
+			UVerts.setCol(ivert, Uop);
+
+		}
+
+		return;
+
+	}
+
+	if (bcid == (int)t_BCKindNS::OutflowSup) {
+
+		t_PrimVars pv_my = getCellCSV(iZone, face.pMyCell->Id).calcPrimVars();
+
+		Umy = pv_my.calcRUVWT();
+
+		Uop = Umy;
+
+		t_PrimVars pv_vert;
+
+		for (int ivert = 0; ivert < face.NVerts; ivert++) {
+
+			pv_vert = getVertCSV(iZone, face.pVerts[ivert]->Id).calcPrimVars();
+			UVerts.setCol(ivert, pv_vert.calcRUVWT());
+
+		}
+
+		return;
+
+	}
+
+	if (bcid == (int)t_BCKindNS::EulerWall) {
+
+		t_PrimVars pv_my = getCellCSV(iZone, face.pMyCell->Id).calcPrimVars();
+
+		Umy = pv_my.calcRUVWT();
+
+		// difference is zero => no viscous flux
+		Uop = Umy;
+
+		t_PrimVars pv_vert;
+
+		// TODO: setting all vertex values to zero?
+		pv_vert.reset();
+
+		for (int ivert = 0; ivert < face.NVerts; ivert++)
+			UVerts.setCol(ivert, pv_vert);
+
+		return;
+
+	}
+
+	if (bcid == (int)t_BCKindNS::WallNoSlip) {
+
+		t_PrimVars pv_my = getCellCSV(iZone, face.pMyCell->Id).calcPrimVars();
+
+		Umy = pv_my.calcRUVWT();
+
+		t_VecConsVars pv_vert;
+
+		double Tw = G_BCListNS.getBC(bcid)->get_settings_grp("").get_real_param("Tw");
+
+		// rho 
+		pv_vert[0] = calcRhoByPT(pv_my.getP(), Tw);
+		// u,v,w
+		pv_vert[1] = 0;
+		pv_vert[2] = 0;
+		pv_vert[3] = 0;
+		// using dp/dn=0
+		pv_vert[4] = pv_my.getP();
+
+		for (int ivert = 0; ivert < face.NVerts; ivert++)
+			UVerts.setCol(ivert, pv_vert);
+
+		return;
+
+	}
+
+};
+
+void t_DomNSLSQ::calcFaceFluxVisc(int iZone, lint iFace, t_VecConsVars& fluxVisc) {
+
+	t_Zone& zne = Zones[iZone];
+	t_Face& face = zne.getFace(iFace);
+
+
+	t_VecConsVars Umy, Uop;
+	t_Mat<NConsVars, MaxNumVertsInFace> UVerts;
+	calcDataForFaceGradRUVWT(iZone, iFace, Umy, Uop, UVerts);
+
+	t_Mat<3, NConsVars> FaceGradRUVWT;
+	face.ComputeFaceGrad<5>(Umy, Uop, UVerts, FaceGradRUVWT);
+
+
+	// IMPORTANT TODO: prim values at face must be computed as averaged 
+	// reconstructed values at face center: 
+	// pv_face = 0.5*(pv_left_lsq + pv_right_lsq)
+	
+	// for now just using cell center value!
+	t_PrimVars pv_face = getCellCSV(iZone, face.pMyCell->Id).calcPrimVars();
+
+	calcNSViscFlux(face.Normal, pv_face, FaceGradRUVWT, fluxVisc);
+
+}
+
+void t_DomNSLSQ::calcFaceFlux(int iZone, lint iFace) {
+
+	t_VecConsVars fluxTot;
+
+	t_FluxEu fluxEu;
+
+	calcFaceFluxEuler(iZone, iFace, fluxEu);
+
+	t_VecConsVars fluxVisc;
+
+	calcFaceFluxVisc(iZone, iFace, fluxVisc);
+
+	// set flux for the face
+
+	fluxTot = fluxEu + fluxVisc;
+
+	getFlux(iZone, iFace) = fluxTot;
+
+}
