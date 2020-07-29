@@ -109,7 +109,7 @@ struct t_Face {
 
 			for (int j = 0; j < NVerts; j++) {
 
-				jcyc = j + 1;
+				int jcyc = j + 1;
 
 				UVertsCyc[ivar][jcyc] = UVerts[ivar][j];
 
