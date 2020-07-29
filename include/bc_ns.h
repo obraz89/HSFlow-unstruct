@@ -10,7 +10,7 @@ enum struct t_BCKindNS {
 	InflowSup = 0,
 	OutflowSup,
 	WallNoSlip,
-	Sym
+	EulerWall
 };
 
 class t_BCNSBase : public t_BCDataFace {
@@ -87,15 +87,15 @@ public:
 };
 
 // Symmetry bc
-class t_BCNSSym :public t_BCNSBase {
+class t_BCNSEuWall :public t_BCNSBase {
 public:
-	t_BCNSSym() = delete;
-	t_BCNSSym(const std::string& sect) :t_BCNSBase(sect) { }
+	t_BCNSEuWall() = delete;
+	t_BCNSEuWall(const std::string& sect) :t_BCNSBase(sect) { }
 	// implement TPugin
 	std::string get_description() const { return std::string("bc ns sym"); };
 	// implement t_BCNSBase
 	//void yield(const t_ConsVars& csv_my, t_ConsVars& csv_virt) const;
-	static t_BCKindNS getKindStat() { return t_BCKindNS::Sym; }
+	static t_BCKindNS getKindStat() { return t_BCKindNS::EulerWall; }
 	t_BCKindNS getKind() const { return getKindStat(); }
 	// implement t_BCDataFace
 	static std::string getBCKindNameStat() { return "bc_ns_sym"; }

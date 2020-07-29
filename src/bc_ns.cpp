@@ -25,7 +25,7 @@ std::string t_BCListNS::getSupportedBCsStr() const {
 	ostr << t_BCNSInflowSup::getBCKindNameStat() << ", ";
 	ostr << t_BCNSOutflowSup::getBCKindNameStat() << ", ";
 	ostr << t_BCNSWall::getBCKindNameStat() << ", ";
-	ostr << t_BCNSSym::getBCKindNameStat();
+	ostr << t_BCNSEuWall::getBCKindNameStat();
 
 	return ostr.str();
 
@@ -78,8 +78,8 @@ void t_BCListNS::addBCsetByName(std::string bc_set_name, std::string bc_kind_nam
 	if (bc_kind_name.compare(t_BCNSWall::getBCKindNameStat()) == 0)
 		pBC = new t_BCNSWall(bc_set_name);
 
-	if (bc_kind_name.compare(t_BCNSSym::getBCKindNameStat()) == 0)
-		pBC = new t_BCNSSym(bc_set_name);
+	if (bc_kind_name.compare(t_BCNSEuWall::getBCKindNameStat()) == 0)
+		pBC = new t_BCNSEuWall(bc_set_name);
 
 	if (pBC == nullptr)
 		hsLogMessage("Error:t_BCList:Unknown bc type!");
@@ -118,8 +118,8 @@ bool t_BCListNS::getBCKindByFamName(const std::string& fam_name, t_BCKindNS& bc_
 		if (bc_kind_str.compare(t_BCNSWall::getBCKindNameStat()) == 0) {
 			bc_kind = t_BCKindNS::WallNoSlip;
 		}
-		if (bc_kind_str.compare(t_BCNSSym::getBCKindNameStat()) == 0) {
-			bc_kind = t_BCKindNS::Sym;
+		if (bc_kind_str.compare(t_BCNSEuWall::getBCKindNameStat()) == 0) {
+			bc_kind = t_BCKindNS::EulerWall;
 		}
 
 	}
