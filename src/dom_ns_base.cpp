@@ -105,18 +105,6 @@ void t_DomNSBase::calcFaceGradMatrices() {
 
 }
 
-void t_DomNSBase::prepareBeforeTimeMarch() {
-
-	hsLogMessage("Calculating weights for vertices");
-
-	calcCellWeightsForVertices();
-
-	hsLogMessage("Calculating face grad reconstruction matrices");
-
-	calcFaceGradMatrices();
-
-}
-
 void t_DomNSBase::calcVertexValues() {
 
 

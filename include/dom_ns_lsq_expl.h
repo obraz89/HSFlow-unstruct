@@ -17,6 +17,9 @@ public:
 	// implement t_Dom5LSQ
 	t_ConsVars calcVirtCellCSV(int iZone, lint iFace) const;
 
+	// implement t-DomBase
+	void prepareBeforeTimeMarch();
+
 	void calcDataForFaceGradRUVWT(int iZone, lint iFace, t_VecConsVars& Umy, 
 		t_VecConsVars& Uop, t_Mat<NConsVars, MaxNumVertsInFace>& UVerts) const;
 };

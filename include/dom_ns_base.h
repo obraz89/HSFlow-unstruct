@@ -54,8 +54,6 @@ public:
 		return getFlux(zone_id, face_id);
 	};
 
-	void prepareBeforeTimeMarch();
-
 	void calcCellWeightsForVertices();
 
 	void calcFaceGradMatrices();

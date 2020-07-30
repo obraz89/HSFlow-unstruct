@@ -16,6 +16,23 @@ void t_DomNSLSQ::allocateFlowSolution() {
 
 }
 
+void t_DomNSLSQ::prepareBeforeTimeMarch() {
+
+
+	hsLogMessage("Calculating weights for vertices");
+
+	calcCellWeightsForVertices();
+
+	hsLogMessage("Calculating face grad reconstruction matrices");
+
+	calcFaceGradMatrices();
+
+	hsLogMessage("Calculating lsq reconstruction matrices");
+
+	t_LSQData::calcReconstData(G_GhostMngNS);
+
+}
+
 // calculate csv in virtual cell depending on bc
 // globar reference frame
 t_ConsVars t_DomNSLSQ::calcVirtCellCSV(int iZone, lint iFace) const {
