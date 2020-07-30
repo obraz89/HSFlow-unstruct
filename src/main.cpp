@@ -160,13 +160,11 @@ int main(int argc, char* argv[])
 
 	initialize_flow_model();
 
-	G_pDom->initializeFlow();
+	G_pDom->prepareBeforeTimeMarch();
 
 	G_pDom->checkMesh();
 
-	hsLogMessage("Computing reconstruction data...");
-
-	G_pDom->prepareBeforeTimeMarch();
+	G_pDom->initializeFlow();
 
 	hsflow::TLog::flush();
 	{

@@ -40,7 +40,7 @@ struct t_Vert {
 	void calcAllocNeigCoefs();
 
 	t_Vec3 xyz;
-	t_Vert():pNeigCells(nullptr), Id(-1), NNeigCells(0) {}
+	t_Vert():pNeigCells(nullptr), pNeigCoefs(nullptr), Id(-1), NNeigCells(0) {}
 	~t_Vert() { 
 		if (pNeigCells !=nullptr) delete[] pNeigCells; 
 		if (pNeigCoefs != nullptr) delete[] pNeigCoefs;
