@@ -7,6 +7,9 @@
 #include "flux_euler.h"
 
 class t_DomNSLSQ : public t_DomNSBase, public t_LSQData {
+	// tmp, for debug
+	t_Mat<NConsVars, 3> GradDataRUVWT_Cell;
+	t_Mat<NConsVars, 3> GradDataRUVWT_Face;
 public:
 	void allocateFlowSolution();
 	void calcFaceFlux(int iZone, lint iFace);

@@ -41,6 +41,9 @@ protected:
 		return ZonesRecData[iZone].ReconstData[iCell];
 	};
 	void calcCellGradCSV(int iZone, lint iCell, t_Mat<NConsVars, 3>& CellGrad);
+
+	// mainly for debug & comparison with face grad data
+	void calcCellGradRUVWT(int iZone, lint iCell, t_Mat<NConsVars, 3>& CellGrad);
 	void calcReconstDataLSQ(int iZone, lint iCell);
 
 	t_Vec<NConsVars> calcSlopeLimiters(int iZone, lint iCell, const t_Mat<NConsVars, 3>& CellGradPV) const;

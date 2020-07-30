@@ -183,6 +183,18 @@ public:
 		for (int i = 0; i < NRows; i++) data[i][iCol] = vec[i];
 
 	}
+	// primitive l2 norm
+	// square root of sum of squares of all elements
+	double calcNormPrimitive() {
+
+		double norm = 0.0;
+
+		for (int i = 0; i < NRows; i++)
+			for (int j = 0; j < NCols; j++)
+				norm += data[i][j]*data[i][j];
+		return sqrt(norm);
+
+	}
 
 	int getFlatInd(int i, int j) const{ return i * NCols + j; }
 

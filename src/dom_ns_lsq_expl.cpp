@@ -141,6 +141,11 @@ void t_DomNSLSQ::calcFaceFluxEuler(int iZone, lint iFace, t_FluxEu& fluxEU) {
 	const t_Cell& CellMy = *face.pMyCell;
 	const t_Cell& CellOp = *face.pOppCell;
 
+	{
+		// debug, compute also grads of RUVWT to compare with face grad data
+		calcCellGradRUVWT(iZone, face.pMyCell->Id, this->GradDataRUVWT_Cell);
+	}
+
 	//compute inviscid flux
 	
 	t_Mat<NConsVars, 3> CellGradCSVMy;
@@ -237,6 +242,14 @@ void t_DomNSLSQ::calcFaceFluxVisc(int iZone, lint iFace, t_VecConsVars& fluxVisc
 	t_Mat<3, NConsVars> FaceGradRUVWT;
 	face.ComputeFaceGrad<5>(Umy, Uop, UVerts, FaceGradRUVWT);
 
+	{
+		// debug, store FaceGradRUVWT
+		// transpose to be in the same order as lsq
+		for (int i = 0; i < 3; i++)
+			for (int j = 0; j < NConsVars; j++)
+				this->GradDataRUVWT_Face[j][i] = FaceGradRUVWT[i][j];
+	}
+
 
 	// IMPORTANT TODO: prim values at face must be computed as averaged 
 	// reconstructed values at face center: 
@@ -263,8 +276,40 @@ void t_DomNSLSQ::calcFaceFlux(int iZone, lint iFace) {
 
 	// set flux for the face
 
-	fluxTot = fluxEu; //+ fluxVisc;
+	fluxTot = fluxEu + fluxVisc;
 
 	getFlux(iZone, iFace) = fluxTot;
+
+	{
+		
+		// debug 
+		int nskip = 40;
+
+		static int N = 0;
+
+		const t_Face& face = Zones[iZone].getFace(iFace);
+
+		if (GradDataRUVWT_Cell.calcNormPrimitive() > 1.0e-5) {
+			if (N++ > nskip) {
+
+				N = 0;
+
+				std::ofstream ostr("dbg.txt", std::ios::app);
+
+				if (face.isFluid())
+					ostr << "[Fluid face]";
+				else
+					ostr << "[BC Face bcid="<<face.BCId.get()<<"]";
+
+				ostr << "Cell Grad:\n" << GradDataRUVWT_Cell.to_str();
+				ostr << "Face Grad:\n" << GradDataRUVWT_Face.to_str();
+				ostr << "===============================================\n";
+				ostr.flush(); ostr.close();
+
+			}
+		}
+
+
+	}
 
 }

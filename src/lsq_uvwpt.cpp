@@ -206,6 +206,48 @@ void t_LSQData::calcCellGradCSV(int iZone, lint iCell, t_Mat<NConsVars, 3>& Cell
 
 };
 
+void t_LSQData::calcCellGradRUVWT(int iZone, lint iCell, t_Mat<NConsVars, 3>& CellGrad) {
+
+	t_VecConsVars ruvwt_c = Dom->getCellCSV(iZone, iCell).calcPrimVars().calcRUVWT();
+
+	const t_Cell& Cell = Dom->Zones[iZone].getCell(iCell);
+
+	const t_ReconstDataLSQ& RecData = getReconstData(iZone, iCell);
+
+	CellGrad.reset();
+
+	t_Vec3 grad_cur, dr;
+
+	double du;
+
+	double r_inv = 1.0 / RecData.r;
+
+	t_VecConsVars ruvwt_n;
+
+	// iterate over neighbors, including virtual cells
+	for (int j = 0; j < Cell.NFaces; j++) {
+
+		const t_Cell& CellNeig = *Cell.pCellsNeig[j];
+
+		dr = r_inv * (CellNeig.Center - Cell.Center);
+
+		ruvwt_n = getNeigCellCSV(iZone, iCell, j).calcPrimVars().calcRUVWT();
+
+		for (int i = 0; i < NConsVars; i++) {
+
+			du = r_inv * (ruvwt_n[i] - ruvwt_c[i]);
+
+			grad_cur = RecData.MInvRR * dr;
+			grad_cur *= du;
+
+			for (int k = 0; k < 3; k++)
+				CellGrad[i][k] += grad_cur[k];
+		}
+
+	}
+
+};
+
 static double calcLimiterMinmod(double r) {
 	return fmin(fabs(r), 1.0);
 }
