@@ -89,4 +89,5 @@ void  t_GhostMng5::exchangeCSV() {
 
 void t_GhostMng5::exchangeReconstData() {
 	hsLogMsgAllRanks("t_GhostMngEuler::exchangeReconstData not implemented yet, ghosts not receiving reconstr data");
+	hsflow::TLog::flush();
 }
