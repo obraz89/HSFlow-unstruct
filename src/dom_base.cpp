@@ -646,7 +646,8 @@ void t_Face::ComputeRootVertex() {
 }
 
 // Compute matrix for reconstruction of face gradients;
-// basic vectors in face plane are edges from the root vertex
+// basic vectors in face plane are edges from the root vertex (tris)
+// or just vectors between opposite edges (quad)
 // thrid vector is dr between cell centers (fluid face)
 // or dr between face center and cell center (boundary face)
 void t_Face::ComputeMatGrad() {
@@ -667,11 +668,13 @@ void t_Face::ComputeMatGrad() {
 	const t_Vert* vert_cycle[MaxNumVertsInFace + 2];
 	_makeCyclicListofVerts(vert_cycle);
 
-	int icyc = IndVertRoot + 1;
-
 	t_Vec3 v1, v2;
 
 	if (NVerts == 3) {
+
+		ComputeRootVertex();
+
+		int icyc = IndVertRoot + 1;
 
 		v1 = vert_cycle[icyc + 1]->xyz - vert_cycle[icyc]->xyz;
 		v2 = vert_cycle[icyc - 1]->xyz - vert_cycle[icyc]->xyz;
