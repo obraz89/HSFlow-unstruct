@@ -54,7 +54,7 @@ public:
 	std::string getBCKindName() const { return getBCKindNameStat(); }
 };
 
-// Euler wall
+// No-slip wall
 class t_BCNSWall :public t_BCNSBase {
 
 	double TWallDim;
@@ -62,7 +62,7 @@ class t_BCNSWall :public t_BCNSBase {
 public:
 	t_BCNSWall(const std::string& sect) :t_BCNSBase(sect) { default_settings(); }
 	// implement TPugin
-	std::string get_description() const { return std::string("bc euler wall"); };
+	std::string get_description() const { return std::string("bc ns noslip wall"); };
 	void default_settings() {
 		TPluginParamsGroup g("", "gas-dynamic functions values on the wall");
 		g.add("Tw_K", 300.0, "temperature, dimensional in K");
@@ -86,19 +86,19 @@ public:
 	std::string getBCKindName() const { return getBCKindNameStat(); }
 };
 
-// Symmetry bc
+// Euler Wall
 class t_BCNSEuWall :public t_BCNSBase {
 public:
 	t_BCNSEuWall() = delete;
 	t_BCNSEuWall(const std::string& sect) :t_BCNSBase(sect) { }
 	// implement TPugin
-	std::string get_description() const { return std::string("bc ns sym"); };
+	std::string get_description() const { return std::string("bc ns euler wall"); };
 	// implement t_BCNSBase
 	//void yield(const t_ConsVars& csv_my, t_ConsVars& csv_virt) const;
 	static t_BCKindNS getKindStat() { return t_BCKindNS::EulerWall; }
 	t_BCKindNS getKind() const { return getKindStat(); }
 	// implement t_BCDataFace
-	static std::string getBCKindNameStat() { return "bc_ns_sym"; }
+	static std::string getBCKindNameStat() { return "bc_ns_euler_wall"; }
 	std::string getBCKindName() const { return getBCKindNameStat(); }
 };
 
