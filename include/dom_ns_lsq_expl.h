@@ -1,9 +1,10 @@
 #pragma once
 
-// get reconstr types
-#include "dom_euler_lsq.h"
+#include "lsq_uvwpt.h"
 
 #include "dom_ns_base.h"
+
+#include "flux_euler.h"
 
 class t_DomNSLSQ : public t_DomNSBase, public t_LSQData {
 public:
