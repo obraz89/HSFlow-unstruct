@@ -691,8 +691,8 @@ void t_Face::ComputeMatGrad() {
 
 	}
 
-	MatD.setRow(2, v1);
-	MatD.setRow(3, v2);
+	MatD.setRow(1, v1);
+	MatD.setRow(2, v2);
 
 	this->MatGrad = MatD.CalcInv();
 
