@@ -650,6 +650,8 @@ void t_Face::ComputeRootVertex() {
 // or just vectors between opposite edges (quad)
 // thrid vector is dr between cell centers (fluid face)
 // or dr between face center and cell center (boundary face)
+
+// IMPORTANT TODO: make reconstruction matrix O(1) ?
 void t_Face::ComputeMatGrad() {
 
 	t_Vec3 r_my, r_op;

@@ -16,6 +16,8 @@ void t_DomNSLSQ::allocateFlowSolution() {
 
 }
 
+// calculate csv in virtual cell depending on bc
+// globar reference frame
 t_ConsVars t_DomNSLSQ::calcVirtCellCSV(int iZone, lint iFace) const {
 
 	t_ConsVars csv_virt;
@@ -32,7 +34,9 @@ t_ConsVars t_DomNSLSQ::calcVirtCellCSV(int iZone, lint iFace) const {
 			hsLogError("t_DomEuLSQ::calcVirtCellCSV: trying to calc virt cell csv for fluid face");
 	}
 
-	t_BCKindNS bc_kind = G_BCListNS.getKind(face.BCId.get());
+	int bc_id = face.BCId.get();
+
+	t_BCKindNS bc_kind = G_BCListNS.getKind(bc_id);
 
 	if (bc_kind == t_BCKindNS::InflowSup) {
 
@@ -48,9 +52,7 @@ t_ConsVars t_DomNSLSQ::calcVirtCellCSV(int iZone, lint iFace) const {
 
 	}
 
-	if (bc_kind == t_BCKindNS::WallNoSlip ) {
-
-		hsLogError("WallNoSlip:Implement me !");
+	if (bc_kind == t_BCKindNS::EulerWall ) {
 
 		t_MatRotN mat_rot_coefs;
 
@@ -76,10 +78,19 @@ t_ConsVars t_DomNSLSQ::calcVirtCellCSV(int iZone, lint iFace) const {
 
 	if (bc_kind == t_BCKindNS::WallNoSlip) {
 
-		hsLogError("Sym:Implement me !");
+		double Tw = G_BCListNS.getBC(bc_id)->get_settings_grp("").get_real_param("Tw");
+
+		t_PrimVars pv_face = csv_my.calcPrimVars();
+
+		// rho 
+		pv_face.setR(calcRhoByPT(pv_face.getP(), Tw));
+		// u,v,w
+		pv_face.setUVW({0,0,0});
+		// using dp/dn=0, P_face = P_my
+
+		return pv_face.calcConsVars();
 
 	}
-
 
 	hsLogError(
 		"t_DomNSLSQ::calcVirtCellCSV: unknow bc kind : Zone #%ld, face #%ld",
@@ -170,115 +181,29 @@ void t_DomNSLSQ::calcDataForFaceGradRUVWT(int iZone, lint iFace, t_VecConsVars& 
 
 	int bcid = face.BCId.get();
 
-	if (bcid == t_FaceBCID::Fluid) {
+	t_PrimVars pv_my = getCellCSV(iZone, face.pMyCell->Id).calcPrimVars();
 
-		t_PrimVars pv_my = getCellCSV(iZone, face.pMyCell->Id).calcPrimVars();
-		t_PrimVars pv_op = getCellCSV(iZone, face.pOppCell->Id).calcPrimVars();
+	t_PrimVars pv_op;
 
-		Umy = pv_my.calcRUVWT();
+	if (face.isFluid())
+		pv_op = getCellCSV(iZone, face.pOppCell->Id).calcPrimVars();
+	else
+		pv_op = calcVirtCellCSV(iZone, iFace).calcPrimVars();
 
-		Uop = pv_op.calcRUVWT();
+	Umy = pv_my.calcRUVWT();
 
-		t_PrimVars pv_vert;
+	Uop = pv_op.calcRUVWT();
 
-		for (int ivert = 0; ivert < face.NVerts; ivert++) {
+	t_PrimVars pv_vert;
 
-			pv_vert = getVertCSV(iZone, face.pVerts[ivert]->Id).calcPrimVars();
-			UVerts.setCol(ivert, pv_vert.calcRUVWT());
+	for (int ivert = 0; ivert < face.NVerts; ivert++) {
 
-		}
-
-		return;
-	}
-
-	if (bcid == (int)t_BCKindNS::InflowSup) {
-
-		t_PrimVars pv_my = getCellCSV(iZone, face.pMyCell->Id).calcPrimVars();
-
-		Umy = pv_my.calcRUVWT();
-
-		t_PrimVars pv_op;
-		pv_op.setValAtInf();
-
-		Uop = pv_op.calcRUVWT();
-
-		for (int ivert = 0; ivert < face.NVerts; ivert++) {
-
-			UVerts.setCol(ivert, Uop);
-
-		}
-
-		return;
+		pv_vert = getVertCSV(iZone, face.pVerts[ivert]->Id).calcPrimVars();
+		UVerts.setCol(ivert, pv_vert.calcRUVWT());
 
 	}
 
-	if (bcid == (int)t_BCKindNS::OutflowSup) {
-
-		t_PrimVars pv_my = getCellCSV(iZone, face.pMyCell->Id).calcPrimVars();
-
-		Umy = pv_my.calcRUVWT();
-
-		Uop = Umy;
-
-		t_PrimVars pv_vert;
-
-		for (int ivert = 0; ivert < face.NVerts; ivert++) {
-
-			pv_vert = getVertCSV(iZone, face.pVerts[ivert]->Id).calcPrimVars();
-			UVerts.setCol(ivert, pv_vert.calcRUVWT());
-
-		}
-
-		return;
-
-	}
-
-	if (bcid == (int)t_BCKindNS::EulerWall) {
-
-		t_PrimVars pv_my = getCellCSV(iZone, face.pMyCell->Id).calcPrimVars();
-
-		Umy = pv_my.calcRUVWT();
-
-		// difference is zero => no viscous flux
-		Uop = Umy;
-
-		t_PrimVars pv_vert;
-
-		// TODO: setting all vertex values to zero?
-		pv_vert.reset();
-
-		for (int ivert = 0; ivert < face.NVerts; ivert++)
-			UVerts.setCol(ivert, pv_vert);
-
-		return;
-
-	}
-
-	if (bcid == (int)t_BCKindNS::WallNoSlip) {
-
-		t_PrimVars pv_my = getCellCSV(iZone, face.pMyCell->Id).calcPrimVars();
-
-		Umy = pv_my.calcRUVWT();
-
-		t_VecConsVars pv_vert;
-
-		double Tw = G_BCListNS.getBC(bcid)->get_settings_grp("").get_real_param("Tw");
-
-		// rho 
-		pv_vert[0] = calcRhoByPT(pv_my.getP(), Tw);
-		// u,v,w
-		pv_vert[1] = 0;
-		pv_vert[2] = 0;
-		pv_vert[3] = 0;
-		// using dp/dn=0
-		pv_vert[4] = pv_my.getP();
-
-		for (int ivert = 0; ivert < face.NVerts; ivert++)
-			UVerts.setCol(ivert, pv_vert);
-
-		return;
-
-	}
+	return;
 
 };
 
@@ -321,7 +246,7 @@ void t_DomNSLSQ::calcFaceFlux(int iZone, lint iFace) {
 
 	// set flux for the face
 
-	fluxTot = fluxEu + fluxVisc;
+	fluxTot = fluxEu; //+ fluxVisc;
 
 	getFlux(iZone, iFace) = fluxTot;
 
