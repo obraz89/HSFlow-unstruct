@@ -48,13 +48,15 @@ void t_LSQData::initializeVirtCells() {
 				face2change.pOppCell = &VirtCell;
 
 				// compute virtual cell center
-				// flipping real cell center over face
 
 				const t_Vec3& n = face.Normal;
 
-				double dst = 2.0 * n.dot(face.Center - cell.Center);
+				// flipping over face center - old variant
+				//double dst = 2.0 * n.dot(face.Center - cell.Center);
+				//VirtCell.Center = cell.Center + dst * n;
 
-				VirtCell.Center = cell.Center + dst * n;
+				// virtual cell center is in face center - new variant
+				VirtCell.Center = face.Center;
 
 			}
 		}
