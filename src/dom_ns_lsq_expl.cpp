@@ -335,7 +335,7 @@ void t_DomNSLSQ::calcFaceFlux(int iZone, lint iFace) {
 
 	// debug 
 	// compare cell grad vs face grad
-	if (true){
+	if (false){
 		
 		int nskip = 40;
 
