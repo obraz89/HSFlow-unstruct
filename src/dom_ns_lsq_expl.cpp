@@ -95,7 +95,7 @@ t_ConsVars t_DomNSLSQ::calcVirtCellCSV(int iZone, lint iFace) const {
 
 	if (bc_kind == t_BCKindNS::WallNoSlip) {
 
-		double Tw = G_BCListNS.getBC(bc_id)->get_settings_grp("").get_real_param("Tw");
+		double Tw = G_BCListNS.getBC(bc_id)->get_settings_grp("").get_real_param("Tw_K");
 
 		t_PrimVars pv_face = csv_my.calcPrimVars();
 
@@ -280,9 +280,10 @@ void t_DomNSLSQ::calcFaceFlux(int iZone, lint iFace) {
 
 	getFlux(iZone, iFace) = fluxTot;
 
-	{
+	// debug 
+	// compare cell grad vs face grad
+	if (false){
 		
-		// debug 
 		int nskip = 40;
 
 		static int N = 0;
