@@ -8,6 +8,8 @@
 
 #include "ghost_ns.h"
 
+#include "flow_params.h"
+
 void t_DomNSLSQ::allocateFlowSolution() {
 
 	t_DomNSBase::allocateFlowSolution();
@@ -95,7 +97,9 @@ t_ConsVars t_DomNSLSQ::calcVirtCellCSV(int iZone, lint iFace) const {
 
 	if (bc_kind == t_BCKindNS::WallNoSlip) {
 
-		double Tw = G_BCListNS.getBC(bc_id)->get_settings_grp("").get_real_param("Tw_K");
+		double Tw_K = G_BCListNS.getBC(bc_id)->get_settings_grp("").get_real_param("Tw_K");
+
+		double Tw = Tw_K / G_FreeStreamParams.getTinfDim();
 
 		t_PrimVars pv_face = csv_my.calcPrimVars();
 
@@ -218,14 +222,63 @@ void t_DomNSLSQ::calcDataForFaceGradRUVWT(int iZone, lint iFace, t_VecConsVars& 
 
 	t_PrimVars pv_vert;
 
-	for (int ivert = 0; ivert < face.NVerts; ivert++) {
+	// vertex values computed dependig on the bc type
 
-		pv_vert = getVertCSV(iZone, face.pVerts[ivert]->Id).calcPrimVars();
-		UVerts.setCol(ivert, pv_vert.calcRUVWT());
+	if (face.isFluid() || bcid==t_BCKindNS::OutflowSup) {
+
+		for (int ivert = 0; ivert < face.NVerts; ivert++) {
+
+			pv_vert = getVertCSV(iZone, face.pVerts[ivert]->Id).calcPrimVars();
+			UVerts.setCol(ivert, pv_vert.calcRUVWT());
+
+		}
+
+		return;
 
 	}
 
-	return;
+	if (bcid == t_BCKindNS::EulerWall) {
+
+		for (int ivert = 0; ivert < face.NVerts; ivert++) {
+
+			// TODO: setting all vert vals to zero, is this ok?
+			pv_vert.reset();
+			UVerts.setCol(ivert, pv_vert);
+
+		}
+
+		return;
+
+	}
+
+	if (bcid == t_BCKindNS::InflowSup) {
+
+		for (int ivert = 0; ivert < face.NVerts; ivert++) {
+
+			pv_vert.setValAtInf();
+			UVerts.setCol(ivert, pv_vert.calcRUVWT());
+
+		}
+
+		return;
+
+	}
+
+	if (bcid == t_BCKindNS::WallNoSlip) {
+
+		for (int ivert = 0; ivert < face.NVerts; ivert++) {
+			// all vertex value from virtual cell
+			pv_vert = pv_op;
+			UVerts.setCol(ivert, pv_vert);
+
+		}
+
+		return;
+
+	}
+
+	hsLogError("calcDataForFaceGradRUVWT: unsupported bc type");
+	hsflow::TLog::flush();
 
 };
 
@@ -282,7 +335,7 @@ void t_DomNSLSQ::calcFaceFlux(int iZone, lint iFace) {
 
 	// debug 
 	// compare cell grad vs face grad
-	if (false){
+	if (true){
 		
 		int nskip = 40;
 
