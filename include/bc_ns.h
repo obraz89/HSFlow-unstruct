@@ -6,7 +6,7 @@
 
 #include "flux_ns.h"
 
-enum struct t_BCKindNS {
+enum t_BCKindNS {
 	InflowSup = 0,
 	OutflowSup,
 	WallNoSlip,
