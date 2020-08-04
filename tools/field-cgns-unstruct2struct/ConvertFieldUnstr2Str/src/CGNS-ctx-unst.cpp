@@ -1,10 +1,11 @@
-#include "CGNS-ctx.h"
+#include "CGNS-ctx-unst.h"
 
 #include "logging.h"
 
-#include "bc_common.h"
+// ignoring bcs
+//#include "bc_common.h"
 
-t_CGNSContext G_CGNSCtx;
+t_CGNSContext G_CTXUnst;
 
 bool t_CGNSContext::readMesh(std::string gridFN) {
 
@@ -133,7 +134,10 @@ bool t_CGNSContext::readMesh(std::string gridFN) {
 
 					if (is_bc_section) {
 						pPatch = new t_CGSection(SectionBCFamName.c_str(), istart, iend);
-						t_FaceBCID faceBCID = G_pBCList->getBCID(SectionBCFamName);
+
+						// NB: currently ignoring BC ids
+						//t_FaceBCID faceBCID = G_pBCList->getBCID(SectionBCFamName);
+						t_FaceBCID faceBCID(t_FaceBCID::Dummy);
 						pPatch->BCId = faceBCID;
 						cgZne.addSection(pPatch, t_CGSectionKind::BC);
 					}

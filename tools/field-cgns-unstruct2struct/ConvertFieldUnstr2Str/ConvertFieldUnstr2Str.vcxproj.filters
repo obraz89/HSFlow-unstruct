@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\unstruct">
+      <UniqueIdentifier>{39ab65fb-0573-4d47-b512-59b11e9eb8ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\unstruct">
+      <UniqueIdentifier>{2e5bc256-fb36-40eb-8779-e243ff3e90d7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -27,6 +33,24 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\CGNS-ctx-unst.cpp">
+      <Filter>Source Files\unstruct</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dom_base_unstruct.cpp">
+      <Filter>Source Files\unstruct</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dom_uvwpt_unstruct.cpp">
+      <Filter>Source Files\unstruct</Filter>
+    </ClCompile>
+    <ClCompile Include="src\io_field_unstruct.cpp">
+      <Filter>Source Files\unstruct</Filter>
+    </ClCompile>
+    <ClCompile Include="src\common_procs_unstruct.cpp">
+      <Filter>Source Files\unstruct</Filter>
+    </ClCompile>
+    <ClCompile Include="src\matrix_small.cpp">
+      <Filter>Source Files\unstruct</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\optParse.h">
@@ -37,6 +61,27 @@
     </ClInclude>
     <ClInclude Include="include\settings.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\matrix_small.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CGNS-ctx-unst.h">
+      <Filter>Header Files\unstruct</Filter>
+    </ClInclude>
+    <ClInclude Include="include\common_data_unstruct.h">
+      <Filter>Header Files\unstruct</Filter>
+    </ClInclude>
+    <ClInclude Include="include\dom_base_unstruct.h">
+      <Filter>Header Files\unstruct</Filter>
+    </ClInclude>
+    <ClInclude Include="include\dom_uvwpt_unstruct.h">
+      <Filter>Header Files\unstruct</Filter>
+    </ClInclude>
+    <ClInclude Include="include\io_field_unstruct.h">
+      <Filter>Header Files\unstruct</Filter>
+    </ClInclude>
+    <ClInclude Include="include\common_procs_unstruct.h">
+      <Filter>Header Files\unstruct</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

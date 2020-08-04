@@ -2,11 +2,16 @@
 // ConvertFieldUnstr2Str.cpp : Defines the entry point for the console application.
 //
 
+#include "mpi.h"
+
 #include "optParse.h"
 
 #include "logging.h"
 
 #include "settings.h"
+
+#include "CGNS-ctx-unst.h"
+#include "dom_uvwpt_unstruct.h"
 
 #if defined(_WINDOWS)
   #include <windows.h>
@@ -20,6 +25,8 @@
 #endif
 
 const char szTITLE[] = "HSFlow : High-Speed Flow solver. (c) 2004-2020 HSFlow team";
+
+TState G_State;
 
 bool processCmdLine(int argc, char* argv[])
 {
@@ -82,10 +89,35 @@ bool processCmdLine(int argc, char* argv[])
 
 int main(int argc, char** argv)
 {
+	MPI_Init(&argc, &argv);
+
+	MPI_Comm_rank(MPI_COMM_WORLD, &G_State.mpiRank);
+	MPI_Comm_size(MPI_COMM_WORLD, &G_State.mpiNProcs);
+
+	hsLogMessage("My rank=%d, total procs=%d", G_State.mpiRank, G_State.mpiNProcs);
+
 	processCmdLine(argc, argv);
 	//hsLogMessage("Hello World");
 
 	load_settings();
+
+	// loading unstruct stuff
+
+	G_CTXUnst.readMesh(g_Settings.strGridFnUstr);
+
+	t_Dom5 DomUnst;
+	g_pDomUnst = &DomUnst;
+
+	DomUnst.initializeFromCtxStage1();
+
+	DomUnst.initializeFromCtxStage2();
+
+	DomUnst.allocateFlowSolution();
+
+	DomUnst.initializeFlow();
+
+	MPI_Finalize();
+
     return 0;
 }
 

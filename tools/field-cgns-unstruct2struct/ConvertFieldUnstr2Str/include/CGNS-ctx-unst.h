@@ -4,7 +4,7 @@
 
 #include "cgnslib.h"
 
-#include "common_data.h"
+#include "common_data_unstruct.h"
 
 using t_BufCGSize = t_BufInds<cgsize_t>;
 
@@ -37,7 +37,7 @@ struct t_CGSection {
 
 	t_CGSection() = delete;
 	t_CGSection(const char* sect_name, cgsize_t istart, cgsize_t iend) :
-		_buf(0, 0), itype(CG_ElementTypeNull), id_start(istart), id_end(iend), name(sect_name) {}
+		_buf(0, 0), itype(CG_ElementTypeNull), id_start(istart), id_end(iend), name(sect_name), BCId(t_FaceBCID::Dummy) {}
 
 	~t_CGSection() {  }
 
@@ -276,4 +276,4 @@ struct t_CGNSContext
 
 };
 
-extern t_CGNSContext G_CGNSCtx;
+extern t_CGNSContext G_CTXUnst;
