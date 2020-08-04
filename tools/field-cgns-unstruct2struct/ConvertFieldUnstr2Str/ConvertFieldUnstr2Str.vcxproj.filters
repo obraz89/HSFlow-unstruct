@@ -19,6 +19,12 @@
     <Filter Include="Source Files\unstruct">
       <UniqueIdentifier>{2e5bc256-fb36-40eb-8779-e243ff3e90d7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\struct">
+      <UniqueIdentifier>{d4ceb294-d24d-429b-8431-3ee2c3b59bbd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\struct">
+      <UniqueIdentifier>{2d42e6c6-b2fc-437f-ad95-70f229a0e43c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -51,6 +57,18 @@
     <ClCompile Include="src\matrix_small.cpp">
       <Filter>Source Files\unstruct</Filter>
     </ClCompile>
+    <ClCompile Include="src\grid-data-3D.cpp">
+      <Filter>Source Files\struct</Filter>
+    </ClCompile>
+    <ClCompile Include="src\grid-load-cgns-struct.cpp">
+      <Filter>Source Files\struct</Filter>
+    </ClCompile>
+    <ClCompile Include="src\io-field_struct.cpp">
+      <Filter>Source Files\struct</Filter>
+    </ClCompile>
+    <ClCompile Include="src\domain-struct.cpp">
+      <Filter>Source Files\struct</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\optParse.h">
@@ -60,9 +78,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\settings.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\matrix_small.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\CGNS-ctx-unst.h">
@@ -82,6 +97,30 @@
     </ClInclude>
     <ClInclude Include="include\common_procs_unstruct.h">
       <Filter>Header Files\unstruct</Filter>
+    </ClInclude>
+    <ClInclude Include="include\common_data.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\matrix_small.h">
+      <Filter>Header Files\unstruct</Filter>
+    </ClInclude>
+    <ClInclude Include="include\common_data_struct.h">
+      <Filter>Header Files\struct</Filter>
+    </ClInclude>
+    <ClInclude Include="include\evector.h">
+      <Filter>Header Files\struct</Filter>
+    </ClInclude>
+    <ClInclude Include="include\grid-load-cgns-struct.h">
+      <Filter>Header Files\struct</Filter>
+    </ClInclude>
+    <ClInclude Include="include\io-field_struct.h">
+      <Filter>Header Files\struct</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cgnslib_wrapper.h">
+      <Filter>Header Files\struct</Filter>
+    </ClInclude>
+    <ClInclude Include="include\common_procs_struct.h">
+      <Filter>Header Files\struct</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -5,6 +5,8 @@
 #include <array>
 #include <vector>
 
+#include "common_data.h"
+
 #include "logging.h"
 
 #include "matrix_small.h"
@@ -146,33 +148,6 @@ public:
 	}
 };
 
-//
-// Problem solving state
-//
-struct TState
-{
-	int mpiRank, mpiNProcs;  // MPI rank, number of procs
-							 // Relation of zone index and MPI rank working with it
-	int* map_zone2rank;  // map_zone2rank[izne] == mpiRank, where izne -- 0-based zone index
-
-						 //---
-
-	//int nTmStep;     // current time step number
-	//int nwtIter;     // current Newton's iteration number
-
-					 /// L_inf norm of residual at 0-th Newton's iteration at current step
-	//double initialResidual;
-
-	// TODO: these are scheme parameters, separate them later
-
-	double time;
-
-	double ResidTot;
-
-	// debug vars
-	double ResidNormVeloWall;
-};
-
 /**
  * Several arrays packed (stacked up) into one. Dynamic version.
  * Each subarray consists of several POD elements.
@@ -220,5 +195,3 @@ public:
 		delete[] _data;
 	}
 };
-
-extern TState G_State;

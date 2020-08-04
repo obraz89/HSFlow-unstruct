@@ -153,8 +153,12 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="src\CGNS-ctx-unst.cpp" />
     <ClCompile Include="src\common_procs_unstruct.cpp" />
+    <ClCompile Include="src\domain-struct.cpp" />
     <ClCompile Include="src\dom_base_unstruct.cpp" />
     <ClCompile Include="src\dom_uvwpt_unstruct.cpp" />
+    <ClCompile Include="src\grid-data-3D.cpp" />
+    <ClCompile Include="src\grid-load-cgns-struct.cpp" />
+    <ClCompile Include="src\io-field_struct.cpp" />
     <ClCompile Include="src\io_field_unstruct.cpp" />
     <ClCompile Include="src\logging.cpp" />
     <ClCompile Include="src\matrix_small.cpp" />
@@ -162,10 +166,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\CGNS-ctx-unst.h" />
+    <ClInclude Include="include\cgnslib_wrapper.h" />
+    <ClInclude Include="include\common_data.h" />
+    <ClInclude Include="include\common_data_struct.h" />
     <ClInclude Include="include\common_data_unstruct.h" />
+    <ClInclude Include="include\common_procs_struct.h" />
     <ClInclude Include="include\common_procs_unstruct.h" />
     <ClInclude Include="include\dom_base_unstruct.h" />
     <ClInclude Include="include\dom_uvwpt_unstruct.h" />
+    <ClInclude Include="include\evector.h" />
+    <ClInclude Include="include\grid-load-cgns-struct.h" />
+    <ClInclude Include="include\io-field_struct.h" />
     <ClInclude Include="include\io_field_unstruct.h" />
     <ClInclude Include="include\logging.h" />
     <ClInclude Include="include\matrix_small.h" />
