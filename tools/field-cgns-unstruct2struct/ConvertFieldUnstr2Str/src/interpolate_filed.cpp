@@ -20,20 +20,24 @@ int getZoneIndStruct(int iZoneU) {
 	return 0;
 }
 
-// direction of snake moving in xy plane
+// position of snake head moving in xy plane
 // < (head)
 // * (tail)
 //<_____________ 
 //______________|
 //|_____________              
 //*_____________|
-struct t_DirXY {
+// this movement covers whole Nx by Ny structured slice;
+// next vertex is always neighbor of previous vertex;
+// (so this can be used for iteration over unstructured domain)
+// in short: move like a snake (in Nokia 3310)
+struct t_DirSnakeXY {
 	const int Nx;
 	const int Ny;
 	int i, j;
 	bool MoveRight;
-	t_DirXY() = delete;
-	t_DirXY(int a_Nx, int a_Ny) : Nx(a_Nx), Ny(a_Ny), MoveRight(true) { i = 1; j = 1;}
+	t_DirSnakeXY() = delete;
+	t_DirSnakeXY(int a_Nx, int a_Ny) : Nx(a_Nx), Ny(a_Ny), MoveRight(true) { i = 1; j = 1;}
 
 	void move() {
 
@@ -69,11 +73,12 @@ struct t_DirXY {
 	}
 };
 
+// copy unstructured vertex values into structured field;
 // two domains: 
-// G_DomUnst - unstructured
-// G_Domain - structured
+// G_DomUnst - unstructured, G_Domain - structured
 // grids must be identical (vertex2vertex)
-// copy unstructured vertex values into structured field
+// unstructured domain must be cell-based
+// (vertex values in unstructured domain are interpolated);
 void interpolate_match1to1() {
 
 	const t_Dom5& G_DU = G_DomUnst;
@@ -116,8 +121,7 @@ void interpolate_match1to1() {
 				}
 			}
 			hsLogMessage("iVert start:%d", iVertC);
-			// move like a snake (in Nokia 3310)
-			t_DirXY dir(zneS.nx, zneS.ny);
+			t_DirSnakeXY dir(zneS.nx, zneS.ny);
 			int iVert = iVertC;
 			t_PrimVars pv; 
 			int IdxGlobStruct;
@@ -127,7 +131,7 @@ void interpolate_match1to1() {
 			for (int iNode = 1; iNode <= zneS.nx*zneS.ny; iNode++) {
 
 				pv = G_DU.calcVertexPV(iZoneU, iVert);
-				IdxGlobStruct = zneS.globRealInd(dir.i, dir.j, ks);
+				IdxGlobStruct = G_Domain.nu*(zneS.flatIdx(dir.i, dir.j, ks) - 1) + 0;
 
 				zneS.U[IdxGlobStruct + 0] = pv.getU();
 				zneS.U[IdxGlobStruct + 1] = pv.getV();
@@ -171,6 +175,5 @@ void interpolate_match1to1() {
 		}
 
 	}
-	// find centeral vertex
 
 };

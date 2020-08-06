@@ -141,6 +141,12 @@ int main(int argc, char** argv)
 	hsLogMessage("Interpolating field data");
 	interpolate_match1to1();
 
+	hsLogMessage("Saving structured flow field");
+
+	std::string fnFldStr = "fld_struct";
+	
+	saveField_struct(fnFldStr, "");
+
 	MPI_Finalize();
 
     return 0;

@@ -173,7 +173,7 @@ bool initField_struct()
  *
  * @return `true` if succeeded and `false` otherwise
 **/
-bool saveField(const std::string& fileName, const std::string& gridFileName,
+bool saveField_struct(const std::string& fileName, const std::string& gridFileName,
 			   const short time_layer, bool isDouble)
 {
 
