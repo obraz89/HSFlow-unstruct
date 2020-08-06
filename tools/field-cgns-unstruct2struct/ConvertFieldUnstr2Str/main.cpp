@@ -18,6 +18,8 @@
 #include "grid-load-cgns-struct.h"
 #include "io-field_struct.h"
 
+#include "interpolate_field.h"
+
 #if defined(_WINDOWS)
   #include <windows.h>
   #include <direct.h>   // chdir
@@ -110,16 +112,20 @@ int main(int argc, char** argv)
 
 	G_CTXUnst.readMesh(g_Settings.strGridFnUstr);
 
-	t_Dom5 DomUnst;
-	g_pDomUnst = &DomUnst;
+	g_pDomUnst = &G_DomUnst;
 
-	DomUnst.initializeFromCtxStage1();
+	G_DomUnst.initializeFromCtxStage1();
 
-	DomUnst.initializeFromCtxStage2();
+	G_DomUnst.initializeFromCtxStage2();
 
-	DomUnst.allocateFlowSolution();
+	hsLogMessage("Calculating cell weights for vertex pv reconstruction");
+	G_DomUnst.calcCellWeightsForVertices();
 
-	DomUnst.initializeFlow();
+	G_DomUnst.allocateFlowSolution();
+
+	G_DomUnst.initializeFlow();
+
+	//G_DomUnst.
 
 	// loading struct stuff
 
@@ -131,6 +137,9 @@ int main(int argc, char** argv)
 
 	hsLogMessage("Allocating struct field");
 	initField_struct();
+
+	hsLogMessage("Interpolating field data");
+	interpolate_match1to1();
 
 	MPI_Finalize();
 

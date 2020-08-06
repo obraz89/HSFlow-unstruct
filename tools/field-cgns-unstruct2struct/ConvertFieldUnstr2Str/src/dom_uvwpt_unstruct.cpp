@@ -13,6 +13,8 @@
 #define CG_BUILD_SCOPE 1
 #endif
 
+t_Dom5 G_DomUnst;
+
 void t_Dom5::allocateFlowSolution() {
 
 	ZonesSol = new t_ZoneFlowData[nZones];
@@ -25,7 +27,7 @@ void t_Dom5::allocateFlowSolution() {
 		lint nFaces = zne.getNFaces();
 		lint nCellsReal = zne.getnCellsReal();
 
-		fdata.PV = new t_PrimVarsIO[nCellsReal];
+		fdata.PV = new t_PrimVars[nCellsReal];
 
 
 	}
@@ -112,31 +114,31 @@ void t_Dom5::getDataAsArr(std::string name, int zoneID, t_ArrDbl& Vals) const {
 				func_id = i;
 
 		for (int iCell = 0; iCell < Zne.getnCellsReal(); iCell++) {
-			const t_PrimVarsIO& csv = getCellPV(zoneID, iCell);
-			t_PrimVarsIO pvio(csv);
+			const t_PrimVars& csv = getCellPV(zoneID, iCell);
+			t_PrimVars pvio(csv);
 			// velocityX
 			if (func_id == 0) {
-				data[iCell] = pvio.u;
+				data[iCell] = pvio.getU();
 				continue;
 			}
 			// velocity Y
 			if (func_id == 1) {
-				data[iCell] = pvio.v;
+				data[iCell] = pvio.getV();
 				continue;
 			}
 			// velocity Z
 			if (func_id == 2) {
-				data[iCell] = pvio.w;
+				data[iCell] = pvio.getW();
 				continue;
 			}
 			// Pressure
 			if (func_id == 3) {
-				data[iCell] = pvio.p;
+				data[iCell] = pvio.getP();
 				continue;
 			}
-			// Pressure
+			// Temperature
 			if (func_id == 4) {
-				data[iCell] = pvio.t;
+				data[iCell] = pvio.getT();
 				continue;
 			}
 
@@ -268,13 +270,13 @@ double t_Dom5::loadField(std::string path_field) {
 
 			for (int iCell = 0; iCell < zne.getnCellsReal(); iCell++) {
 
-				t_PrimVarsIO pvio;
+				t_PrimVars pvio;
 
-				pvio.u = newField[0][iCell];
-				pvio.v = newField[1][iCell];
-				pvio.w = newField[2][iCell];
-				pvio.p = newField[3][iCell];
-				pvio.t = newField[4][iCell];
+				pvio.getU() = newField[0][iCell];
+				pvio.getV() = newField[1][iCell];
+				pvio.getW() = newField[2][iCell];
+				pvio.getP() = newField[3][iCell];
+				pvio.getT() = newField[4][iCell];
 
 				getCellPV(zi, iCell) = pvio;
 
@@ -294,5 +296,29 @@ double t_Dom5::loadField(std::string path_field) {
 		cg_close(f);
 
 	return time;
+
+}
+
+t_PrimVars t_Dom5::calcVertexPV(int iZone, int iVert) const{
+
+		t_Zone& zne = Zones[iZone];
+
+		t_PrimVars pv_vert;
+		t_PrimVars pv_neig;
+
+		pv_vert.reset();
+
+		t_Vert& vert = zne.getVert(iVert);
+
+		for (int j = 0; j < vert.NNeigCells; j++) {
+
+				pv_neig = getCellPV(iZone, vert.pNeigCells[j]->Id);
+
+				for (int k = 0; k < NConsVars; k++)
+					pv_vert[k] += vert.pNeigCoefs[j] * pv_neig[k];
+
+		}
+
+		return pv_vert;
 
 }

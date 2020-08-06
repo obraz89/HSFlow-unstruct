@@ -433,6 +433,8 @@ struct t_DomBase
 
 	virtual void checkMesh();
 
+	void calcCellWeightsForVertices();
+
 	// interface for the flow domain
 	virtual void allocateFlowSolution() = 0;
 	virtual void initializeFlow() = 0;

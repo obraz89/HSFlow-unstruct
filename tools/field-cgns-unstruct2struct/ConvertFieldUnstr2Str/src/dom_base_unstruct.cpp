@@ -1477,5 +1477,20 @@ void t_DomBase::checkMesh() {
 
 }
 
+void t_DomBase::calcCellWeightsForVertices() {
+
+	for (int i = iZneMPIs; i <= iZneMPIe; i++) {
+
+		t_Zone& zne = Zones[i];
+
+		for (int ivert = 0; ivert < zne.getnVerts(); ivert++) {
+
+			zne.getVert(ivert).calcAllocNeigCoefs();
+
+		}
+	}
+
+};
+
 
 

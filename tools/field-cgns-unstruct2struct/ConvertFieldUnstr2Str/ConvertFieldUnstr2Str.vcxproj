@@ -163,6 +163,7 @@
     <ClCompile Include="src\logging.cpp" />
     <ClCompile Include="src\matrix_small.cpp" />
     <ClCompile Include="src\settings.cpp" />
+    <ClCompile Include="src\interpolate_filed.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\CGNS-ctx-unst.h" />
@@ -176,6 +177,7 @@
     <ClInclude Include="include\dom_uvwpt_unstruct.h" />
     <ClInclude Include="include\evector.h" />
     <ClInclude Include="include\grid-load-cgns-struct.h" />
+    <ClInclude Include="include\interpolate_field.h" />
     <ClInclude Include="include\io-field_struct.h" />
     <ClInclude Include="include\io_field_unstruct.h" />
     <ClInclude Include="include\logging.h" />
