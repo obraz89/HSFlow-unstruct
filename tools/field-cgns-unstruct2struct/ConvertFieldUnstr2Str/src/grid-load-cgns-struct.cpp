@@ -44,7 +44,7 @@ static bool loadGridCoords(TcgnsContext& ctx);
 //-----------------------------------------------------------------------------
 
 
-bool doLoadGrid_cgns( const std::string& gridFN )
+bool doLoadGrid_cgns_struct( const std::string& gridFN )
 {
 	const bool is3D = ( G_Domain.nDim == 3 );
 

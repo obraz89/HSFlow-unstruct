@@ -65,3 +65,5 @@ bool assignZonesToProcs()
 
 		return true;
 }
+
+TDomain G_Domain;

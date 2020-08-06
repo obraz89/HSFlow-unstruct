@@ -13,6 +13,8 @@
 
 #include <stdarg.h>
 
+#include "mpi.h"
+
 /**
  * Make std::string with printf-style formatting
  *
@@ -263,3 +265,17 @@ void hs_log_error_src(const std::string& msg, const char* src, int line)
 	hsflow::TLog::log(hsflow::hsLOG_ERROR, s);
 }
 //-----------------------------------------------------------------------------
+
+void hsLogWTime(bool isInit)
+{
+	static double t0 = 0;
+
+	if (isInit)
+	{
+		t0 = MPI_Wtime();
+		return;
+	}
+
+	double t = MPI_Wtime() - t0;
+	hsLogMessage(" WTime= %.1f", t);
+}

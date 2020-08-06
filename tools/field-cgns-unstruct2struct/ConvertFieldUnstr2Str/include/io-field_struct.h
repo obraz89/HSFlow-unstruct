@@ -14,13 +14,8 @@
 extern int* g_zoneMPIRank;
 //-----------------------------------------------------------------------------
 
-bool initField();
-double loadField(const std::string& fileName, const short time_layer = 0);
+bool initField_struct();
 
 bool saveField(const std::string& fileName, const std::string& gridFileName,
 			   const short time_layer = 0, bool isDouble = true);
-bool saveField_legacy(const char* aFileName);
-
-bool saveFieldWall(const std::string& fileName, const std::string& gridFileName);
-bool saveFieldSlices(const std::string& fileName_base, const std::string& gridFileName);
 //-----------------------------------------------------------------------------

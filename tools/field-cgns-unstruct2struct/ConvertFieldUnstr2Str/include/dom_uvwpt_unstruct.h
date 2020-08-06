@@ -4,8 +4,6 @@
 
 #include "io_field_unstruct.h"
 
-static const int NConsVars = 5;
-
 struct t_PrimVarsIO {
 
 	double u;

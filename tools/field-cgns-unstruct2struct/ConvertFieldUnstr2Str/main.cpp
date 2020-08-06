@@ -10,8 +10,13 @@
 
 #include "settings.h"
 
+// unstruct 
 #include "CGNS-ctx-unst.h"
 #include "dom_uvwpt_unstruct.h"
+
+//struct
+#include "grid-load-cgns-struct.h"
+#include "io-field_struct.h"
 
 #if defined(_WINDOWS)
   #include <windows.h>
@@ -115,6 +120,17 @@ int main(int argc, char** argv)
 	DomUnst.allocateFlowSolution();
 
 	DomUnst.initializeFlow();
+
+	// loading struct stuff
+
+	G_Domain.nDim = 3;
+	G_Domain.nu = NConsVars;
+
+	hsLogMessage("Loading struct grid %s", g_Settings.strGridFnStrc.c_str());
+	doLoadGrid_cgns_struct(g_Settings.strGridFnStrc);
+
+	hsLogMessage("Allocating struct field");
+	initField_struct();
 
 	MPI_Finalize();
 

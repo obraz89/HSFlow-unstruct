@@ -128,3 +128,5 @@ struct TcgnsContext
 	~TcgnsContext(){  delete[] cgZones;  }
 };
 //-----------------------------------------------------------------------------
+
+bool doLoadGrid_cgns_struct(const std::string& gridFN);

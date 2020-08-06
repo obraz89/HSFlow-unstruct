@@ -1,5 +1,8 @@
 #pragma once
 
+// dimension of CSV vector
+static const int NConsVars = 5;
+
 //
 // Problem solving state
 //
@@ -26,6 +29,8 @@ struct TState
 	// debug vars
 	double ResidNormVeloWall;
 };
+
+const std::string g_VecFuncNames[] = { "VelocityX", "VelocityY", "VelocityZ", "Pressure", "Temperature" };
 
 bool hs_file_exists(const std::string& fn);
 //time_t hs_file_mtime(const std::string& fn);
