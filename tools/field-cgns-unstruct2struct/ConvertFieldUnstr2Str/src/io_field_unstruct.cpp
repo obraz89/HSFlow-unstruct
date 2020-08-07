@@ -80,10 +80,10 @@ bool read_zone_cgns(const int fileID, const int iBase, const int idxZne,
 	// Block size without ghosts
 	if (isize[1] != Zne.getnCellsReal())
 	{
-		hsLogError("Inconsistent zone '%s'#%d dimensions: %d <-> %d",
+		hsLogError("Inconsistent zone '%s'#%d dimensions (ok if this is Fluent field): %d <-> %d",
 			szZone, cgZneID,
 			isize[1], Zne.getnCellsReal());
-		return false;
+		//return false;
 	}
 	// Indexes faces
 	cgsize_t irmin = 1;
