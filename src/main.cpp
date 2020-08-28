@@ -158,8 +158,6 @@ int main(int argc, char* argv[])
 
 	G_pDom->allocateFlowSolution();
 
-	initialize_flow_model();
-
 	G_pDom->prepareBeforeTimeMarch();
 
 	G_pDom->checkMesh();

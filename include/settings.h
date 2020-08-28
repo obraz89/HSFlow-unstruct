@@ -2,11 +2,44 @@
 
 #include "IniFile.hpp"
 
+#include "logging.h"
+
 //
 // Constants
 //
 extern const char* g_CASE_SETTINGS_DIR;
 extern const char* g_CASE_RESULTS_DIR;
+
+// enum int with str code
+// 0 <=> Str1
+// 1 <=> Str2
+// etc
+struct t_EnumStr {
+
+	int Val;
+
+	std::vector<std::string> ValsStr;
+
+	virtual void initValsStr() = 0;
+	virtual const std::string& defaultValStr() const= 0;
+
+	void set(std::string str) {
+		for (int i = 0; i < ValsStr.size(); i++) {
+			if (ValsStr[i].compare(str) == 0) {
+				Val = i;
+				return;
+			}
+		}
+		hsLogError("EnumStr: unknown option %s", str.c_str());
+	}
+
+	std::string getOptionsStr() {
+		std::string str;
+		for (auto elem : ValsStr) str += elem + ",";
+		return str;
+	}
+
+};
 
 struct TgenericSettings
 {

@@ -9,6 +9,8 @@
 
 #include "dom_base.h"
 
+#include "flow_model_perfect_gas.h"
+
 #include <stdlib.h> // free()
 #include <string.h> // strtok(), strdup()
 #include <cassert>
@@ -239,6 +241,22 @@ bool load_settings() {
 	ini_data = iniAD.get_ini().encode();
 
 	load_case(ini_data);
+
+	iniAD.set_section("flow_model");
+
+	{
+		G_FlowModelParams.Gamma = 1.4;
+
+		G_FlowModelParams.Pr = 0.72;
+
+		iniAD.read_string("ViscTypeOptions", G_FlowModelParams.ViscType.getOptionsStr());
+
+		G_FlowModelParams.ViscType.set(iniAD.read_string("ViscType", 
+			G_FlowModelParams.ViscType.defaultValStr()));
+
+	}
+
+	ini_data = iniAD.get_ini().encode();
 
 	// for now rewriting ini every time (to get defaults for the first time) 
 	// TODO: replace by TPlugin::save_settings(fn, ini_data); 

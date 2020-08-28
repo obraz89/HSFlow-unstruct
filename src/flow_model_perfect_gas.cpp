@@ -4,16 +4,6 @@
 
 t_FlowModelParams G_FlowModelParams;
 
-void initialize_flow_model() {
-
-	G_FlowModelParams.Gamma = 1.4;
-
-	G_FlowModelParams.Pr = 0.72;
-
-}
-
-
-
 // common functions
 
 double calcSoundSpeedByRP(double rho, double pressure) {
@@ -61,10 +51,12 @@ double calcViscositySuther(double T) {
 };
 
 double calcViscosity(double T) {
-	if (true)
+	if (G_FlowModelParams.ViscType==t_ViscType::Power)
 		return calcViscosityPower(T);
-	else
+	if (G_FlowModelParams.ViscType==t_ViscType::Suther)
 		return calcViscositySuther(T);
+	hsLogError("CalcViscosity::unsupported visc calc type");
+	return 0;
 }
 
 double calcThermalConductivity(double T) {

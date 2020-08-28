@@ -2,19 +2,34 @@
 
 #include "matrix_small.h"
 
+#include "settings.h"
+
+struct t_ViscType : public t_EnumStr {
+	static const int Suther = 0;
+	static const int Power = 1;
+	void initValsStr() {
+		ValsStr.push_back("Suther");
+		ValsStr.push_back("Power");
+	}
+
+	bool operator==(int v) { return Val == v; }
+
+	const std::string& defaultValStr() const { return ValsStr[0]; }
+
+	t_ViscType() { initValsStr(); }
+};
+
 struct t_FlowModelParams {
 
 	double Gamma;
 
 	double Pr;
 
+	t_ViscType ViscType;
+
 };
 
 extern t_FlowModelParams G_FlowModelParams;
-
-void initialize_flow_model();
-
-
 
 // non-dimensional speed of sound
 double calcSoundSpeedByRP(double rho, double pressure); 
