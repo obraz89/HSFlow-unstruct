@@ -1,13 +1,13 @@
 
 :: copy this file to your case dir and launch !!!
 
-@set HSFlowRoot=E:\science\devel\HSFlow-unstruct
+@set HSFlowRoot=S:\science\HSFlow-unstruct
 
 @set HSFLOW_CASE_DIR=%CD% 
 
 :: set paths to required libs
 
-@set MPI_DIR=E:\lib\msmpi_10.1.2
+@set MPI_DIR=%HSFlowRoot%/lib/msmpi_v8
 
 @set CGNS_DIR=%HSFlowRoot%/lib/cgns-vc14-rlz-win64
 
