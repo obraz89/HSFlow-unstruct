@@ -4,7 +4,7 @@
 
 #include <array>
 #include <vector>
-
+#include <algorithm>
 #include "logging.h"
 
 #include "matrix_small.h"
