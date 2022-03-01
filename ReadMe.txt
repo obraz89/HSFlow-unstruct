@@ -2,34 +2,27 @@
     CONSOLE APPLICATION : HSFlow-unstruct Project Overview
 ========================================================================
 
-AppWizard has created this HSFlow-unstruct application for you.
+HSFlow-unstruct is a solver for 3d Euler and Navier-Stokes equations 
+on unstructured grids.
 
-This file contains a summary of what you will find in each of the files that
-make up your HSFlow-unstruct application.
+It is an educational project to show main features of finite-volume Godunov-type schemes
 
-
-HSFlow-unstruct.vcxproj
-    This is the main project file for VC++ projects generated using an Application Wizard.
-    It contains information about the version of Visual C++ that generated the file, and
-    information about the platforms, configurations, and project features selected with the
-    Application Wizard.
-
-HSFlow-unstruct.vcxproj.filters
-    This is the filters file for VC++ projects generated using an Application Wizard. 
-    It contains information about the association between the files in your project 
-    and the filters. This association is used in the IDE to show grouping of files with
-    similar extensions under a specific node (for e.g. ".cpp" files are associated with the
-    "Source Files" filter).
-
-HSFlow-unstruct.cpp
-    This is the main application source file.
 
 /////////////////////////////////////////////////////////////////////////////
-Other standard files:
+Installation notes:
 
-StdAfx.h, StdAfx.cpp
-    These files are used to build a precompiled header (PCH) file
-    named HSFlow-unstruct.pch and a precompiled types file named StdAfx.obj.
+1. Clone the repository to your local machine (simple way is to use GitHub Desktop)
+
+2. Copy lib directory inside the root of your repository (provided separately)
+
+From lib/msmpi_v8 run MSMpiSetup.exe and msmpisdk.msi
+This will install Microsoft mpi on your machine (binaries and sdk)
+
+3. Create folder for your test case, copy run scripts to your case folder: 
+start_sln.cmd, start_mpi_debug.cmd, start_mpi_release.cmd
+
+4. Configure your project (settings dir, grids, bcs etc), 
+run using scripts
 
 /////////////////////////////////////////////////////////////////////////////
 Other notes:
