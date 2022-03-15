@@ -41,6 +41,21 @@ struct t_EnumStr {
 
 };
 
+struct t_NonDimType : public t_EnumStr {
+	static const int FreeStreamVelo = 0;
+	static const int FreeStreamSoundSpeed = 1;
+	void initValsStr() {
+		ValsStr.push_back("FreeStreamVelo");
+		ValsStr.push_back("FreeStreamSoundSpeed");
+	}
+
+	bool operator==(int v) { return Val == v; }
+
+	const std::string& defaultValStr() const { return ValsStr[0]; }
+
+	t_NonDimType() { initValsStr(); }
+};
+
 struct TgenericSettings
 {
 	//--- Init ---
@@ -57,6 +72,9 @@ struct TgenericSettings
 
 	// euler, ns, rans etc
 	std::string strCase;
+
+	// non-dim type
+	t_NonDimType nonDimType;
 
 	// TODO: scheme (domain) options
 	double CFL;	// Courant number

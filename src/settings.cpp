@@ -227,6 +227,11 @@ bool load_settings() {
 
 		g_genOpts.strCase = iniAD.read_string("case", "euler");
 
+		iniAD.read_string("nonDimOptions", g_genOpts.nonDimType.getOptionsStr());
+
+		g_genOpts.nonDimType.set(iniAD.read_string("nonDim", 
+			g_genOpts.nonDimType.defaultValStr()));
+
 	}
 
 	iniAD.set_section("scheme");
