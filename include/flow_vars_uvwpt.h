@@ -51,6 +51,7 @@ public:
 	void setP(double val) { data[4] = val; }
 
 	void setByRhoUH(double rho, const t_Vec3& UVW, double H);
+	void setByRhoUT(double rho, const t_Vec3& UVW, double T);
 
 	void setValAtInf();
 

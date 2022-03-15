@@ -13,7 +13,6 @@
 
 #include <stdlib.h> // free()
 #include <string.h> // strtok(), strdup()
-#include <cassert>
 
 const char* g_CASE_RESULTS_DIR = "solution/";   // ending '/' is required!
 const char* g_CASE_SETTINGS_DIR = "settings/";
@@ -22,158 +21,6 @@ const char* g_CASE_SETTINGS_DIR = "settings/";
 static const char MAIN_INI[] = "main.ini";
 
 TgenericSettings g_genOpts;
-
-/**
- * Wrapper class for IniFile
- * Writes default value if key doesn't exist on reading
- */
-class TIniAutoDefaults
-{
-	ini::IniFile _ini;
-	std::string _file_name;
-
-	ini::IniSection* _section;  // active section
-	std::string _section_name;
-
-	bool _updated;
-	TIniAutoDefaults();
-
-public:
-	TIniAutoDefaults(const std::string& fn)
-		: _ini(fn), _file_name(fn), _section(nullptr), _section_name(), _updated(false) {
-		;
-	}
-
-	ini::IniFile& get_ini() {
-		return _ini;
-	}
-
-	void save_if_updated() {
-		if (_updated)
-			_ini.save(_file_name);
-	}
-
-	void set_section(const char* s) {
-		_section_name = s;
-		_section = &(_ini[s]);
-	}
-
-	/**
-	 * Read the key or create a new one with defaut value
-	 *
-	 * @param[in] key - key name in the active section
-	 * @param[in] s0 - default value in case the key doesn't not exist
-	 * @return    key value
-	 */
-	std::string read_string(const std::string& key, const std::string& s0) {
-		assert(_section);
-		ini::IniSection& sect = *_section;
-		if (sect.has(key))
-			return sect[key].asString();
-
-		sect[key] = s0;   _updated = true;
-		return s0;
-	}
-
-	int read_int(const std::string& key, int i0) {
-		assert(_section);
-		ini::IniSection& sect = *_section;
-		try {
-			if (sect.has(key))
-				return sect[key].asInt();
-		}
-		catch (std::domain_error & e) {
-			hsLogWarning("%s", e.what());
-		}
-
-		sect[key] = i0;   _updated = true;
-		return i0;
-	}
-
-	/**
-	 * Reread the key, if updated assign the provided variable
-	 *
-	 * @param[in]     key  - key name in the active section
-	 * @param[in/out] prevValue - saved previous value of the key
-	 * @return        true if value was updated and false otherwise
-	 */
-	bool reread_int(const std::string& key, int& prevValue) {
-		int val;
-		try {
-			if (!_section->has(key))
-				return false;
-			val = (*_section)[key].asInt();
-		}
-		catch (std::domain_error & e) {
-			return false;
-		}
-
-		if (val == prevValue)
-			return false;
-
-		hsLogMessage("  %s/%s: %d -> %d", _section_name.c_str(), key.c_str(), prevValue, val);
-		prevValue = val;
-
-		return true;
-	}
-
-	double read_float(const std::string& key, double f0) {
-		assert(_section);
-		ini::IniSection& sect = *_section;
-		try {
-			if (sect.has(key))
-				return sect[key].asDouble();
-		}
-		catch (std::domain_error & e) {
-			hsLogWarning("%s", e.what());
-		}
-
-		sect[key] = f0;   _updated = true;
-		return f0;
-	}
-
-	/**
-	 * Reread the key, if updated assign the provided variable
-	 *
-	 * @param[in]     key  - key name in the active section
-	 * @param[in/out] prevValue - saved previous value of the key
-	 * @return        true if value was updated and false otherwise
-	 */
-	bool reread_float(const std::string& key, double& prevValue) {
-		double val;
-		try {
-			if (!_section->has(key))
-				return false;
-			val = (*_section)[key].asDouble();
-		}
-		catch (std::domain_error & e) {
-			return false;
-		}
-
-		if (fabs(val - prevValue) < 1e-15)
-			return false;
-
-		hsLogMessage("  %s/%s: %g -> %g", _section_name.c_str(), key.c_str(), prevValue, val);
-		prevValue = val;
-
-		return true;
-	}
-
-	bool read_bool(const std::string& key, bool b0) {
-		assert(_section);
-		ini::IniSection& sect = *_section;
-		try {
-			if (sect.has(key))
-				return sect[key].asBool();
-		}
-		catch (std::domain_error & e) {
-			hsLogWarning("%s", e.what());
-		}
-
-		sect[key] = b0;   _updated = true;
-		return b0;
-	}
-};
 
 
 bool load_settings() {
@@ -218,6 +65,16 @@ bool load_settings() {
 			ok &= CheckFieldFile(fn);  // don't return here, allow to init the whole config
 		}
 
+		// initialize field with custom procedure
+		{
+			iniAD.read_string("initFieldCustom_Options",
+				g_genOpts.initFieldCustom.getOptionsStr());
+
+			g_genOpts.initFieldCustom.set(iniAD.read_string("InitFieldCustom",
+				g_genOpts.initFieldCustom.defaultValStr()));
+		}
+
+
 		g_genOpts.strGridFN = iniAD.read_string("gridFN", "grid.cgns");
 		g_genOpts.timeStart = iniAD.read_float("timeStart", -1);
 
@@ -261,13 +118,11 @@ bool load_settings() {
 
 	}
 
-	ini_data = iniAD.get_ini().encode();
-
 	// for now rewriting ini every time (to get defaults for the first time) 
 	// TODO: replace by TPlugin::save_settings(fn, ini_data); 
 	// when MPI is ok
+	ini_data = iniAD.get_ini().encode();
 	iniAD.get_ini().decode(ini_data);
-
 	iniAD.get_ini().save(sIni);
 
 	return true;

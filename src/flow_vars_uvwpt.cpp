@@ -82,6 +82,16 @@ void t_PrimVars::setByRhoUH(double rho, const t_Vec3& UVW, double H) {
 
 };
 
+void t_PrimVars::setByRhoUT(double rho, const t_Vec3& UVW, double T) {
+
+	setR(rho);
+
+	setUVW(UVW);
+
+	setP(calcPressureByRT(rho, T));
+
+};
+
 void t_PrimVars::setValAtInf() {
 
 	const t_FlowParamsFreeStream& fp = G_FreeStreamParams;
