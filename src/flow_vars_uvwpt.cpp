@@ -86,11 +86,31 @@ void t_PrimVars::setValAtInf() {
 
 	const t_FlowParamsFreeStream& fp = G_FreeStreamParams;
 
-	setR(1.0);
+	if (g_genOpts.nonDimType == t_NonDimType::FreeStreamVelo) {
 
-	setUVW(fp.getUInf());
+		setR(1.0);
 
-	setP(1.0 / calcGMaMa());
+		setUVW(fp.getUInf());
+
+		setP(1.0 / calcGMaMa());
+
+		return;
+
+	}
+
+	if (g_genOpts.nonDimType == t_NonDimType::FreeStreamSoundSpeed) {
+
+		setR(1.0);
+
+		setUVW(fp.getUInf());
+
+		setP(1.0 / G_FlowModelParams.Gamma);
+
+		return;
+
+	}
+
+	hsLogError("t_PrimVars::setValAtInf: unknown non dim option");
 
 }
 
@@ -201,11 +221,7 @@ void t_ConsVars::setValAtInf() {
 
 	const t_FlowParamsFreeStream& fp = G_FreeStreamParams;
 
-	prv.setR(1.0);
-
-	prv.setUVW(fp.getUInf());
-
-	prv.setP(1.0 / calcGMaMa());
+	prv.setValAtInf();
 
 	*this = prv.calcConsVars();
 

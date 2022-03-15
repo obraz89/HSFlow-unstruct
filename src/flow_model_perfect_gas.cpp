@@ -6,24 +6,47 @@ t_FlowModelParams G_FlowModelParams;
 
 // common functions
 
+// same formula for both non-dim types
 double calcSoundSpeedByRP(double rho, double pressure) {
 
 	return sqrt(G_FlowModelParams.Gamma * pressure / rho);
 
 }
 
+
 double calcTempByRP(double rho, double pressure) {
 
-	return calcGMaMa() * pressure / rho;
+	if (g_genOpts.nonDimType==t_NonDimType::FreeStreamVelo)
+		return calcGMaMa() * pressure / rho;
+
+	if (g_genOpts.nonDimType == t_NonDimType::FreeStreamSoundSpeed)
+		return G_FlowModelParams.Gamma * pressure / rho;
+
+	hsLogError("flow model:T-R-P: Unsupported option of non dim!");
+	return 0;
 
 }
 
 double calcPressureByRT(double rho, double T) {
-	return 1.0 / calcGMaMa() * rho * T;
+	if (g_genOpts.nonDimType == t_NonDimType::FreeStreamVelo)
+		return 1.0 / calcGMaMa() * rho * T;
+
+	if (g_genOpts.nonDimType == t_NonDimType::FreeStreamSoundSpeed)
+		return 1.0 / G_FlowModelParams.Gamma * rho * T;
+
+	hsLogError("flow model:T-R-P: Unsupported option of non dim!");
+	return 0;
 }
 
 double calcRhoByPT(double pressure, double temperature) {
-	return calcGMaMa() * pressure / temperature;
+	if (g_genOpts.nonDimType == t_NonDimType::FreeStreamVelo)
+		return calcGMaMa() * pressure / temperature;
+
+	if (g_genOpts.nonDimType == t_NonDimType::FreeStreamSoundSpeed)
+		return G_FlowModelParams.Gamma * pressure / temperature;
+
+	hsLogError("flow model:T-R-P: Unsupported option of non dim!");
+	return 0;
 };
 
 double calcGMaMa() {
