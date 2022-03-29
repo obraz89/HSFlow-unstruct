@@ -20,22 +20,79 @@ void t_Dom5::initializeFlow() {
 	double time = -1;
 
 	if (g_genOpts.strInitFieldFN.empty()) {
-		// set real cell values
-		for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
+		if (g_genOpts.initFieldCustom==t_EnumInitFieldCustom::No) {
+			// set real cell values
+			for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
 
-			t_Zone& zne = Zones[iZone];
+				t_Zone& zne = Zones[iZone];
 
-			t_Cell* pcell;
+				t_Cell* pcell;
 
-			for (int i = 0; i < zne.getnCellsReal(); i++) {
+				for (int i = 0; i < zne.getnCellsReal(); i++) {
 
-				pcell = zne.getpCell(i);
-				getCellCSV(iZone, i).setValAtInf();
+					pcell = zne.getpCell(i);
+					getCellCSV(iZone, i).setValAtInf();
+				}
+
 			}
 
+			time = 0.0;
 		}
+		else {
+			if (g_genOpts.initFieldCustom == t_EnumInitFieldCustom::Eu1d) {
+				std::string fn = std::string() + g_CASE_SETTINGS_DIR + 
+					g_genOpts.initFieldCustom.toStr() + ".ini";
 
-		time = 0.0;
+				TIniAutoDefaults iniAD(fn);
+
+				iniAD.set_section("init");
+
+				double r1 = iniAD.read_float("r1", 1.0);
+				double u1 = iniAD.read_float("u1", 0.0);
+				double t1 = iniAD.read_float("t1", 1.0);
+
+				double r2 = iniAD.read_float("r2", 1.0);
+				double u2 = iniAD.read_float("u2", 0.0);
+				double t2 = iniAD.read_float("t2", 1.0);
+
+				double xl = iniAD.read_float("xl", 0.0);
+				double xr = iniAD.read_float("xr", 0.5);
+
+				std::string ini_data = iniAD.get_ini().encode();
+				iniAD.get_ini().decode(ini_data);
+				iniAD.get_ini().save(fn);
+
+				t_PrimVars pv1, pv2;
+
+				pv1.setByRhoUT(r1, t_Vec3(u1, 0.0, 0.0), t1);
+				pv2.setByRhoUT(r2, t_Vec3(u2, 0.0, 0.0), t2);
+
+				t_ConsVars csv1 = pv1.calcConsVars();
+				t_ConsVars csv2 = pv2.calcConsVars();
+
+				for (int iZone = iZneMPIs; iZone <= iZneMPIe; iZone++) {
+
+					t_Zone& zne = Zones[iZone];
+
+					t_Cell* pcell;
+
+					for (int i = 0; i < zne.getnCellsReal(); i++) {
+
+						pcell = zne.getpCell(i);
+
+						double x_cell = pcell->Center[0];
+
+						if (xl < x_cell && x_cell < xr)
+							getCellCSV(iZone, i) = csv1;
+						else
+							getCellCSV(iZone, i) = csv2;
+					}
+
+				}
+
+				time = 0.0;
+			}
+		}
 	}
 	else {
 

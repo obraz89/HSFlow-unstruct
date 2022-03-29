@@ -6,6 +6,8 @@
 
 #include <cmath>
 
+#include "settings.h"
+
 #define STR_FLOW_PARAMS "flow_params"
 
 class t_FlowParamsFreeStream : public TPlugin {
@@ -22,7 +24,7 @@ protected:
 	// aos in radians
 	double AoSRad;
 
-	// non-dimensional velocity vector at infinity
+	// unit vector of velocity direction at infinity
 	t_Vec3 UInf;
 
 	// non-dimensional Reynolds number via values at infinity & 
@@ -64,13 +66,25 @@ public:
 
 		AoSRad = PI * aos_deg / 180.0;
 
-		double Ux = cos(AoARad) * cos(AoSRad);
+		double UxDir = cos(AoARad) * cos(AoSRad);
 
-		double Uy = sin(AoARad);
+		double UyDir = sin(AoARad);
 
-		double Uz = cos(AoARad) * sin(AoSRad);
+		double UzDir = cos(AoARad) * sin(AoSRad);
+		// free stream velocity vector
+		switch (g_genOpts.nonDimType.Val)
+		{
+		case t_NonDimType::FreeStreamVelo:
+			UInf.set(UxDir, UyDir, UzDir);
+			break;
+		case t_NonDimType::FreeStreamSoundSpeed:
+			UInf.set(Mach * UxDir, Mach * UyDir, Mach * UzDir);
+			break;
+		default:
+			hsLogError("Flow Params: unknown nondim type");
+			break;
+		}
 
-		UInf.set(Ux, Uy, Uz);
 
 		Re = g.get_real_param("Re");
 	};

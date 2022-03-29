@@ -10,6 +10,9 @@
 
 
 #include "cgnslib.h"
+
+#define _CRT_SECURE_NO_WARNINGS
+
 // TODO: make cgns wrapper as in HSFlow
 #if CG_BUILD_SCOPE == 0
 #undef  CG_BUILD_SCOPE
@@ -30,7 +33,11 @@
 
 #include "CGNS-ctx.h"
 
+#include <iostream>
+
 #include <cassert>
+
+#include <iomanip>
 //-----------------------------------------------------------------------------
 
 const char g_szCGBase[] = "HSFlow-unstruct";
@@ -143,6 +150,9 @@ bool read_zone_cgns(const int fileID, const int iBase, const int idxZne,
 
 	return true;
 }
+
+// additional io into text file for 1d case
+bool saveField_txt1D();
 
 
 /**
@@ -453,10 +463,55 @@ bool saveField(const std::string& fileName, const std::string& gridFileName,
 			cg_close(fGrid);
 	}
 
+	// additional io
+	if (g_genOpts.initFieldCustom == t_EnumInitFieldCustom::Eu1d) {
+		saveField_txt1D();
+	}
+
 	MPI_Barrier(MPI_COMM_WORLD);
 	hsLogWTime();
 
 	return ok;
+}
+/*
+*  Save Field as txt file in format :
+*  x, rho, u, p, T
+* 
+* 
+* 
+*/
+bool saveField_txt1D() {
+	if (G_State.mpiNProcs != 1 || G_pDom->nZones !=1)
+		hsLogError("Error: FIXME: save field as txt works only for single proc & sinle zone grid");
+	if (G_State.mpiRank == 0) {
+		char str_time[64];
+		sprintf(str_time, "%.5f", G_State.time);
+		std::string fn = std::string(g_CASE_RESULTS_DIR) + "fld1d_t" + std::string(str_time)+".txt";
+		std::ofstream ofstr(fn, std::ios_base::out);
+
+		int nCells = G_pDom->Zones[0].getnCellsReal();
+		t_ArrDbl v_u, v_p, v_T;
+
+		v_u.alloc(nCells);
+		v_p.alloc(nCells);
+		v_T.alloc(nCells);
+
+		G_pDom->getDataAsArr("VelocityX", 0, v_u);
+		G_pDom->getDataAsArr("Pressure", 0, v_p);
+		G_pDom->getDataAsArr("Temperature", 0, v_T);
+
+		ofstr << "x\tu\tp\tt\n";
+
+		ofstr << std::fixed << std::setw(11) << std::setprecision(6);
+
+		for (int i = 0; i < nCells; i++) {
+			double x = G_pDom->Zones[0].getCell(i).Center[0];
+			ofstr << x <<"\t" << v_u.data()[i] <<"\t" << v_p.data()[i] <<"\t" << v_T.data()[i] << "\n";
+		}
+
+	}
+
+	return true;
 }
 
 
