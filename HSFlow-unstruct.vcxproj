@@ -31,6 +31,7 @@
     <ClCompile Include="src\dom_euler_1st_impl.cpp" />
     <ClCompile Include="src\dom_euler_base.cpp" />
     <ClCompile Include="src\dom_euler_lsq.cpp" />
+    <ClCompile Include="src\dom_euler_lw.cpp" />
     <ClCompile Include="src\lsq_uvwpt.cpp" />
     <ClCompile Include="src\dom_ns_base.cpp" />
     <ClCompile Include="src\dom_ns_lsq_expl.cpp" />
@@ -51,6 +52,7 @@
     <ClCompile Include="src\dom_base.cpp" />
     <ClCompile Include="src\PluginBase.cpp" />
     <ClCompile Include="src\rs_procs.cpp" />
+    <ClCompile Include="src\schemes_euler.cpp" />
     <ClCompile Include="src\settings.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -65,6 +67,7 @@
     <ClInclude Include="include\dom_euler_1st_impl.h" />
     <ClInclude Include="include\dom_euler_base.h" />
     <ClInclude Include="include\dom_euler_lsq.h" />
+    <ClInclude Include="include\dom_euler_lw.h" />
     <ClInclude Include="include\lsq_uvwpt.h" />
     <ClInclude Include="include\dom_ns_base.h" />
     <ClInclude Include="include\dom_ns_lsq_expl.h" />

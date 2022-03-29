@@ -138,6 +138,12 @@
     <ClCompile Include="src\dom_ns_lsq_expl.cpp">
       <Filter>Source Files\ns</Filter>
     </ClCompile>
+    <ClCompile Include="src\dom_euler_lw.cpp">
+      <Filter>Source Files\euler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\schemes_euler.cpp">
+      <Filter>Source Files\euler</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\logging.h">
@@ -241,6 +247,9 @@
     </ClInclude>
     <ClInclude Include="include\schemes_ns.h">
       <Filter>Header Files\ns</Filter>
+    </ClInclude>
+    <ClInclude Include="include\dom_euler_lw.h">
+      <Filter>Header Files\euler</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

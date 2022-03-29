@@ -434,7 +434,7 @@ void t_Dom5::makeTimeStep() {
 
 }
 
-double t_Dom5::calcDt() const {
+double t_Dom5::calcDt(){
 
 	double dt = HUGE_VAL;
 
@@ -462,6 +462,8 @@ double t_Dom5::calcDt() const {
 		}
 
 	}
+
+	this->timeStep = dt;
 
 	return dt;
 

@@ -43,6 +43,9 @@ struct t_PrimVarsIO {
 
 class t_Dom5 : public t_DomBase {
 
+protected:
+	double timeStep;
+
 public:
 	virtual t_ConsVars& getCellCSV(int zone_id, lint cell_id) = 0;
 	virtual const t_ConsVars& getCellCSV(int zone_id, lint cell_id) const = 0;
@@ -54,7 +57,7 @@ public:
 	std::vector<std::string> getFuncNamesIO() const;
 	virtual void getDataAsArr(std::string name, int zoneID, t_ArrDbl& Vals) const;
 
-	virtual double calcDt() const;
+	virtual double calcDt();
 	virtual void calcFaceFlux(int iZone, lint iFace) = 0;
 
 	virtual void checkMinMaxCSV();
